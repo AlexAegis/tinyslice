@@ -1,0 +1,38 @@
+{
+	"$schema": "https://raw.githubusercontent.com/SchemaStore/schemastore/master/src/schemas/json/eslintrc.json",
+	"root": true,
+	"ignorePatterns": ["lint-staged.config.js"],
+	"plugins": ["prettier"],
+	"extends": ["eslint:recommended", "plugin:@typescript-eslint/recommended"],
+	"overrides": [
+		{
+			"files": ["*.ts", "*.tsx", "*.js", "*.jsx"],
+			"rules": {
+				"no-unused-vars": ["error", { "argsIgnorePattern": "^_" }],
+				"quotes": ["error", "single", { "avoidEscape": true }]
+			}
+		},
+		{
+			"files": ["*.ts", "*.tsx"],
+			"parserOptions": { "project": "./tsconfig.json" },
+			"rules": {
+				"@typescript-eslint/quotes": ["error", "single", { "avoidEscape": true }],
+				"@typescript-eslint/no-unused-vars": ["error", { "argsIgnorePattern": "^_" }],
+				"@typescript-eslint/explicit-member-accessibility": "off",
+				"@typescript-eslint/explicit-function-return-type": "off",
+				"@typescript-eslint/no-parameter-properties": "off",
+				"@typescript-eslint/naming-convention": [
+					"error",
+					{
+						"selector": "variable",
+						"format": ["camelCase", "UPPER_CASE"]
+					}
+				]
+			}
+		}
+	],
+	"rules": {
+		"no-unused-vars": ["error", { "argsIgnorePattern": "^_" }],
+		"quotes": ["error", "single", { "avoidEscape": true }]
+	}
+}
