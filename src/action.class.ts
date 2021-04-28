@@ -1,5 +1,5 @@
 import { MonoTypeOperatorFunction, Observable, Subject, Subscription } from 'rxjs';
-import { filter, map } from 'rxjs/operators';
+import { filter, finalize, map } from 'rxjs/operators';
 
 export interface ActionConfig {
 	name?: string;
@@ -29,7 +29,6 @@ export type WrappedActionPacketTuple<T> = {
 export type Union<T extends unknown[]> = T[number];
 
 export class Action<T> extends Subject<T> {
-	private static readonly registered: Action<never>[] = [];
 	private static readonly pool = new Subject<WrappedActionPacket<never>>();
 	private static readonly poolMap = new Map<string, Action<never>>();
 	private subscription?: Subscription;
@@ -39,12 +38,40 @@ export class Action<T> extends Subject<T> {
 
 	private config: ActionConfig;
 
-	public static register(action: Action<never>, type: string, _config: ActionConfig): void {
-		Action.registered.push(action);
+	public static register<T extends never>(
+		action: Action<T>,
+		type: string,
+		_config: ActionConfig
+	): void {
+		Action.poolMap.set(type, action);
 
 		action.subscription = action
-			.pipe(map((payload) => ({ type, payload })))
+			.pipe(
+				map((payload) => ({ type, payload })),
+				finalize(() => Action.poolMap.delete(action.type))
+			)
 			.subscribe(Action.pool);
+	}
+
+	public static isRegistered<T>(action?: Action<T> | string): boolean {
+		if (!action) {
+			return false;
+		}
+		let type: string;
+		if (typeof action === 'string') {
+			type = action;
+		} else {
+			type = action.type;
+		}
+		return Action.poolMap.has(type);
+	}
+
+	public static getRegistered<T>(type: string): Action<T> | undefined {
+		return this.poolMap.get(type) as Action<T> | undefined;
+	}
+
+	public static emit<T>(type: string, payload: T): void {
+		Action.getRegistered<T>(type)?.next(payload);
 	}
 
 	public unregister(): void {
