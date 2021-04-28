@@ -1,5 +1,5 @@
-import { MonoTypeOperatorFunction, Observable, Subject } from 'rxjs';
-import { filter } from 'rxjs/operators';
+import { MonoTypeOperatorFunction, Observable, Subject, Subscription } from 'rxjs';
+import { filter, map } from 'rxjs/operators';
 
 export interface ActionConfig {
 	name?: string;
@@ -29,16 +29,26 @@ export type WrappedActionPacketTuple<T> = {
 export type Union<T extends unknown[]> = T[number];
 
 export class Action<T> extends Subject<T> {
-	private static readonly registered: Action<any>[] = [];
-	private static readonly pool = new Subject<WrappedActionPacket<any>>();
-	public static get pool$(): Observable<WrappedActionPacket<any>> {
+	private static readonly registered: Action<never>[] = [];
+	private static readonly pool = new Subject<WrappedActionPacket<never>>();
+	private static readonly poolMap = new Map<string, Action<never>>();
+	private subscription?: Subscription;
+	public static get pool$(): Observable<WrappedActionPacket<never>> {
 		return this.pool;
 	}
 
 	private config: ActionConfig;
 
-	public static register<T>(action: Action<T>, _type: string, _config: ActionConfig): void {
-		Action.registered.push(action as Action<unknown>);
+	public static register(action: Action<never>, type: string, _config: ActionConfig): void {
+		Action.registered.push(action);
+
+		action.subscription = action
+			.pipe(map((payload) => ({ type, payload })))
+			.subscribe(Action.pool);
+	}
+
+	public unregister(): void {
+		this.subscription?.unsubscribe();
 	}
 
 	public constructor(public type: string, config: ActionConfig = {}) {
@@ -48,7 +58,7 @@ export class Action<T> extends Subject<T> {
 			...config,
 		};
 
-		Action.register(this, type, this.config);
+		Action.register((this as unknown) as Action<never>, type, this.config);
 	}
 
 	/**
@@ -76,8 +86,8 @@ export class Action<T> extends Subject<T> {
 }
 
 export function RegisterAction(name: string, config: ActionConfig = {}) {
-	return function <T>(target: Action<T>): void {
-		Action.register<T>(target, name, {
+	return function (target: Action<never>): void {
+		Action.register(target, name, {
 			...DEFAULT_ACTION_CONFIG,
 			...config,
 		});
