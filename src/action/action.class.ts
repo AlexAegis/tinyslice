@@ -14,14 +14,17 @@ export class ActionAlreadyRegisteredError extends Error {
 }
 
 export class Action<T> extends Subject<T> {
-	private static readonly _dispatcher = new Subject<ActionPacket<never>>();
+	private static readonly _dispatcher$ = new Subject<ActionPacket<never>>();
 	private static readonly _actionMap = new Map<string, Action<never>>();
 	private _dispatchSubscription?: Subscription;
-	public static get dispatcher(): Observable<ActionPacket<never>> {
-		return this._dispatcher;
-	}
+
+	public static readonly dispatcher$ = this._dispatcher$.asObservable();
 
 	private config: ActionConfig;
+
+	public get listen$(): Observable<ActionPacket<T>> {
+		return Action.listen$(this);
+	}
 
 	public static register<T extends never>(action: Action<T>): void {
 		if (Action._actionMap.has(action.type)) {
@@ -34,7 +37,7 @@ export class Action<T> extends Subject<T> {
 				map((payload) => ({ type: action.type, payload })),
 				finalize(() => Action._actionMap.delete(action.type))
 			)
-			.subscribe(Action._dispatcher);
+			.subscribe(Action._dispatcher$);
 	}
 
 	public static isRegistered<T>(action?: Action<T> | string): boolean {
@@ -58,12 +61,8 @@ export class Action<T> extends Subject<T> {
 		Action.getRegistered<T>(type)?.next(payload);
 	}
 
-	/**
-	 * The finalize operator will take care of removing it from the actionMap
-	 */
-	public unsubscribe(): void {
-		super.unsubscribe();
-		this._dispatchSubscription?.unsubscribe();
+	public static unsubscribeAll(): void {
+		Action._actionMap.forEach((a) => a.unsubscribe());
 	}
 
 	public constructor(public type: string, config: Partial<ActionConfig> = {}) {
@@ -77,16 +76,27 @@ export class Action<T> extends Subject<T> {
 		}
 	}
 
+	public emit(payload: T): void {
+		Action.emit(this.type, payload);
+	}
+	/**
+	 * The finalize operator will take care of removing it from the actionMap
+	 */
+	public unsubscribe(): void {
+		super.unsubscribe();
+		this._dispatchSubscription?.unsubscribe();
+	}
+
 	/**
 	 *
 	 * @deprecated
 	 */
-	public filter(): MonoTypeOperatorFunction<ActionPacket<T>> {
+	public getFilter(): MonoTypeOperatorFunction<ActionPacket<T>> {
 		return <T>(source: Observable<ActionPacket<T>>) =>
 			source.pipe(filter((value) => value.type === this.type));
 	}
 
-	public static of<T extends readonly unknown[]>(
+	public static makeFilter<T extends readonly unknown[]>(
 		...actions: [...ActionTuple<T>]
 	): MonoTypeOperatorFunction<ActionPacket<T[number]>> {
 		const allowedTypes = new Set<string>(actions.map((action) => action.type));
@@ -94,9 +104,9 @@ export class Action<T> extends Subject<T> {
 			source.pipe(filter((value) => allowedTypes.has(value.type)));
 	}
 
-	public static dispatcherOf<T extends readonly unknown[]>(
+	public static listen$<T extends readonly unknown[]>(
 		...actions: [...ActionTuple<T>]
 	): Observable<ActionPacket<T[number]>> {
-		return this.dispatcher.pipe(Action.of(...actions));
+		return this._dispatcher$.pipe(Action.makeFilter(...actions));
 	}
 }
