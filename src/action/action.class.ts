@@ -1,5 +1,6 @@
 import { MonoTypeOperatorFunction, Observable, Subject, Subscription } from 'rxjs';
 import { filter, finalize, map } from 'rxjs/operators';
+import { PayloadReducer, ReducerConfiguration } from 'src/store/reducer.type';
 import { ActionConfig, DEFAULT_ACTION_CONFIG } from './action-config.interface';
 import { ActionPacket } from './action-packet.interface';
 
@@ -7,37 +8,39 @@ export type ActionTuple<T> = {
 	[K in keyof T]: Action<T[K]>;
 };
 
-export class ActionAlreadyRegisteredError extends Error {
-	constructor(action: Action<never>) {
+export class ActionAlreadyRegisteredError<T> extends Error {
+	constructor(action: Action<T>) {
 		super(`Action ${action.type} already registered!`);
 	}
 }
 
-export class Action<T> extends Subject<T> {
-	private static readonly _dispatcher$ = new Subject<ActionPacket<never>>();
-	private static readonly _actionMap = new Map<string, Action<never>>();
-	private _dispatchSubscription?: Subscription;
+export class Action<Payload> extends Subject<Payload> {
+	public static VOID = new Action('[Void]');
 
-	public static readonly dispatcher$ = this._dispatcher$.asObservable();
+	private static readonly globalDispatcher$ = new Subject<ActionPacket<unknown>>();
+	private static readonly globalActionMap = new Map<string, Action<unknown>>();
+	public static readonly dispatcher$ = this.globalDispatcher$.asObservable();
+
+	#dispatchSubscription?: Subscription;
 
 	private config: ActionConfig;
 
-	public get listen$(): Observable<ActionPacket<T>> {
+	public get listen$(): Observable<ActionPacket<Payload>> {
 		return Action.listen$(this);
 	}
 
-	public static register<T extends never>(action: Action<T>): void {
-		if (Action._actionMap.has(action.type)) {
+	public static register<T>(action: Action<T>): void {
+		if (Action.globalActionMap.has(action.type)) {
 			throw new ActionAlreadyRegisteredError(action);
 		}
-		Action._actionMap.set(action.type, action);
+		Action.globalActionMap.set(action.type, action as Action<unknown>);
 
-		action._dispatchSubscription = action
+		action.#dispatchSubscription = action
 			.pipe(
-				map((payload) => ({ type: action.type, payload })),
-				finalize(() => Action._actionMap.delete(action.type))
+				map(action.makePacket),
+				finalize(() => Action.globalActionMap.delete(action.type))
 			)
-			.subscribe(Action._dispatcher$);
+			.subscribe(Action.globalDispatcher$);
 	}
 
 	public static isRegistered<T>(action?: Action<T> | string): boolean {
@@ -50,48 +53,48 @@ export class Action<T> extends Subject<T> {
 		} else {
 			type = action.type;
 		}
-		return Action._actionMap.has(type);
+		return Action.globalActionMap.has(type);
 	}
 
 	public static getRegistered<T>(type: string): Action<T> | undefined {
-		return this._actionMap.get(type) as Action<T> | undefined;
+		return this.globalActionMap.get(type) as Action<T> | undefined;
 	}
 
-	public static emit<T>(type: string, payload: T): void {
-		Action.getRegistered<T>(type)?.next(payload);
+	public static next<Payload>(type: string, payload: Payload): void {
+		Action.getRegistered<Payload>(type)?.next(payload);
 	}
 
 	public static unsubscribeAll(): void {
-		Action._actionMap.forEach((a) => a.unsubscribe());
+		Action.globalActionMap.forEach((a) => a.unsubscribe());
 	}
 
-	public constructor(public type: string, config: Partial<ActionConfig> = {}) {
+	public constructor(public type: string, config: Partial<ActionConfig> = DEFAULT_ACTION_CONFIG) {
 		super();
 		this.config = {
 			...DEFAULT_ACTION_CONFIG,
 			...config,
 		};
 		if (this.config.autoRegister) {
-			Action.register((this as unknown) as Action<never>);
+			Action.register(this as unknown as Action<never>);
 		}
 	}
 
-	public emit(payload: T): void {
-		Action.emit(this.type, payload);
+	public makePacket(payload: Payload): ActionPacket<Payload> {
+		return { type: this.type, payload };
 	}
 	/**
 	 * The finalize operator will take care of removing it from the actionMap
 	 */
 	public unsubscribe(): void {
 		super.unsubscribe();
-		this._dispatchSubscription?.unsubscribe();
+		this.#dispatchSubscription?.unsubscribe();
 	}
 
 	/**
 	 *
 	 * @deprecated
 	 */
-	public getFilter(): MonoTypeOperatorFunction<ActionPacket<T>> {
+	public getFilter(): MonoTypeOperatorFunction<ActionPacket<Payload>> {
 		return <T>(source: Observable<ActionPacket<T>>) =>
 			source.pipe(filter((value) => value.type === this.type));
 	}
@@ -107,6 +110,16 @@ export class Action<T> extends Subject<T> {
 	public static listen$<T extends readonly unknown[]>(
 		...actions: [...ActionTuple<T>]
 	): Observable<ActionPacket<T[number]>> {
-		return this._dispatcher$.pipe(Action.makeFilter(...actions));
+		return this.globalDispatcher$.pipe(Action.makeFilter(...actions));
+	}
+
+	public reduce<State>(
+		payloadReducer: PayloadReducer<State, Payload>
+	): ReducerConfiguration<State, Payload> {
+		return {
+			packetReducer: (state: State, actionPacket: ActionPacket<Payload>) =>
+				payloadReducer(state, actionPacket.payload),
+			action: this,
+		};
 	}
 }

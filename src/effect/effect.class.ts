@@ -1,28 +1,38 @@
-import { Observable, Subscription } from 'rxjs';
-import { filter, finalize, tap } from 'rxjs/operators';
+import { EMPTY, Observable, Subscription } from 'rxjs';
+import { catchError, filter, finalize, tap } from 'rxjs/operators';
 import { ActionPacket } from 'src/action/action-packet.interface';
 import { Action } from '../action/action.class';
 import { DEFAULT_EFFECT_CONFIG, EffectConfig } from './effect-config.interface';
 
 export class Effect<T> {
-	private static registered: Set<Effect<unknown>> = new Set();
+	static #registered: Set<Effect<unknown>> = new Set();
 
-	private subscription?: Subscription;
-	private observable: Observable<ActionPacket<T>>;
+	#subscription?: Subscription;
+	// TODO: When available, buffer until a reducersRun notification comes
+	#effectPipeline: Observable<ActionPacket<T>> = this.observable.pipe(
+		catchError((error) => {
+			if (this.config.logErrors) {
+				console.error(error);
+			}
+			return EMPTY;
+		}),
+		filter((wrappedAction) => Action.isRegistered(wrappedAction.type)),
+		tap(({ type, payload }) => Action.next<T>(type, payload)),
+		finalize(() => Effect.#registered.delete(this))
+	);
 
 	private config: EffectConfig;
 
-	public constructor(observable: Observable<ActionPacket<T>>, config: EffectConfig = {}) {
+	public constructor(
+		private readonly observable: Observable<ActionPacket<T>>,
+		config: EffectConfig = DEFAULT_EFFECT_CONFIG
+	) {
 		this.config = {
 			...DEFAULT_EFFECT_CONFIG,
 			...config,
 		};
 
-		this.observable = observable.pipe(
-			filter((wrappedAction) => Action.isRegistered(wrappedAction.type)),
-			tap(({ type, payload }) => Action.emit<T>(type, payload)),
-			finalize(() => Effect.registered.delete(this))
-		);
+		this.#effectPipeline.subscribe();
 	}
 
 	/**
@@ -31,18 +41,18 @@ export class Effect<T> {
 	 */
 	public static from<T>(
 		observable: Observable<ActionPacket<T>>,
-		config: EffectConfig = {}
+		config: EffectConfig = DEFAULT_EFFECT_CONFIG
 	): Effect<T> {
 		return new Effect(observable, config).register();
 	}
 
 	public register(): this {
-		this.subscription = this.observable.subscribe();
-		Effect.registered.add(this);
+		this.#subscription = this.observable.subscribe();
+		Effect.#registered.add(this);
 		return this;
 	}
 
 	public unregister(): void {
-		this.subscription?.unsubscribe();
+		this.#subscription?.unsubscribe();
 	}
 }

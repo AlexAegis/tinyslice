@@ -40,6 +40,7 @@
 	},
 	"terminal.integrated.windowsEnableConpty": true,
 	"liveServer.settings.multiRootWorkspaceName": "starter-stack",
+	"prettier.prettierPath": "node_modules/prettier",
 	"json.schemas": [
 		{
 			"fileMatch": ["typedoc.json"],
