@@ -4,7 +4,6 @@ import {
 	finalize,
 	map,
 	Observable,
-	shareReplay,
 	Subject,
 	Subscription,
 	tap,
@@ -16,16 +15,14 @@ import { ReducerConfiguration } from './reducer.type';
 export type Selector<State, Slice> = (state: State) => Slice;
 export type Wrapper<Slice, State> = (slice: Slice) => Partial<State>;
 
-abstract class BaseStore<ParentState, Slice, Payload> {
-	abstract state: BehaviorSubject<Slice>;
-
-	abstract parent: BaseStore<unknown, ParentState, Payload> | undefined;
-
-	abstract wrap: Wrapper<Slice, ParentState> | undefined;
+abstract class BaseStore<ParentState, Slice, Payload> extends Observable<Slice> {
+	protected abstract state: BehaviorSubject<Slice>;
+	protected abstract parent: BaseStore<unknown, ParentState, Payload> | undefined;
+	protected abstract wrap: Wrapper<Slice, ParentState> | undefined;
 
 	#sink = new Subscription();
 
-	public reduce(slice: Slice): void {
+	protected reduce(slice: Slice): void {
 		if (this.wrap) {
 			if (this.parent) {
 				this.parent.reduce({ ...this.parent.state.value, ...this.wrap(slice) });
@@ -82,11 +79,7 @@ abstract class BaseStore<ParentState, Slice, Payload> {
 		);
 	}
 
-	public get listen$(): Observable<Slice> {
-		return this.state.pipe(shareReplay(1));
-	}
-
-	static createReducerRunner<State, Payload = unknown>(
+	protected static createReducerRunner<State, Payload = unknown>(
 		reducerConfigurations: ReducerConfiguration<State, Payload>[]
 	): (action: ActionPacket<Payload>, state: State) => State {
 		return (action: ActionPacket<Payload>, state: State) =>
@@ -98,7 +91,7 @@ abstract class BaseStore<ParentState, Slice, Payload> {
 				);
 	}
 
-	set teardown(subscription: Subscription) {
+	protected set teardown(subscription: Subscription) {
 		this.#sink.add(subscription);
 	}
 
@@ -109,9 +102,13 @@ abstract class BaseStore<ParentState, Slice, Payload> {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export class Store<State, Payload = any> extends BaseStore<unknown, State, Payload> {
-	parent = undefined;
-	wrap = undefined;
-	state = new BehaviorSubject<State>(this.initialState);
+	protected parent = undefined;
+	protected wrap = undefined;
+	protected state = new BehaviorSubject<State>(this.initialState);
+
+	#stateObservable = this.state.asObservable();
+	subscribe = this.#stateObservable.subscribe.bind(this.#stateObservable);
+
 	// This emits
 	public reducedNotification = new Subject<void>();
 
@@ -148,9 +145,11 @@ export class StoreSlice<ParentSlice, Slice, Payload> extends BaseStore<
 	Slice,
 	Payload
 > {
-	state = new BehaviorSubject<Slice>(this.initialState);
+	protected state = new BehaviorSubject<Slice>(this.initialState);
+	#stateObservable = this.state.asObservable();
+	subscribe = this.#stateObservable.subscribe.bind(this.#stateObservable);
 
-	#parentListener: Observable<Slice> = this.parent.state.pipe(
+	#parentListener: Observable<Slice> = this.parent.pipe(
 		map(this.selector),
 		distinctUntilChanged(this.comparator),
 		tap(this.state),
@@ -169,10 +168,10 @@ export class StoreSlice<ParentSlice, Slice, Payload> extends BaseStore<
 	#reducerRunner = BaseStore.createReducerRunner(this.reducerConfigurations);
 
 	constructor(
-		readonly parent: BaseStore<unknown, ParentSlice, Payload>,
+		protected readonly parent: BaseStore<unknown, ParentSlice, Payload>,
 		private readonly initialState: Slice,
 		private readonly selector: Selector<ParentSlice, Slice>,
-		readonly wrap: Wrapper<Slice, ParentSlice>,
+		protected readonly wrap: Wrapper<Slice, ParentSlice>,
 		private readonly reducerConfigurations: ReducerConfiguration<Slice, Payload>[],
 		private readonly comparator?: (a: Slice, b: Slice) => boolean
 	) {

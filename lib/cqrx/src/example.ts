@@ -67,8 +67,8 @@ const barSlice = fooSlice.slice(
 	[]
 );
 
-barSlice.listen$.subscribe((bar) => console.log('bar', bar));
-lastPrintedSlice.listen$.subscribe((lastPrinted) => console.log('lastPrinted', lastPrinted));
+barSlice.subscribe((bar) => console.log('bar', bar));
+lastPrintedSlice.subscribe((lastPrinted) => console.log('lastPrinted', lastPrinted));
 
 printAction.next('Hello!');
 printAction.next('World!');
@@ -81,4 +81,4 @@ const newBarSlice = barSlice.addSlice<{ ns: number }, 'newBarSlice'>(
 	[countAction.reduce((s) => ({ ...s, ns: s.ns + 1 }))]
 );
 
-newBarSlice.listen$.pipe(map((a) => a?.ns)).subscribe((ns) => console.log('ns', ns));
+newBarSlice.pipe(map((a) => a?.ns)).subscribe((ns) => console.log('ns', ns));

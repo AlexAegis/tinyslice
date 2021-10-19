@@ -15,14 +15,10 @@
 		},
 		[countAction.reduce((state) => ({ ...state, count: state.count + 1 }))]
 	);
-	const countSlice = store.slice(
-		(state) => state.count,
-		(count) => ({ count })
-	);
-	const count$ = countSlice.listen$;
+	const countSlice = store.dice('count');
 </script>
 
 <h1>Welcome to {a}</h1>
 
-<button on:click={() => countAction.next(1)}>Clicked {$count$}</button>
+<button on:click={() => countAction.next(1)}>Clicked {$countSlice}</button>
 <p>Visit <a href="https://kit.svelte.dev">kit.svelte.dev</a> to read the documentation</p>
