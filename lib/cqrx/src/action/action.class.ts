@@ -1,6 +1,6 @@
 import { MonoTypeOperatorFunction, Observable, Subject, Subscription } from 'rxjs';
 import { filter, finalize, map } from 'rxjs/operators';
-import { PayloadReducer, ReducerConfiguration } from 'src/store/reducer.type';
+import { PayloadReducer, ReducerConfiguration } from '../store/reducer.type';
 import { ActionConfig, DEFAULT_ACTION_CONFIG } from './action-config.interface';
 import { ActionPacket } from './action-packet.interface';
 
@@ -15,11 +15,11 @@ export class ActionAlreadyRegisteredError<T> extends Error {
 }
 
 export class Action<Payload> extends Subject<Payload> {
-	public static VOID = new Action('[Void]');
-
 	private static readonly globalDispatcher$ = new Subject<ActionPacket<unknown>>();
 	private static readonly globalActionMap = new Map<string, Action<unknown>>();
 	public static readonly dispatcher$ = this.globalDispatcher$.asObservable();
+
+	public static VOID = new Action('[Void]');
 
 	#dispatchSubscription?: Subscription;
 
@@ -31,13 +31,14 @@ export class Action<Payload> extends Subject<Payload> {
 
 	public static register<T>(action: Action<T>): void {
 		if (Action.globalActionMap.has(action.type)) {
-			throw new ActionAlreadyRegisteredError(action);
+			return;
+			// throw new ActionAlreadyRegisteredError(action);
 		}
 		Action.globalActionMap.set(action.type, action as Action<unknown>);
 
 		action.#dispatchSubscription = action
 			.pipe(
-				map(action.makePacket),
+				map((payload) => action.makePacket(payload)),
 				finalize(() => Action.globalActionMap.delete(action.type))
 			)
 			.subscribe(Action.globalDispatcher$);

@@ -1,6 +1,6 @@
 import { EMPTY, Observable, Subscription } from 'rxjs';
 import { catchError, filter, finalize, tap } from 'rxjs/operators';
-import { ActionPacket } from 'src/action/action-packet.interface';
+import { ActionPacket } from '../action/action-packet.interface';
 import { Action } from '../action/action.class';
 import { DEFAULT_EFFECT_CONFIG, EffectConfig } from './effect-config.interface';
 

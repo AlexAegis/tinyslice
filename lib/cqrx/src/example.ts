@@ -1,8 +1,4 @@
-export * from './action';
-export * from './effect';
-export * from './store';
-
-import { mapTo, tap } from 'rxjs/operators';
+import { map, mapTo, tap } from 'rxjs/operators';
 import { Action } from './action/action.class';
 import { Effect } from './effect/effect.class';
 import { Store } from './store';
@@ -53,27 +49,36 @@ const store = new Store<ExampleState>(
 	]
 );
 const lastPrintedSlice = store.slice(
-	undefined,
 	(state) => state.lastPrinted,
 	(lastPrinted) => ({ lastPrinted }),
 	[]
 );
 
-const fooSlice = store.slice(
-	{ bar: { zed: 2 } },
-	(state) => state.foo,
-	(foo) => ({ foo }),
-	[]
-);
+const fooSlice = store.dice('foo', [
+	printAction.reduce<{ bar: { zed: 2 } }>((state, payload) => {
+		console.log('diced foo print', payload);
+		return state;
+	}),
+]);
+
 const barSlice = fooSlice.slice(
-	{ zed: 2 },
 	(state) => state.bar,
 	(bar) => ({ bar }),
 	[]
 );
-barSlice.listen$.subscribe((bar) => console.log(bar));
+
+barSlice.listen$.subscribe((bar) => console.log('bar', bar));
 lastPrintedSlice.listen$.subscribe((lastPrinted) => console.log('lastPrinted', lastPrinted));
 
 printAction.next('Hello!');
 printAction.next('World!');
 countAction.next(1);
+
+const newBarSlice = barSlice.addSlice<{ ns: number }, 'newBarSlice'>(
+	{ ns: 1 },
+	(state) => state.newBarSlice,
+	(newBarSlice) => ({ newBarSlice }),
+	[countAction.reduce((s) => ({ ...s, ns: s.ns + 1 }))]
+);
+
+newBarSlice.listen$.pipe(map((a) => a?.ns)).subscribe((ns) => console.log('ns', ns));
