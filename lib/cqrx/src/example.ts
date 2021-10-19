@@ -54,7 +54,7 @@ const lastPrintedSlice = store.slice(
 	[]
 );
 
-const fooSlice = store.dice('foo', [
+const fooSlice = store.slice('foo', [
 	printAction.reduce<{ bar: { zed: 2 } }>((state, payload) => {
 		console.log('diced foo print', payload);
 		return state;
@@ -63,8 +63,7 @@ const fooSlice = store.dice('foo', [
 
 const barSlice = fooSlice.slice(
 	(state) => state.bar,
-	(bar) => ({ bar }),
-	[]
+	(bar) => ({ bar })
 );
 
 barSlice.subscribe((bar) => console.log('bar', bar));

@@ -33,33 +33,44 @@ abstract class BaseStore<ParentState, Slice, Payload> extends Observable<Slice> 
 		}
 	}
 
-	public slice<SubSlice extends Slice[keyof Slice]>(
+	slice<SubSlice extends Slice[keyof Slice]>(
 		selector: Selector<Slice, SubSlice>,
 		wrapper: Wrapper<SubSlice, Slice>,
-		reducers: ReducerConfiguration<SubSlice, Payload>[] = [],
+		reducers?: ReducerConfiguration<SubSlice, Payload>[],
 		comparator?: (a: SubSlice, b: SubSlice) => boolean
-	): StoreSlice<Slice, SubSlice, Payload> {
-		return new StoreSlice(
-			this,
-			selector(this.state.value),
-			selector,
-			wrapper,
-			reducers,
-			comparator
-		);
-	}
-
-	public dice<SubSliceKey extends keyof Slice, SubSlice extends Slice[SubSliceKey]>(
+	): StoreSlice<Slice, SubSlice, Payload>;
+	slice<SubSliceKey extends keyof Slice, SubSlice extends Slice[SubSliceKey]>(
 		key: SubSliceKey,
-		reducers: ReducerConfiguration<SubSlice, Payload>[] = [],
+		reducers?: ReducerConfiguration<SubSlice, Payload>[],
+		comparator?: (a: SubSlice, b: SubSlice) => boolean
+	): StoreSlice<Slice, SubSlice, Payload>;
+	slice<SubSliceKey extends keyof Slice, SubSlice extends Slice[SubSliceKey]>(
+		keyOrSelector: SubSliceKey | Selector<Slice, SubSlice>,
+		wrapperOrReducers?: Wrapper<SubSlice, Slice> | ReducerConfiguration<SubSlice, Payload>[],
+		reducersOrComparator?:
+			| ((a: SubSlice, b: SubSlice) => boolean)
+			| ReducerConfiguration<SubSlice, Payload>[],
 		comparator?: (a: SubSlice, b: SubSlice) => boolean
 	): StoreSlice<Slice, SubSlice, Payload> {
-		return this.slice(
-			(state) => state[key] as SubSlice,
-			(state) => ({ [key]: state } as unknown as Partial<Slice>),
-			reducers,
-			comparator
-		);
+		if (typeof keyOrSelector === 'string') {
+			return new StoreSlice(
+				this,
+				this.state.value[keyOrSelector] as SubSlice,
+				(state) => state[keyOrSelector] as SubSlice,
+				(state) => ({ [keyOrSelector]: state } as unknown as Partial<Slice>),
+				(wrapperOrReducers as ReducerConfiguration<SubSlice, Payload>[]) ?? [],
+				comparator
+			);
+		} else {
+			return new StoreSlice(
+				this,
+				(keyOrSelector as Selector<Slice, SubSlice>)(this.state.value),
+				keyOrSelector as Selector<Slice, SubSlice>,
+				wrapperOrReducers as Wrapper<SubSlice, Slice>,
+				(reducersOrComparator as ReducerConfiguration<SubSlice, Payload>[]) ?? [],
+				comparator
+			);
+		}
 	}
 
 	public addSlice<SubSlice, AdditionalKey extends string | number = never>( // TODO: must not already be present on slice
