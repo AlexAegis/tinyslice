@@ -14,18 +14,47 @@ import { ReducerConfiguration } from './reducer.type';
 
 export type Selector<State, Slice> = (state: State) => Slice;
 export type Wrapper<Slice, State> = (slice: Slice) => Partial<State>;
+export type Parent<T> = Record<string | number, T>;
+export type SliceMap<State extends Record<keyof State, unknown>> = Record<
+	keyof State,
+	StoreSlice<Record<keyof State, unknown>>
+>;
+type OptionsFlags<Type> = {
+	[Property in keyof Type]: unknown;
+};
 
-abstract class BaseStore<ParentState, Slice, Payload> extends Observable<Slice> {
+// TODO: Problem, each slice creates a new state that will run every reducer again on it's own
+abstract class BaseStore<Slice extends Record<string | number, any>>
+	extends Observable<Slice>
+	implements OptionsFlags<Record<string | number, any>>
+{
 	protected abstract state: BehaviorSubject<Slice>;
-	protected abstract parent: BaseStore<unknown, ParentState, Payload> | undefined;
-	protected abstract wrap: Wrapper<Slice, ParentState> | undefined;
+	protected abstract parent: BaseStore<Parent<Slice>> | undefined;
+	// TODO: Autowrapper should handle arrays too
+	protected abstract wrap: Wrapper<Slice, Parent<Slice>> | undefined;
 
 	#sink = new Subscription();
+
+	constructor(protected readonly initialState: Slice) {
+		super();
+		(Object.keys(this.initialState) as (keyof Slice)[]).forEach((key) => {
+			const selector: Selector<Slice, Record<string | number, unknown>> = (s: Slice) =>
+				s[key] as Record<string | number, unknown>;
+			const initial = selector(this.initialState);
+			const wrapper = (a: Record<string | number, unknown>) =>
+				({ [key]: a } as Partial<Slice>);
+
+			Object.assign(this, {
+				[key]: new StoreSlice(this as any, initial, selector as any, wrapper, []),
+			});
+		});
+	}
+	[x: number | string]: unknown;
 
 	protected reduce(slice: Slice): void {
 		if (this.wrap) {
 			if (this.parent) {
-				this.parent.reduce({ ...this.parent.state.value, ...this.wrap(slice) });
+				this.parent.reduce({ ...(this.parent.state.value as Slice), ...this.wrap(slice) });
 			} else {
 				const state = this.state as BehaviorSubject<Slice>;
 				state.next({ ...state.value, ...this.wrap(slice) });
@@ -33,61 +62,22 @@ abstract class BaseStore<ParentState, Slice, Payload> extends Observable<Slice> 
 		}
 	}
 
-	slice<SubSlice extends Slice[keyof Slice]>(
-		selector: Selector<Slice, SubSlice>,
-		wrapper: Wrapper<SubSlice, Slice>,
-		reducers?: ReducerConfiguration<SubSlice, Payload>[],
-		comparator?: (a: SubSlice, b: SubSlice) => boolean
-	): StoreSlice<Slice, SubSlice, Payload>;
+	slice<SubSlice extends Record<keyof SubSlice, unknown>>(
+		selector: Selector<Slice, SubSlice>
+	): StoreSlice<SubSlice>;
 	slice<SubSliceKey extends keyof Slice, SubSlice extends Slice[SubSliceKey]>(
-		key: SubSliceKey,
-		reducers?: ReducerConfiguration<SubSlice, Payload>[],
-		comparator?: (a: SubSlice, b: SubSlice) => boolean
-	): StoreSlice<Slice, SubSlice, Payload>;
-	slice<SubSliceKey extends keyof Slice, SubSlice extends Slice[SubSliceKey]>(
-		keyOrSelector: SubSliceKey | Selector<Slice, SubSlice>,
-		wrapperOrReducers?: Wrapper<SubSlice, Slice> | ReducerConfiguration<SubSlice, Payload>[],
-		reducersOrComparator?:
-			| ((a: SubSlice, b: SubSlice) => boolean)
-			| ReducerConfiguration<SubSlice, Payload>[],
-		comparator?: (a: SubSlice, b: SubSlice) => boolean
-	): StoreSlice<Slice, SubSlice, Payload> {
+		key: SubSliceKey
+	): StoreSlice<SubSlice>;
+	slice<SubSliceKey extends keyof Slice, SubSlice extends Record<keyof SubSlice, unknown>>(
+		keyOrSelector: SubSliceKey | Selector<Slice, SubSlice>
+	): StoreSlice<SubSlice> {
 		if (typeof keyOrSelector === 'string') {
-			return new StoreSlice(
-				this,
-				this.state.value[keyOrSelector] as SubSlice,
-				(state) => state[keyOrSelector] as SubSlice,
-				(state) => ({ [keyOrSelector]: state } as unknown as Partial<Slice>),
-				(wrapperOrReducers as ReducerConfiguration<SubSlice, Payload>[]) ?? [],
-				comparator
-			);
+			return this[keyOrSelector as string] as unknown as StoreSlice<SubSlice>;
 		} else {
-			return new StoreSlice(
-				this,
-				(keyOrSelector as Selector<Slice, SubSlice>)(this.state.value),
-				keyOrSelector as Selector<Slice, SubSlice>,
-				wrapperOrReducers as Wrapper<SubSlice, Slice>,
-				(reducersOrComparator as ReducerConfiguration<SubSlice, Payload>[]) ?? [],
-				comparator
-			);
+			return (keyOrSelector as Selector<Slice, SubSlice>)(
+				this as unknown as Slice
+			) as unknown as StoreSlice<SubSlice>;
 		}
-	}
-
-	public addSlice<SubSlice, AdditionalKey extends string | number = never>( // TODO: must not already be present on slice
-		initialState: SubSlice,
-		selector: Selector<Slice & Record<AdditionalKey, SubSlice>, SubSlice>,
-		wrapper: Wrapper<SubSlice, Slice & Record<AdditionalKey, SubSlice>>,
-		reducers: ReducerConfiguration<SubSlice, Payload>[] = [],
-		comparator?: (a: SubSlice, b: SubSlice) => boolean
-	): StoreSlice<Slice & Record<AdditionalKey, SubSlice>, SubSlice, Payload> {
-		return new StoreSlice(
-			this as unknown as BaseStore<unknown, Slice & Record<AdditionalKey, SubSlice>, Payload>,
-			initialState,
-			selector,
-			wrapper,
-			reducers,
-			comparator
-		);
 	}
 
 	protected static createReducerRunner<State, Payload = unknown>(
@@ -112,7 +102,10 @@ abstract class BaseStore<ParentState, Slice, Payload> extends Observable<Slice> 
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export class Store<State, Payload = any> extends BaseStore<unknown, State, Payload> {
+export class Store<State extends Record<keyof State, unknown>>
+	extends BaseStore<State>
+	implements State
+{
 	protected parent = undefined;
 	protected wrap = undefined;
 	protected state = new BehaviorSubject<State>(this.initialState);
@@ -126,7 +119,7 @@ export class Store<State, Payload = any> extends BaseStore<unknown, State, Paylo
 	#reducerRunner = Store.createReducerRunner(this.reducerConfigurations);
 
 	// TODO: Never run while reducers are executing and bubbling
-	#storePipeline = (Action.dispatcher$ as Observable<ActionPacket<Payload>>).pipe(
+	#storePipeline = (Action.dispatcher$ as Observable<ActionPacket<unknown>>).pipe(
 		withLatestFrom(this.state),
 		map(([action, state]) => this.#reducerRunner(action, state)),
 		tap(this.state),
@@ -140,10 +133,10 @@ export class Store<State, Payload = any> extends BaseStore<unknown, State, Paylo
 	#storeSubscription = this.#storePipeline.subscribe();
 
 	public constructor(
-		public readonly initialState: State,
-		private readonly reducerConfigurations: ReducerConfiguration<State, Payload>[]
+		protected readonly initialState: State,
+		private readonly reducerConfigurations: ReducerConfiguration<State, unknown>[]
 	) {
-		super();
+		super(initialState);
 	}
 
 	public stop(): void {
@@ -151,11 +144,7 @@ export class Store<State, Payload = any> extends BaseStore<unknown, State, Paylo
 	}
 }
 
-export class StoreSlice<ParentSlice, Slice, Payload> extends BaseStore<
-	ParentSlice,
-	Slice,
-	Payload
-> {
+export class StoreSlice<Slice extends Record<string | number, unknown>> extends BaseStore<Slice> {
 	protected state = new BehaviorSubject<Slice>(this.initialState);
 	#stateObservable = this.state.asObservable();
 	subscribe = this.#stateObservable.subscribe.bind(this.#stateObservable);
@@ -170,7 +159,7 @@ export class StoreSlice<ParentSlice, Slice, Payload> extends BaseStore<
 		})
 	);
 
-	#slicePipeline = (Action.dispatcher$ as Observable<ActionPacket<Payload>>).pipe(
+	#slicePipeline = (Action.dispatcher$ as Observable<ActionPacket<unknown>>).pipe(
 		withLatestFrom(this.state),
 		map(([action, state]) => this.#reducerRunner(action, state)),
 		tap((slice) => this.reduce(slice))
@@ -179,14 +168,14 @@ export class StoreSlice<ParentSlice, Slice, Payload> extends BaseStore<
 	#reducerRunner = BaseStore.createReducerRunner(this.reducerConfigurations);
 
 	constructor(
-		protected readonly parent: BaseStore<unknown, ParentSlice, Payload>,
-		private readonly initialState: Slice,
-		private readonly selector: Selector<ParentSlice, Slice>,
-		protected readonly wrap: Wrapper<Slice, ParentSlice>,
-		private readonly reducerConfigurations: ReducerConfiguration<Slice, Payload>[],
+		protected readonly parent: BaseStore<Parent<Slice>>,
+		protected readonly initialState: Slice,
+		private readonly selector: Selector<Parent<Slice>, Slice>,
+		protected readonly wrap: Wrapper<Slice, Parent<Slice>>,
+		private readonly reducerConfigurations: ReducerConfiguration<Slice, unknown>[],
 		private readonly comparator?: (a: Slice, b: Slice) => boolean
 	) {
-		super();
+		super(initialState);
 		this.teardown = this.#parentListener.subscribe();
 		this.teardown = this.#slicePipeline.subscribe();
 	}
