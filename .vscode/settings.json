@@ -1,4 +1,6 @@
 {
+	"deno.enable": false,
+	"deno.lint": false,
 	"editor.formatOnSave": true,
 	"editor.autoIndent": "full",
 	"editor.tabCompletion": "off",
@@ -43,7 +45,9 @@
 	"prettier.prettierPath": "node_modules/prettier",
 	"json.schemas": [
 		{
-			"fileMatch": ["typedoc.json"],
+			"fileMatch": [
+				"typedoc.json"
+			],
 			"url": "https://json.schemastore.org/typedoc"
 		}
 	]
