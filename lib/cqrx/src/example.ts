@@ -61,6 +61,9 @@ const fooSlice = store.slice('foo', [
 	}),
 ]);
 
+const rootStore = fooSlice.root<ExampleState>();
+console.log('isCorrect', rootStore === store);
+
 const barSlice = fooSlice.slice(
 	(state) => state.bar,
 	(bar) => ({ bar })

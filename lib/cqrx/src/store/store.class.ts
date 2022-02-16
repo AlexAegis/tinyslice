@@ -80,6 +80,7 @@ abstract class BaseStore<ParentState, Slice, Payload> extends Observable<Slice> 
 		reducers: ReducerConfiguration<SubSlice, Payload>[] = [],
 		comparator?: (a: SubSlice, b: SubSlice) => boolean
 	): StoreSlice<Slice & Record<AdditionalKey, SubSlice>, SubSlice, Payload> {
+		// TODO! slices should be singleton relative to the base store
 		return new StoreSlice(
 			this as unknown as BaseStore<unknown, Slice & Record<AdditionalKey, SubSlice>, Payload>,
 			initialState,
@@ -100,6 +101,15 @@ abstract class BaseStore<ParentState, Slice, Payload> extends Observable<Slice> 
 					(accumulator, { packetReducer }) => packetReducer(accumulator, action),
 					state
 				);
+	}
+
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	public root<T, P = any>(): Store<T, P> {
+		let current = this as BaseStore<unknown, unknown, unknown>;
+		while (current.parent) {
+			current = current.parent;
+		}
+		return current as Store<T, P>;
 	}
 
 	protected set teardown(subscription: Subscription) {
