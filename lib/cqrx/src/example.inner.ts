@@ -3,6 +3,8 @@ import { Action } from './action/action.class';
 import { Store } from './store';
 
 const outerAction = new Action<number>('outerAction');
+const middleAction = new Action<number>('middleAction');
+
 const innerAction = new Action<number>('innerAction');
 
 Action.listenAll$()
@@ -26,7 +28,9 @@ const store = new Store<ExampleState>(
 	[outerAction.reduce((state) => ({ ...state, out: state.out + 1 }))]
 );
 
-const fooSlice = store.slice<'foo'>('foo');
+const fooSlice = store.slice<'foo'>('foo', [
+	middleAction.reduce((state, payload) => ({ ...state, bar: { zed: payload } })),
+]);
 
 const barSlice = fooSlice.slice<{ zed: number }>(
 	(state) => state.bar,
@@ -38,4 +42,9 @@ store.subscribe((state) => console.log('Full State', JSON.stringify(state)));
 fooSlice.subscribe((foo) => console.log('FooSlice', JSON.stringify(foo)));
 barSlice.subscribe((bar) => console.log('BarSlice', JSON.stringify(bar)));
 outerAction.next(1);
+innerAction.next(1);
+middleAction.next(0);
+innerAction.next(1);
+innerAction.next(1);
+middleAction.next(0);
 innerAction.next(1);

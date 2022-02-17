@@ -5,7 +5,6 @@ import {
 	finalize,
 	map,
 	Observable,
-	Subject,
 	Subscription,
 	tap,
 	withLatestFrom,
@@ -138,22 +137,14 @@ export class Store<State, Payload = any> extends BaseStore<unknown, State, Paylo
 	protected stateObservable$ = this.state.pipe(distinctUntilChanged());
 	subscribe = this.stateObservable$.subscribe.bind(this.stateObservable$);
 
-	// This emits
-	public reducedNotification = new Subject<void>();
-
 	#reducerRunner = Store.createReducerRunner(this.reducerConfigurations);
 
-	// TODO: Never run while reducers are executing and bubbling
 	#storePipeline = (Action.dispatcher$ as Observable<ActionPacket<Payload>>).pipe(
 		withLatestFrom(this.state),
 		map(([action, state]) => this.#reducerRunner(action, state)),
 		filter((newState) => this.state.value !== newState),
 		tap((a) => this.state.next(a)),
-		tap(() => this.reducedNotification.next()),
-		finalize(() => {
-			this.reducedNotification.complete();
-			this.state.complete();
-		})
+		finalize(() => this.state.complete())
 	);
 
 	public constructor(
@@ -178,9 +169,7 @@ export class StoreSlice<ParentSlice, Slice, Payload> extends BaseStore<
 		map(this.selector),
 		distinctUntilChanged(this.comparator),
 		tap(this.state),
-		finalize(() => {
-			this.state.unsubscribe();
-		})
+		finalize(() => this.state.unsubscribe())
 	);
 
 	#slicePipeline = (Action.dispatcher$ as Observable<ActionPacket<Payload>>).pipe(
@@ -193,7 +182,10 @@ export class StoreSlice<ParentSlice, Slice, Payload> extends BaseStore<
 		tap(this.state)
 	);
 
-	#statePipeline = this.state.pipe(tap((slice) => this.updateParent(slice, this.selector)));
+	#statePipeline = this.state.pipe(
+		tap((slice) => this.updateParent(slice, this.selector)),
+		finalize(() => this.unsubscribe())
+	);
 
 	#reducerRunner = BaseStore.createReducerRunner(this.reducerConfigurations);
 

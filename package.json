@@ -38,6 +38,7 @@
 		"format": "prettier --write .",
 		"lint:es": "eslint",
 		"lint:format": "prettier --check .",
+		"test": "jest --passWithNoTests",
 		"ncu": "ncu -u",
 		"clean": "rimraf node_modules package-lock.json",
 		"_postinstall": "husky install",
