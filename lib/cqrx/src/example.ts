@@ -6,7 +6,11 @@ import { Store } from './store';
 const printAction = new Action<string>('printAction');
 const countAction = new Action<number>('countAction');
 
-printAction.listen$.pipe(tap((a) => console.log(a)));
+const innerAction = new Action<number>('innerAction');
+
+Action.listenAll$()
+	.pipe(tap((a) => console.log(`[${a.type}]`)))
+	.subscribe();
 
 Action.listen$(printAction)
 	.pipe(tap((a) => console.log('a2', a.payload)))
@@ -18,8 +22,8 @@ Effect.from(
 	Action.listen$(countAction).pipe(mapTo({ type: printAction.type, payload: 'eat this' }))
 );
 
-printAction.next('Hello');
-countAction.next(12);
+// printAction.next('Hello');
+// countAction.next(12);
 
 export interface ExampleState {
 	lastPrinted: string | undefined;
@@ -44,20 +48,27 @@ const store = new Store<ExampleState>(
 		ger: { ber: { yon: 3 } },
 	},
 	[
-		printAction.reduce<ExampleState>((state, payload) => ({ ...state, lastPrinted: payload })),
-		countAction.reduce<ExampleState>((state, payload) => ({ ...state, lastCounted: payload })),
+		printAction.reduce((state, payload) => ({ ...state, lastPrinted: payload })),
+		countAction.reduce((state, payload) => ({ ...state, lastCounted: payload })),
 	]
 );
-const lastPrintedSlice = store.slice(
+
+store.subscribe((state) => console.log('Full State', JSON.stringify(state)));
+
+const lastPrintedSlice = store.slice<ExampleState['lastPrinted']>(
 	(state) => state.lastPrinted,
-	(lastPrinted) => ({ lastPrinted }),
-	[]
+	(lastPrinted) => ({ lastPrinted })
+	// [innerAction.reduce((state, payload) => `${state}${payload}`)]
 );
 
-const fooSlice = store.slice('foo', [
-	printAction.reduce<{ bar: { zed: 2 } }>((state, payload) => {
+const fooSlice = store.slice<'foo'>('foo', [
+	printAction.reduce((state, payload) => {
 		console.log('diced foo print', payload);
-		return state;
+		return { ...state, bar: { zed: state.bar.zed + 1 } };
+	}),
+	innerAction.reduce((state, payload) => {
+		console.log('inner action just ran');
+		return { ...state, bar: { zed: payload } };
 	}),
 ]);
 
@@ -72,9 +83,10 @@ const barSlice = fooSlice.slice(
 barSlice.subscribe((bar) => console.log('bar', bar));
 lastPrintedSlice.subscribe((lastPrinted) => console.log('lastPrinted', lastPrinted));
 
-printAction.next('Hello!');
-printAction.next('World!');
-countAction.next(1);
+innerAction.next(1);
+// printAction.next('Hello!');
+// printAction.next('World!');
+// countAction.next(1);
 
 const newBarSlice = barSlice.addSlice<{ ns: number }, 'newBarSlice'>(
 	{ ns: 1 },

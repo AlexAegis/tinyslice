@@ -114,6 +114,10 @@ export class Action<Payload> extends Subject<Payload> {
 		return this.globalDispatcher$.pipe(Action.makeFilter(...actions));
 	}
 
+	public static listenAll$(): Observable<ActionPacket<unknown>> {
+		return this.globalDispatcher$.asObservable();
+	}
+
 	public reduce<State>(
 		payloadReducer: PayloadReducer<State, Payload>
 	): ReducerConfiguration<State, Payload> {

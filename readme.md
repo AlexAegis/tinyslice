@@ -1,4 +1,4 @@
-# cqrx
+# cqrx / tinySlice
 
 [![CI](https://github.com/AlexAegis/cqrx/workflows/CI/badge.svg)](https://github.com/AlexAegis/cqrx/actions?query=workflow%3ACI)
 

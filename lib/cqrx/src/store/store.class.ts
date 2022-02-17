@@ -1,6 +1,7 @@
 import {
 	BehaviorSubject,
 	distinctUntilChanged,
+	filter,
 	finalize,
 	map,
 	Observable,
@@ -19,17 +20,18 @@ abstract class BaseStore<ParentState, Slice, Payload> extends Observable<Slice> 
 	protected abstract state: BehaviorSubject<Slice>;
 	protected abstract parent: BaseStore<unknown, ParentState, Payload> | undefined;
 	protected abstract wrap: Wrapper<Slice, ParentState> | undefined;
+	protected abstract stateObservable$: Observable<Slice>;
 
 	#sink = new Subscription();
 
-	protected reduce(slice: Slice): void {
-		if (this.wrap) {
-			if (this.parent) {
-				this.parent.reduce({ ...this.parent.state.value, ...this.wrap(slice) });
-			} else {
-				const state = this.state as BehaviorSubject<Slice>;
-				state.next({ ...state.value, ...this.wrap(slice) });
-			}
+	/**
+	 * Propagates the changed slice back to its parent
+	 */
+	protected updateParent(slice: Slice, selector: (parentSlice: ParentState) => Slice): void {
+		if (this.wrap && this.parent && selector(this.parent.state.value) !== slice) {
+			const wrappedSlice = this.wrap(slice);
+			const newSlice = { ...this.parent.state.value, ...wrappedSlice };
+			this.parent.state.next(newSlice);
 		}
 	}
 
@@ -39,12 +41,18 @@ abstract class BaseStore<ParentState, Slice, Payload> extends Observable<Slice> 
 		reducers?: ReducerConfiguration<SubSlice, Payload>[],
 		comparator?: (a: SubSlice, b: SubSlice) => boolean
 	): StoreSlice<Slice, SubSlice, Payload>;
-	slice<SubSliceKey extends keyof Slice, SubSlice extends Slice[SubSliceKey]>(
+	slice<
+		SubSliceKey extends keyof Slice,
+		SubSlice extends Slice[SubSliceKey] = Slice[SubSliceKey]
+	>(
 		key: SubSliceKey,
 		reducers?: ReducerConfiguration<SubSlice, Payload>[],
 		comparator?: (a: SubSlice, b: SubSlice) => boolean
 	): StoreSlice<Slice, SubSlice, Payload>;
-	slice<SubSliceKey extends keyof Slice, SubSlice extends Slice[SubSliceKey]>(
+	slice<
+		SubSliceKey extends keyof Slice,
+		SubSlice extends Slice[SubSliceKey] = Slice[SubSliceKey]
+	>(
 		keyOrSelector: SubSliceKey | Selector<Slice, SubSlice>,
 		wrapperOrReducers?: Wrapper<SubSlice, Slice> | ReducerConfiguration<SubSlice, Payload>[],
 		reducersOrComparator?:
@@ -53,6 +61,7 @@ abstract class BaseStore<ParentState, Slice, Payload> extends Observable<Slice> 
 		comparator?: (a: SubSlice, b: SubSlice) => boolean
 	): StoreSlice<Slice, SubSlice, Payload> {
 		if (typeof keyOrSelector === 'string') {
+			console.log(keyOrSelector, wrapperOrReducers);
 			return new StoreSlice(
 				this,
 				this.state.value[keyOrSelector] as SubSlice,
@@ -80,7 +89,6 @@ abstract class BaseStore<ParentState, Slice, Payload> extends Observable<Slice> 
 		reducers: ReducerConfiguration<SubSlice, Payload>[] = [],
 		comparator?: (a: SubSlice, b: SubSlice) => boolean
 	): StoreSlice<Slice & Record<AdditionalKey, SubSlice>, SubSlice, Payload> {
-		// TODO! slices should be singleton relative to the base store
 		return new StoreSlice(
 			this as unknown as BaseStore<unknown, Slice & Record<AdditionalKey, SubSlice>, Payload>,
 			initialState,
@@ -127,8 +135,8 @@ export class Store<State, Payload = any> extends BaseStore<unknown, State, Paylo
 	protected wrap = undefined;
 	protected state = new BehaviorSubject<State>(this.initialState);
 
-	#stateObservable = this.state.asObservable();
-	subscribe = this.#stateObservable.subscribe.bind(this.#stateObservable);
+	protected stateObservable$ = this.state.pipe(distinctUntilChanged());
+	subscribe = this.stateObservable$.subscribe.bind(this.stateObservable$);
 
 	// This emits
 	public reducedNotification = new Subject<void>();
@@ -139,7 +147,8 @@ export class Store<State, Payload = any> extends BaseStore<unknown, State, Paylo
 	#storePipeline = (Action.dispatcher$ as Observable<ActionPacket<Payload>>).pipe(
 		withLatestFrom(this.state),
 		map(([action, state]) => this.#reducerRunner(action, state)),
-		tap(this.state),
+		filter((newState) => this.state.value !== newState),
+		tap((a) => this.state.next(a)),
 		tap(() => this.reducedNotification.next()),
 		finalize(() => {
 			this.reducedNotification.complete();
@@ -147,17 +156,12 @@ export class Store<State, Payload = any> extends BaseStore<unknown, State, Paylo
 		})
 	);
 
-	#storeSubscription = this.#storePipeline.subscribe();
-
 	public constructor(
 		public readonly initialState: State,
-		private readonly reducerConfigurations: ReducerConfiguration<State, Payload>[]
+		private readonly reducerConfigurations: ReducerConfiguration<State, Payload>[] = []
 	) {
 		super();
-	}
-
-	public stop(): void {
-		this.#storeSubscription.unsubscribe();
+		this.teardown = this.#storePipeline.subscribe();
 	}
 }
 
@@ -167,8 +171,8 @@ export class StoreSlice<ParentSlice, Slice, Payload> extends BaseStore<
 	Payload
 > {
 	protected state = new BehaviorSubject<Slice>(this.initialState);
-	#stateObservable = this.state.asObservable();
-	subscribe = this.#stateObservable.subscribe.bind(this.#stateObservable);
+	protected stateObservable$ = this.state.pipe(distinctUntilChanged(this.comparator));
+	subscribe = this.stateObservable$.subscribe.bind(this.stateObservable$);
 
 	#parentListener: Observable<Slice> = this.parent.pipe(
 		map(this.selector),
@@ -176,15 +180,20 @@ export class StoreSlice<ParentSlice, Slice, Payload> extends BaseStore<
 		tap(this.state),
 		finalize(() => {
 			this.state.unsubscribe();
-			this;
 		})
 	);
 
 	#slicePipeline = (Action.dispatcher$ as Observable<ActionPacket<Payload>>).pipe(
 		withLatestFrom(this.state),
-		map(([action, state]) => this.#reducerRunner(action, state)),
-		tap((slice) => this.reduce(slice))
+		map(([action, state]) => {
+			return this.#reducerRunner(action, state);
+		}),
+		filter((newState) => this.state.value !== newState),
+		distinctUntilChanged(this.comparator),
+		tap(this.state)
 	);
+
+	#statePipeline = this.state.pipe(tap((slice) => this.updateParent(slice, this.selector)));
 
 	#reducerRunner = BaseStore.createReducerRunner(this.reducerConfigurations);
 
@@ -199,5 +208,6 @@ export class StoreSlice<ParentSlice, Slice, Payload> extends BaseStore<
 		super();
 		this.teardown = this.#parentListener.subscribe();
 		this.teardown = this.#slicePipeline.subscribe();
+		this.teardown = this.#statePipeline.subscribe();
 	}
 }
