@@ -1,4 +1,4 @@
-import { tap } from 'rxjs/operators';
+import { map, tap } from 'rxjs/operators';
 import { Action } from './action/action.class';
 import { Store } from './store';
 
@@ -19,6 +19,7 @@ export interface ExampleState {
 		};
 	};
 }
+Action.effect(innerAction.pipe(map((a) => a + 1)), outerAction);
 
 const store = new Store<ExampleState>(
 	{
@@ -41,10 +42,10 @@ const barSlice = fooSlice.slice<{ zed: number }>(
 store.subscribe((state) => console.log('Full State', JSON.stringify(state)));
 fooSlice.subscribe((foo) => console.log('FooSlice', JSON.stringify(foo)));
 barSlice.subscribe((bar) => console.log('BarSlice', JSON.stringify(bar)));
-outerAction.next(1);
+// outerAction.next(1);
 innerAction.next(1);
-middleAction.next(0);
+middleAction.next(1);
 innerAction.next(1);
 innerAction.next(1);
-middleAction.next(0);
-innerAction.next(1);
+// middleAction.next(0);
+// innerAction.next(1);

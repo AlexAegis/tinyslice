@@ -15,6 +15,7 @@ import { ReducerConfiguration } from './reducer.type';
 export type Selector<State, Slice> = (state: State) => Slice;
 export type Wrapper<Slice, State> = (slice: Slice) => Partial<State>;
 
+// TODO: explore rehydratioon
 abstract class BaseStore<ParentState, Slice, Payload> extends Observable<Slice> {
 	protected abstract state: BehaviorSubject<Slice>;
 	protected abstract parent: BaseStore<unknown, ParentState, Payload> | undefined;

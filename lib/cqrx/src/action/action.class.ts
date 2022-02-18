@@ -1,5 +1,5 @@
 import { MonoTypeOperatorFunction, Observable, Subject, Subscription } from 'rxjs';
-import { filter, finalize, map } from 'rxjs/operators';
+import { filter, finalize, map, tap } from 'rxjs/operators';
 import { PayloadReducer, ReducerConfiguration } from '../store/reducer.type';
 import { ActionConfig, DEFAULT_ACTION_CONFIG } from './action-config.interface';
 import { ActionPacket } from './action-packet.interface';
@@ -42,6 +42,13 @@ export class Action<Payload> extends Subject<Payload> {
 				finalize(() => Action.globalActionMap.delete(action.type))
 			)
 			.subscribe(Action.globalDispatcher$);
+	}
+
+	public static effect<DispatchPayload>(
+		action: Observable<DispatchPayload>,
+		dispatch?: Action<DispatchPayload>
+	): Subscription {
+		return action.pipe(tap((payload) => dispatch?.next(payload))).subscribe();
 	}
 
 	public static isRegistered<T>(action?: Action<T> | string): boolean {
