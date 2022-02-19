@@ -56,8 +56,8 @@ store.subscribe((state) => console.log('Full State', JSON.stringify(state)));
 
 const lastPrintedSlice = store.slice<ExampleState['lastPrinted']>(
 	(state) => state.lastPrinted,
-	(lastPrinted) => ({ lastPrinted })
-	// [innerAction.reduce((state, payload) => `${state}${payload}`)]
+	(lastPrinted) => ({ lastPrinted }),
+	[innerAction.reduce((state, payload) => `${state}${payload}`)]
 );
 
 const fooSlice = store.slice<'foo'>('foo', [
@@ -71,9 +71,6 @@ const fooSlice = store.slice<'foo'>('foo', [
 	}),
 ]);
 
-const rootStore = fooSlice.root<ExampleState>();
-console.log('isCorrect', rootStore === store);
-
 const barSlice = fooSlice.slice(
 	(state) => state.bar,
 	(bar) => ({ bar })
@@ -83,14 +80,17 @@ barSlice.subscribe((bar) => console.log('bar', bar));
 lastPrintedSlice.subscribe((lastPrinted) => console.log('lastPrinted', lastPrinted));
 
 innerAction.next(1);
-// printAction.next('Hello!');
-// printAction.next('World!');
-// countAction.next(1);
+printAction.next('Hello!');
+printAction.next('World!');
+countAction.next(1);
+innerAction.next(1);
 
-const newBarSlice = barSlice.addSlice<{ ns: number }, 'newBarSlice'>(
-	{ ns: 1 },
+innerAction.next(1);
+
+const newBarSlice = barSlice.addSlice<{ ns: number }>(
 	(state) => state.newBarSlice,
 	(newBarSlice) => ({ newBarSlice }),
+	{ ns: 1 },
 	[countAction.reduce((s) => ({ ...s, ns: s.ns + 1 }))]
 );
 
