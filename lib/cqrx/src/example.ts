@@ -1,26 +1,25 @@
 import { map, mapTo, tap } from 'rxjs/operators';
-import { Action } from './action/action.class';
-import { Effect } from './effect/effect.class';
-import { Store } from './store';
+import { Scope } from './store';
 
-const printAction = new Action<string>('printAction');
-const countAction = new Action<number>('countAction');
+const scope = Scope.createScope();
+const printAction = scope.createAction<string>('printAction');
+const countAction = scope.createAction<number>('countAction');
 
-const innerAction = new Action<number>('innerAction');
+const innerAction = scope.createAction<number>('innerAction');
 
-Action.listenAll$()
+scope
+	.listenAll$()
 	.pipe(tap((a) => console.log(`[${a.type}]`)))
 	.subscribe();
 
-Action.listen$(printAction)
+scope
+	.listen$(printAction)
 	.pipe(tap((a) => console.log('a2', a.payload)))
 	.subscribe();
 
 // Do I really need effects? I can just use the action itself since it is also
 // the dispatcher
-Effect.from(
-	Action.listen$(countAction).pipe(mapTo({ type: printAction.type, payload: 'eat this' }))
-);
+scope.createEffect(countAction.pipe(mapTo({ type: printAction.type, payload: 'eat this' })));
 
 // printAction.next('Hello');
 // countAction.next(12);
@@ -40,7 +39,7 @@ export interface ExampleState {
 	};
 }
 
-const store = new Store<ExampleState>(
+const store = scope.createStore<ExampleState>(
 	{
 		lastPrinted: undefined,
 		lastCounted: undefined,

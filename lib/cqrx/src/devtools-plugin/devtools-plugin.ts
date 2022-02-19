@@ -1,14 +1,11 @@
 import { Observable, Subscription, tap } from 'rxjs';
 import { ReduxDevtoolsExtensionConfig } from '.';
-import {
-	ActionLike,
-	ReduxDevtoolsExtension,
-	ReduxDevtoolsExtensionConnection,
-} from './redux-devtools.type';
+import { ActionReduceSnapshot } from '../store/reducer.type';
+import { ReduxDevtoolsExtension, ReduxDevtoolsExtensionConnection } from './redux-devtools.type';
 
-export interface DevtoolPluginOptions<State> {
+export interface DevtoolPluginOptions<State, Payload = unknown> {
 	initialState: State;
-	state$: Observable<{ action: ActionLike; newState: State }>;
+	state$: Observable<ActionReduceSnapshot<State, Payload>>;
 	stateInjector: (state: State) => void;
 	devtoolsPluginOptions: ReduxDevtoolsExtensionConfig;
 }
@@ -29,7 +26,9 @@ export class DevtoolsPlugin<State> {
 		this.extensionConnection.init(this.options.initialState);
 		this.stateSubscription = this.options.state$
 			.pipe(
-				tap(({ action, newState }) => this.extensionConnection.send(action.type, newState))
+				tap(({ action, nextState }) =>
+					this.extensionConnection.send(action.type, nextState)
+				)
 			)
 			.subscribe();
 

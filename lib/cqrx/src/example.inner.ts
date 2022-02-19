@@ -1,13 +1,15 @@
 import { map, tap } from 'rxjs/operators';
-import { Action } from './action/action.class';
-import { Store } from './store';
+import { Scope } from './store/scope.class';
 
-const outerAction = new Action<number>('outerAction');
-const middleAction = new Action<number>('middleAction');
+const actionScope = new Scope();
 
-const innerAction = new Action<number>('innerAction');
+const outerAction = actionScope.createAction<number>('outerAction');
+const middleAction = actionScope.createAction<number>('middleAction');
 
-Action.listenAll$()
+const innerAction = actionScope.createAction<number>('innerAction');
+
+actionScope
+	.listenAll$()
 	.pipe(tap((a) => console.log(`[${a.type}]`)))
 	.subscribe();
 
@@ -19,9 +21,9 @@ export interface ExampleState {
 		};
 	};
 }
-Action.effect(innerAction.pipe(map((a) => a + 1)), outerAction);
+actionScope.createEffect(innerAction.pipe(map((a) => a + 1)), outerAction);
 
-const store = new Store<ExampleState>(
+const store = actionScope.createStore<ExampleState>(
 	{
 		out: 1,
 		foo: { bar: { zed: 2 } },
