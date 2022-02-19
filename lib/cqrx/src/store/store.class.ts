@@ -278,6 +278,27 @@ const createSliceListener = <ParentSlice, Slice, Payload>(
 		})
 	);
 
+const createReducerPipeline = <State, Payload>(
+	dispatcher$: Observable<ActionPacket<unknown>>,
+	state$: Observable<State>,
+	registeredSlices$: Observable<SliceRegistrationOptions<State, unknown, Payload>[]>,
+	combinedReducer: PacketReducer<State, Payload>
+) =>
+	zip(
+		dispatcher$,
+		createSliceListener<State, unknown, Payload>(registeredSlices$, dispatcher$)
+	).pipe(
+		withLatestFrom(state$),
+		map(([[action, sliceChanges], prevState]) =>
+			reduceWithSliceChanges(
+				prevState,
+				action as ActionPacket<Payload>,
+				sliceChanges,
+				combinedReducer
+			)
+		)
+	);
+
 // TODO: make it rehydratable, maybe add a unique name to each store (forward that to the devtoolsPluginOptions and remove name from there)
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export class Store<State, Payload = any> extends BaseStore<unknown, State, Payload> {
@@ -297,22 +318,12 @@ export class Store<State, Payload = any> extends BaseStore<unknown, State, Paylo
 		this.storeOptions?.metaReducers ?? []
 	);
 
-	#storePipeline: Observable<ActionReduceSnapshot<State, Payload>> = zip(
+	#storePipeline = createReducerPipeline(
 		this.scope.dispatcher$,
-		createSliceListener<State, unknown, Payload>(
-			this.sliceRegistrations$,
-			this.scope.dispatcher$
-		)
+		this.stateObservable$,
+		this.sliceRegistrations$,
+		this.#reducerRunner
 	).pipe(
-		withLatestFrom(this.stateObservable$),
-		map(([[action, sliceChanges], prevState]) =>
-			reduceWithSliceChanges(
-				prevState,
-				action as ActionPacket<Payload>,
-				sliceChanges,
-				this.#reducerRunner
-			)
-		),
 		tap((snapshot) => {
 			this.#metaReducerRunner(snapshot);
 			if (snapshot.prevState !== snapshot.nextState) {
@@ -388,19 +399,12 @@ export class StoreSlice<ParentSlice, Slice, Payload> extends BaseStore<
 		finalize(() => this.state.unsubscribe())
 	);
 
-	#slicePipeline: Observable<ActionReduceSnapshot<Slice, Payload> | InitialSnapshot<Slice>> = zip(
+	#slicePipeline = createReducerPipeline(
 		this.scope.dispatcher$,
-		createSliceListener(this.sliceRegistrations$, this.scope.dispatcher$)
+		this.stateObservable$,
+		this.sliceRegistrations$,
+		this.#reducerRunner
 	).pipe(
-		withLatestFrom(this.stateObservable$),
-		map(([[action, sliceChanges], prevState]) =>
-			reduceWithSliceChanges(
-				prevState,
-				action as ActionPacket<Payload>,
-				sliceChanges,
-				this.#reducerRunner
-			)
-		),
 		tap((snapshot) => {
 			if (snapshot.prevState !== snapshot.nextState) {
 				this.state.next(snapshot.nextState);
