@@ -14,6 +14,9 @@ export class ActionAlreadyRegisteredError<T> extends Error {
 	}
 }
 
+/**
+ * TODO: Instead of a static global Dispatcher, let me create one myself
+ */
 export class Action<Payload> extends Subject<Payload> {
 	private static readonly globalDispatcher$ = new Subject<ActionPacket<unknown>>();
 	private static readonly globalActionMap = new Map<string, Action<unknown>>();

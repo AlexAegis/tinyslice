@@ -1,5 +1,9 @@
 {
 	"compileOnSave": false,
+	"exclude": [
+		"examples/**",
+		"node_modules"
+	],
 	"compilerOptions": {
 		"strict": true,
 		"rootDir": ".",

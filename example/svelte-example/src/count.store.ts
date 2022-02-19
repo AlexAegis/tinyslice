@@ -22,7 +22,12 @@ export const countStore = new Store<CountState>(
 			...state,
 			count: state.count - payload
 		}))
-	]
+	],
+	{
+		devtoolsPluginOptions: {
+			name: 'myExampleApp'
+		}
+	}
 );
 
 export const count$ = countStore.slice('count');

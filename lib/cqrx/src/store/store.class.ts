@@ -5,17 +5,25 @@ import {
 	finalize,
 	map,
 	Observable,
+	share,
 	Subscription,
 	tap,
 	withLatestFrom,
 } from 'rxjs';
 import { Action, ActionPacket } from '../action';
+import { DevtoolsPlugin } from '../devtools-plugin/devtools-plugin';
+import { ReduxDevtoolsExtensionConfig } from '../devtools-plugin/redux-devtools.typels.type';
 import { ReducerConfiguration } from './reducer.type';
+
+export interface StoreOptions {
+	devtoolsPluginOptions: ReduxDevtoolsExtensionConfig;
+}
 
 export type Selector<State, Slice> = (state: State) => Slice;
 export type Wrapper<Slice, State> = (slice: Slice) => Partial<State>;
 
 // TODO: explore rehydratioon
+// TODO: Vite hot reload does not work
 abstract class BaseStore<ParentState, Slice, Payload> extends Observable<Slice> {
 	protected abstract state: BehaviorSubject<Slice>;
 	protected abstract parent: BaseStore<unknown, ParentState, Payload> | undefined;
@@ -137,23 +145,44 @@ export class Store<State, Payload = any> extends BaseStore<unknown, State, Paylo
 
 	protected stateObservable$ = this.state.pipe(distinctUntilChanged());
 	subscribe = this.stateObservable$.subscribe.bind(this.stateObservable$);
+	private devtools?: DevtoolsPlugin<State>;
 
 	#reducerRunner = Store.createReducerRunner(this.reducerConfigurations);
 
 	#storePipeline = (Action.dispatcher$ as Observable<ActionPacket<Payload>>).pipe(
 		withLatestFrom(this.state),
-		map(([action, state]) => this.#reducerRunner(action, state)),
-		filter((newState) => this.state.value !== newState),
-		tap((a) => this.state.next(a)),
-		finalize(() => this.state.complete())
+		map(([action, state]) => ({ action, newState: this.#reducerRunner(action, state) })),
+		filter(({ newState }) => this.state.value !== newState),
+		tap(({ newState }) => this.state.next(newState)),
+		finalize(() => this.state.complete()),
+		share()
 	);
 
 	public constructor(
 		public readonly initialState: State,
-		private readonly reducerConfigurations: ReducerConfiguration<State, Payload>[] = []
+		private readonly reducerConfigurations: ReducerConfiguration<State, Payload>[] = [],
+		private readonly storeOptions?: StoreOptions
 	) {
 		super();
 		this.teardown = this.#storePipeline.subscribe();
+
+		try {
+			if (this.storeOptions?.devtoolsPluginOptions) {
+				this.devtools = new DevtoolsPlugin<State>({
+					initialState,
+					state$: this.#storePipeline,
+					stateInjector: (state: State) => this.state.next(state),
+					devtoolsPluginOptions: this.storeOptions.devtoolsPluginOptions,
+				});
+			}
+		} catch (error: unknown) {
+			// couldn't instantiate devtools, no extension installed
+		}
+	}
+
+	public unsubscribe(): void {
+		super.unsubscribe();
+		this.devtools?.unsubscribe();
 	}
 }
 
