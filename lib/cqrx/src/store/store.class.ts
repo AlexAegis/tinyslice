@@ -1,20 +1,27 @@
 import {
 	BehaviorSubject,
 	distinctUntilChanged,
-	filter,
 	finalize,
 	map,
+	mapTo,
 	Observable,
 	share,
 	Subscription,
+	switchMap,
 	tap,
 	withLatestFrom,
+	zip,
 } from 'rxjs';
 import { ActionPacket } from '../action';
 import { DevtoolsPlugin } from '../devtools-plugin/devtools-plugin';
 import type { ReduxDevtoolsExtensionConfig } from '../devtools-plugin/redux-devtools.type';
 import type { Comparator } from './comparator.type';
-import type { ActionReduceSnapshot, MetaPacketReducer, ReducerConfiguration } from './reducer.type';
+import type {
+	ActionReduceSnapshot,
+	MetaPacketReducer,
+	PacketReducer,
+	ReducerConfiguration,
+} from './reducer.type';
 import type { Scope } from './scope.class';
 import type { Selector } from './selector.type';
 import type { Wrapper } from './wrapper.type';
@@ -28,22 +35,23 @@ export interface StoreOptions<State, Payload = unknown> {
 abstract class BaseStore<ParentState, Slice, Payload> extends Observable<Slice> {
 	protected abstract state: BehaviorSubject<Slice>;
 	protected abstract parent: BaseStore<unknown, ParentState, Payload> | undefined;
-	protected abstract wrap: Wrapper<Slice, ParentState> | undefined;
+	public abstract wrapper: Wrapper<Slice, ParentState> | undefined;
 	protected abstract scope: Scope;
 	protected abstract stateObservable$: Observable<Slice>;
+
+	protected abstract sliceRegistrations$: BehaviorSubject<
+		SliceRegistrationOptions<Slice, unknown, Payload>[]
+	>;
 
 	#sink = new Subscription();
 
 	/**
-	 * Propagates the changed slice back to its parent
+	 * TODO: unregister on unsubscribe maybe just provide an unregister callback
 	 */
-	protected updateParent(slice: Slice, selector: (parentSlice: ParentState) => Slice): void {
-		console.log('update Parent', slice);
-		if (this.wrap && this.parent && selector(this.parent.state.value) !== slice) {
-			const wrappedSlice = this.wrap(slice);
-			const newSlice = { ...this.parent.state.value, ...wrappedSlice };
-			this.parent.state.next(newSlice);
-		}
+	public registerSlice(
+		sliceRegistration: SliceRegistrationOptions<Slice, unknown, Payload>
+	): void {
+		this.sliceRegistrations$.next([...this.sliceRegistrations$.value, sliceRegistration]);
 	}
 
 	slice<SubSlice extends Slice[keyof Slice]>(
@@ -139,7 +147,6 @@ abstract class BaseStore<ParentState, Slice, Payload> extends Observable<Slice> 
 		let initialState: SubSlice;
 		let reducerConfigurations: ReducerConfiguration<SubSlice, Payload>[];
 		let comparator: Comparator<SubSlice>;
-		console.log('allalal');
 		if (typeof keyOrSelector === 'string') {
 			selector = (state) => state[keyOrSelector] as SubSlice;
 			wrapper = (state) =>
@@ -178,8 +185,8 @@ abstract class BaseStore<ParentState, Slice, Payload> extends Observable<Slice> 
 
 	protected static createReducerRunner<State, Payload = unknown>(
 		reducerConfigurations: ReducerConfiguration<State, Payload>[] = []
-	): (action: ActionPacket<Payload>, state: State) => State {
-		return (action: ActionPacket<Payload>, state: State) =>
+	): PacketReducer<State, Payload> {
+		return (state: State, action: ActionPacket<Payload>) =>
 			reducerConfigurations
 				.filter((reducerConfiguration) => reducerConfiguration.action.type === action.type)
 				.reduce(
@@ -213,13 +220,75 @@ abstract class BaseStore<ParentState, Slice, Payload> extends Observable<Slice> 
 	}
 }
 
+export type SliceChange<State, Payload> = {
+	slice: ActionReduceSnapshot<unknown, Payload> | InitialSnapshot<unknown>;
+	selector: Selector<State, unknown>;
+	wrapper: Wrapper<unknown, State>;
+};
+
+const reduceWithSliceChanges = <State, Payload>(
+	state: State,
+	action: ActionPacket<Payload>,
+	sliceChanges: Partial<State> | undefined,
+	reducer: PacketReducer<State, Payload>
+) => {
+	let prevState = state;
+	if (typeof state === 'object') {
+		prevState = { ...state };
+		if (sliceChanges) {
+			Object.assign(prevState, sliceChanges);
+		}
+	}
+	const nextState = reducer(prevState, action as ActionPacket<Payload>);
+	return {
+		action: action as ActionPacket<Payload>,
+		prevState: state,
+		nextState,
+	} as ActionReduceSnapshot<State, Payload>;
+};
+
+const createSliceListener = <ParentSlice, Slice, Payload>(
+	sliceRegistrations$: Observable<SliceRegistrationOptions<ParentSlice, Slice, Payload>[]>,
+	actionDispatcher$: Observable<ActionPacket<unknown>>
+): Observable<Partial<ParentSlice> | undefined> =>
+	sliceRegistrations$.pipe(
+		switchMap((sliceRegistrations) => {
+			if (sliceRegistrations.length) {
+				return zip(
+					sliceRegistrations.map((sliceRegistration) =>
+						sliceRegistration.slicePipeline.pipe(
+							map((slice) => ({
+								slice,
+								selector: sliceRegistration.selector,
+								wrapper: sliceRegistration.wrapper,
+							}))
+						)
+					)
+				).pipe(
+					map((sliceChanges) =>
+						sliceChanges.reduce(
+							(acc, next) => Object.assign(acc, next.wrapper(next.slice.nextState)),
+							{} as unknown as Partial<ParentSlice>
+						)
+					)
+				);
+			} else {
+				return actionDispatcher$.pipe(mapTo(undefined));
+			}
+		})
+	);
+
 // TODO: make it rehydratable, maybe add a unique name to each store (forward that to the devtoolsPluginOptions and remove name from there)
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export class Store<State, Payload = any> extends BaseStore<unknown, State, Payload> {
 	protected parent = undefined;
-	protected wrap = undefined;
+	public wrapper = undefined;
 	protected state = new BehaviorSubject<State>(this.initialState);
 	protected stateObservable$ = this.state.pipe(distinctUntilChanged());
+	protected sliceRegistrations$ = new BehaviorSubject<
+		SliceRegistrationOptions<State, unknown, Payload>[]
+	>([]);
+
 	public subscribe = this.stateObservable$.subscribe.bind(this.stateObservable$);
 
 	#devtools?: DevtoolsPlugin<State>;
@@ -228,18 +297,27 @@ export class Store<State, Payload = any> extends BaseStore<unknown, State, Paylo
 		this.storeOptions?.metaReducers ?? []
 	);
 
-	#storePipeline = this.scope.dispatcher$.pipe(
+	#storePipeline: Observable<ActionReduceSnapshot<State, Payload>> = zip(
+		this.scope.dispatcher$,
+		createSliceListener<State, unknown, Payload>(
+			this.sliceRegistrations$,
+			this.scope.dispatcher$
+		)
+	).pipe(
 		withLatestFrom(this.stateObservable$),
-		map(([action, prevState]) => ({
-			action: action as ActionPacket<Payload>,
-			prevState,
-			nextState: this.#reducerRunner(action as ActionPacket<Payload>, prevState),
-		})),
-		filter(({ prevState, nextState }) => prevState !== nextState),
+		map(([[action, sliceChanges], prevState]) =>
+			reduceWithSliceChanges(
+				prevState,
+				action as ActionPacket<Payload>,
+				sliceChanges,
+				this.#reducerRunner
+			)
+		),
 		tap((snapshot) => {
-			console.log('SNAPPP');
-			this.state.next(snapshot.nextState);
 			this.#metaReducerRunner(snapshot);
+			if (snapshot.prevState !== snapshot.nextState) {
+				this.state.next(snapshot.nextState);
+			}
 		}),
 		finalize(() => this.state.complete()),
 		share()
@@ -284,6 +362,9 @@ export interface StoreSliceOptions<Slice, Payload> {
 	initialize?: boolean;
 }
 
+export interface InitialSnapshot<State> {
+	nextState: State;
+}
 export class StoreSlice<ParentSlice, Slice, Payload> extends BaseStore<
 	ParentSlice,
 	Slice,
@@ -293,6 +374,12 @@ export class StoreSlice<ParentSlice, Slice, Payload> extends BaseStore<
 	protected stateObservable$ = this.state.pipe(distinctUntilChanged(this.options.comparator));
 	subscribe = this.stateObservable$.subscribe.bind(this.stateObservable$);
 	protected scope = this.options.scope;
+	protected sliceRegistrations: SliceRegistrationOptions<Slice, unknown, Payload>[] = [];
+	protected sliceRegistrations$ = new BehaviorSubject<
+		SliceRegistrationOptions<Slice, unknown, Payload>[]
+	>([]);
+
+	#reducerRunner = BaseStore.createReducerRunner(this.options.reducerConfigurations);
 
 	#parentListener: Observable<Slice> = this.parent.pipe(
 		map(this.selector),
@@ -301,37 +388,50 @@ export class StoreSlice<ParentSlice, Slice, Payload> extends BaseStore<
 		finalize(() => this.state.unsubscribe())
 	);
 
-	#slicePipeline = this.scope.dispatcher$.pipe(
+	#slicePipeline: Observable<ActionReduceSnapshot<Slice, Payload> | InitialSnapshot<Slice>> = zip(
+		this.scope.dispatcher$,
+		createSliceListener(this.sliceRegistrations$, this.scope.dispatcher$)
+	).pipe(
 		withLatestFrom(this.stateObservable$),
-		map(([action, state]) => {
-			console.log('reducers on slice runnin', state);
-			return this.#reducerRunner(action as ActionPacket<Payload>, state);
-		}),
-		filter((newState) => this.state.value !== newState),
-
-		tap(this.state)
+		map(([[action, sliceChanges], prevState]) =>
+			reduceWithSliceChanges(
+				prevState,
+				action as ActionPacket<Payload>,
+				sliceChanges,
+				this.#reducerRunner
+			)
+		),
+		tap((snapshot) => {
+			if (snapshot.prevState !== snapshot.nextState) {
+				this.state.next(snapshot.nextState);
+			}
+		})
 	);
-
-	#statePipeline = this.stateObservable$.pipe(
-		tap((slice) => this.updateParent(slice, this.selector)),
-		finalize(() => this.unsubscribe())
-	);
-
-	#reducerRunner = BaseStore.createReducerRunner(this.options.reducerConfigurations);
 
 	constructor(
 		protected readonly parent: BaseStore<unknown, ParentSlice, Payload>,
 		protected readonly selector: Selector<ParentSlice, Slice>,
-		protected readonly wrap: Wrapper<Slice, ParentSlice>,
+		public readonly wrapper: Wrapper<Slice, ParentSlice>,
 		private readonly options: StoreSliceOptions<Slice, Payload>
 	) {
 		super();
+
 		this.teardown = this.#parentListener.subscribe();
-		this.teardown = this.#slicePipeline.subscribe();
-		this.teardown = this.#statePipeline.subscribe();
+
+		this.parent.registerSlice({
+			slicePipeline: this.#slicePipeline,
+			selector,
+			wrapper: wrapper as Wrapper<unknown, ParentSlice>,
+		});
 
 		if (options.initialize) {
 			this.state.next(options.initialState);
 		}
 	}
+}
+
+export interface SliceRegistrationOptions<ParentSlice, Slice, Payload> {
+	slicePipeline: Observable<ActionReduceSnapshot<Slice, Payload> | InitialSnapshot<Slice>>;
+	wrapper: Wrapper<unknown, ParentSlice>;
+	selector: Selector<ParentSlice, unknown>;
 }

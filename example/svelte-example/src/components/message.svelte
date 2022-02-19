@@ -5,7 +5,6 @@
 
 	function changeMessage(event: Event) {
 		const message = (event as any as { target?: { value: string } }).target?.value;
-		console.log('message', message);
 		messageActions.setMessage.next(message);
 	}
 </script>

@@ -1,4 +1,4 @@
-import { countStore, scope } from '../store';
+import { rootStore, scope } from '../store';
 
 // Ide, get a subscope from slices, automatic action prefixes
 export const messageActions = {
@@ -9,8 +9,8 @@ export const messageActions = {
 export interface MessageState {
 	lastMessage: string | undefined;
 }
-console.log('lelel');
-export const messageSlice = countStore.addSlice<MessageState>(
+
+export const messageSlice = rootStore.addSlice<MessageState>(
 	'message',
 	{ lastMessage: undefined },
 	[
