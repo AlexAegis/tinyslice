@@ -13,13 +13,67 @@ export interface ActionLike {
 	type: string;
 }
 
-export interface ReduxDevtoolsMessagePayloadJumpToAction {
+export interface ReduxDevtoolsMessagePayloadActionId {
 	type: 'JUMP_TO_ACTION';
 	actionId: number;
 }
-export interface ReduxDevtoolsMessagePayloadToggleAction {
+
+export interface ReduxDevtoolsMessagePayloadIndex {
+	type: 'JUMP_TO_STATE';
+	index: number;
+}
+
+export interface ReduxDevtoolsMessagePayloadId {
 	type: 'TOGGLE_ACTION';
 	id: number;
+}
+
+export interface ReduxDevtoolsMessagePayloadTimestamp {
+	type: 'COMMIT' | 'ROLLBACK' | 'RESET';
+	timestamp: number;
+}
+
+export interface ReduxDevtoolsMessagePayloadEmpty {
+	type: 'SWEEP';
+}
+
+export interface ReduxDevtoolsMessagePayloadSetActionsActive {
+	type: 'SET_ACTIONS_ACTIVE';
+	start: number;
+	end: number;
+	active: boolean;
+}
+
+export interface ReduxDevtoolsMessagePayloadReorderAction {
+	type: 'REORDER_ACTION';
+	actionId: number;
+	beforeActionId: number;
+}
+
+export interface ReduxDevtoolsAction {
+	type: 'PERFORM_ACTION';
+	action: ActionLike;
+	timestamp: number;
+}
+
+export interface ReduxDevtoolsMessagePayloadImportState<State> {
+	type: 'IMPORT_STATE';
+	nextLiftedState: ReduxDevtoolsStateSnapshot<State>;
+	preloadedState: ReduxDevtoolsStateSnapshot<State>;
+}
+
+export interface ReduxDevtoolsMessagePayloadStatus {
+	type: 'LOCK_CHANGES' | 'PAUSE_RECORDING';
+	status: boolean;
+}
+
+export interface ReduxDevtoolsStateSnapshot<State> {
+	actionsById: Record<number, ReduxDevtoolsAction>;
+	computedStates: { state: State }[];
+	currentStateIndex: number;
+	nextActionId: number;
+	skippedActionIds: number[];
+	stagedActionIds: number[];
 }
 
 export interface ReduxDevtoolsMessageStart {
@@ -29,25 +83,36 @@ export interface ReduxDevtoolsMessageStart {
 	state: undefined;
 }
 
-export interface ReduxDevtoolsMessageDispatch {
+export interface ReduxDevtoolsMessageDispatch<State> {
 	id: number;
 	source: '@devtools-extension';
 	type: 'DISPATCH';
 	state: string;
 	payload:
-		| ReduxDevtoolsMessagePayloadJumpToAction
-		| ReduxDevtoolsMessagePayloadToggleAction
+		| ReduxDevtoolsAction
+		| ReduxDevtoolsMessagePayloadEmpty
+		| ReduxDevtoolsMessagePayloadSetActionsActive
+		| ReduxDevtoolsMessagePayloadReorderAction
+		| ReduxDevtoolsMessagePayloadStatus
+		| ReduxDevtoolsMessagePayloadActionId
+		| ReduxDevtoolsMessagePayloadId
+		| ReduxDevtoolsMessagePayloadIndex
+		| ReduxDevtoolsMessagePayloadTimestamp
+		| ReduxDevtoolsMessagePayloadImportState<State>
 		| undefined;
 }
 
-export type ReduxDevtoolsMessage = ReduxDevtoolsMessageStart | ReduxDevtoolsMessageDispatch;
+export type ReduxDevtoolsMessage<State> =
+	| ReduxDevtoolsMessageStart
+	| ReduxDevtoolsMessageDispatch<State>;
 
 export interface ReduxDevtoolsExtensionConnection<State> {
-	subscribe(listener: (change: ReduxDevtoolsMessage) => void): () => void;
+	subscribe(listener: (change: ReduxDevtoolsMessage<State>) => void): () => void;
 	unsubscribe(): void;
 	send(action: ActionLike | string | null, state: State): void;
 	init(state?: State): void;
 	error(anyErr: string | Error): void;
+	open(position: 'left' | 'right' | 'bottom' | 'panel' | 'remote'): void;
 }
 
 export interface ReduxDevtoolsExtension<State> {
@@ -60,10 +125,52 @@ export interface ReduxDevtoolsExtensionConfig {
 	latency?: number;
 	trace?: boolean;
 	traceLimit?: number;
-	features?: object | boolean;
+
 	maxAge?: number;
 	autoPause?: boolean;
 	serialize?: boolean | SerializationOptions;
+	features?: {
+		/**
+		 * start/pause recording of dispatched actions
+		 */
+		pause?: boolean;
+		/**
+		 * lock/unlock dispatching actions and side effects
+		 */
+		lock?: boolean;
+		/**
+		 * persist states on page reloading
+		 */
+		persist?: boolean;
+		/**
+		 * export history of actions in a file
+		 */
+		export?: boolean;
+		/**
+		 * import history of actions from a file
+		 */
+		import?: boolean;
+		/**
+		 * jump back and forth (time travelling)
+		 */
+		jump?: boolean;
+		/**
+		 * skip (cancel) actions
+		 */
+		skip?: boolean;
+		/**
+		 * drag and drop actions in the history list
+		 */
+		reorder?: boolean;
+		/**
+		 * dispatch custom actions or action creators
+		 */
+		dispatch?: boolean;
+		/**
+		 *  generate tests for the selected actions
+		 */
+		test?: boolean;
+	};
 }
 
 export type SerializationOptions = {

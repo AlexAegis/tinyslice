@@ -18,7 +18,7 @@ import {
 import { ActionPacket } from '../action';
 import { DevtoolsPlugin } from '../devtools-plugin/devtools-plugin';
 import type { ReduxDevtoolsExtensionConfig } from '../devtools-plugin/redux-devtools.type';
-import { notNullish } from '../helper';
+import { createLoggingMetaReducer, notNullish } from '../helper';
 import type { Comparator } from './comparator.type';
 import type { Merger } from './merger.type';
 import type {
@@ -30,9 +30,25 @@ import type {
 import type { Scope } from './scope.class';
 import type { Selector } from './selector.type';
 
+export interface StrictRuntimeChecks {
+	strictStateImmutability: boolean;
+	strictActionImmutability: boolean;
+	strictStateSerializability: boolean;
+	strictActionSerializability: boolean;
+}
+
 export interface StoreOptions<State, Payload = unknown> {
+	/**
+	 * Define to enable the integration. Omit to disable.
+	 */
 	devtoolsPluginOptions?: ReduxDevtoolsExtensionConfig;
-	metaReducers: MetaPacketReducer<State, Payload>[];
+	metaReducers?: MetaPacketReducer<State, Payload>[];
+	useDefaultLogger?: boolean;
+	/**
+	 * Runtime checks can slow the store down, turn them off in production,
+	 * they are all on by default.
+	 */
+	runtimeChecks?: StrictRuntimeChecks;
 }
 
 // TODO: explore rehydration
@@ -299,9 +315,7 @@ export class Store<State, Payload = any> extends BaseStore<unknown, State, Paylo
 
 	#devtools?: DevtoolsPlugin<State>;
 	#combinedReducer = Store.createCombinedReducer(this.reducerConfigurations);
-	#metaReducerRunner = Store.createMetaReducerRunner<State, Payload>(
-		this.storeOptions?.metaReducers ?? []
-	);
+	#metaReducerRunner: (snapshot: ActionReduceSnapshot<State, Payload>) => void;
 
 	#storePipeline = createReducerPipeline(
 		this.action$,
@@ -334,6 +348,13 @@ export class Store<State, Payload = any> extends BaseStore<unknown, State, Paylo
 		scope.registerStore(this as Store<unknown, Payload>);
 
 		this.teardown = this.#storePipeline.subscribe();
+
+		this.#metaReducerRunner = Store.createMetaReducerRunner<State, Payload>([
+			...(this.storeOptions?.useDefaultLogger
+				? [createLoggingMetaReducer<State, Payload>()]
+				: []),
+			...(this.storeOptions?.metaReducers ?? []),
+		]);
 
 		try {
 			if (this.storeOptions?.devtoolsPluginOptions) {

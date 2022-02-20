@@ -1,4 +1,4 @@
-import { createLoggingMetaReducer, Scope } from 'cqrx';
+import { Scope } from 'cqrx';
 
 export interface RootState {
 	count: number;
@@ -29,7 +29,7 @@ export const rootStore = scope.createStore<RootState>(
 		devtoolsPluginOptions: {
 			name: 'myExampleApp'
 		},
-		metaReducers: [createLoggingMetaReducer<RootState>()]
+		useDefaultLogger: true
 	}
 );
 
