@@ -1,4 +1,4 @@
-import { MonoTypeOperatorFunction, Observable, Subject, Subscription } from 'rxjs';
+import { merge, MonoTypeOperatorFunction, Observable, Subject, Subscription } from 'rxjs';
 import { filter } from 'rxjs/operators';
 import type { Scope } from '../store';
 import type { PayloadReducer, ReducerConfiguration } from '../store/reducer.type';
@@ -8,6 +8,19 @@ import { ActionPacket } from './action-packet.interface';
 export type ActionTuple<T> = {
 	[K in keyof T]: Action<T[K]>;
 };
+
+export class CombinedActions<Payload extends readonly unknown[]> {
+	combinedActions: Observable<ActionPacket<Payload[number]>>;
+	constructor(chain?: CombinedActions<Payload>, ...action: [...ActionTuple<Payload>]) {
+		this.combinedActions = merge(...action.map((a) => a.listen$));
+	}
+
+	and<T extends readonly unknown[]>(
+		...action: [...ActionTuple<T>]
+	): CombinedActions<Payload | T> {
+		return new CombinedActions(this, ...(action as any));
+	}
+}
 
 /**
  * TODO: Actions should be able to switch or hold multiple scopes
@@ -20,6 +33,10 @@ export class Action<Payload> extends Subject<Payload> {
 
 	public get listen$(): Observable<ActionPacket<Payload>> {
 		return this.scope.listen$(this);
+	}
+
+	and<T>(action: Action<T>) {
+		return new CombinedActions(undefined, this, action);
 	}
 
 	public constructor(

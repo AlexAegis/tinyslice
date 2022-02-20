@@ -6,6 +6,7 @@ import {
 	mapTo,
 	Observable,
 	share,
+	skip,
 	Subscription,
 	switchMap,
 	tap,
@@ -178,7 +179,6 @@ abstract class BaseStore<ParentState, Slice, Payload> extends Observable<Slice> 
 				initialState,
 				reducerConfigurations,
 				comparator,
-				initialize: true,
 			}
 		);
 	}
@@ -370,7 +370,6 @@ export interface StoreSliceOptions<Slice, Payload> {
 	initialState: Slice;
 	reducerConfigurations: ReducerConfiguration<Slice, Payload>[];
 	comparator?: Comparator<Slice>;
-	initialize?: boolean;
 }
 
 export interface InitialSnapshot<State> {
@@ -385,7 +384,6 @@ export class StoreSlice<ParentSlice, Slice, Payload> extends BaseStore<
 	protected stateObservable$ = this.state.pipe(distinctUntilChanged(this.options.comparator));
 	subscribe = this.stateObservable$.subscribe.bind(this.stateObservable$);
 	protected scope = this.options.scope;
-	protected sliceRegistrations: SliceRegistrationOptions<Slice, unknown, Payload>[] = [];
 	protected sliceRegistrations$ = new BehaviorSubject<
 		SliceRegistrationOptions<Slice, unknown, Payload>[]
 	>([]);
@@ -393,6 +391,7 @@ export class StoreSlice<ParentSlice, Slice, Payload> extends BaseStore<
 	#reducerRunner = BaseStore.createReducerRunner(this.options.reducerConfigurations);
 
 	#parentListener: Observable<Slice> = this.parent.pipe(
+		skip(1), // Skip the initially emitted one
 		map(this.selector),
 		distinctUntilChanged(this.options.comparator),
 		tap(this.state),
@@ -420,17 +419,13 @@ export class StoreSlice<ParentSlice, Slice, Payload> extends BaseStore<
 	) {
 		super();
 
-		this.teardown = this.#parentListener.subscribe();
-
 		this.parent.registerSlice({
 			slicePipeline: this.#slicePipeline,
 			selector,
 			wrapper: wrapper as Wrapper<unknown, ParentSlice>,
 		});
 
-		if (options.initialize) {
-			this.state.next(options.initialState);
-		}
+		this.teardown = this.#parentListener.subscribe();
 	}
 }
 
