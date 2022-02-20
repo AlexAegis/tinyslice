@@ -13,7 +13,7 @@ export type MetaPacketReducer<State, Payload = unknown> = (
 
 export type PacketReducer<State, Payload> = (
 	state: State,
-	actionPacket: ActionPacket<Payload>
+	actionPacket: ActionPacket<Payload> | undefined
 ) => State;
 
 export type PayloadReducer<State, Payload> = (state: State, actionPacket: Payload) => State;

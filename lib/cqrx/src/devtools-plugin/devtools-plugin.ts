@@ -41,6 +41,10 @@ export class DevtoolsPlugin<State> {
 		});
 	}
 
+	public error(error: string | Error): void {
+		this.extensionConnection.error(error);
+	}
+
 	static getExtension<State>(): ReduxDevtoolsExtension<State> | undefined {
 		return window?.__REDUX_DEVTOOLS_EXTENSION__ as ReduxDevtoolsExtension<State>;
 	}

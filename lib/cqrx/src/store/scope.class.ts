@@ -6,28 +6,36 @@ import { Action, ActionTuple } from '../action/action.class';
 import { Store, StoreOptions } from '../store/store.class';
 import { ReducerConfiguration } from './reducer.type';
 
-export class Scope {
-	private readonly dispatcherScope = new Subject<ActionPacket<unknown>>();
-	private readonly actionMap = new Map<string, Action<unknown>>();
+export class Scope<EveryStore = unknown, EveryPayload = unknown> {
+	private readonly dispatcherScope = new Subject<ActionPacket<EveryPayload>>();
+	private readonly actionMap = new Map<string, Action<EveryPayload>>();
 	public readonly dispatcher$ = this.dispatcherScope.asObservable();
 	private effectSubscriptions = new Subscription();
-	private stores: Store<unknown>[] = [];
+	private stores: Store<EveryStore, EveryPayload>[] = [];
 
-	public static createScope(): Scope {
-		return new Scope();
+	public readonly VOID = this.createAction<void>('VOID');
+	public readonly REGISTER_LAZY_SLICE = this.createAction<string>('REGISTER_LAZY_SLICE');
+
+	public static createScope<EveryPayload>(): Scope<EveryPayload> {
+		return new Scope<EveryPayload>();
 	}
 
 	public createAction<Payload>(type: string, config?: Partial<ActionConfig>): Action<Payload> {
-		return new Action<Payload>(this, type, config);
+		return new Action<Payload>(this as Scope<unknown, unknown>, type, config);
 	}
 
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	public createStore<State, Payload = any>(
+	public createStore<State extends EveryStore, Payload extends EveryPayload = any>(
 		initialState: State,
 		reducerConfigurations: ReducerConfiguration<State, Payload>[] = [],
 		storeOptions?: StoreOptions<State>
 	): Store<State, Payload> {
-		return new Store<State, Payload>(this, initialState, reducerConfigurations, storeOptions);
+		return new Store<State, Payload>(
+			this as unknown as Scope<unknown, Payload>,
+			initialState,
+			reducerConfigurations,
+			storeOptions
+		);
 	}
 
 	public createEffect<DispatchPayload>(
@@ -50,15 +58,17 @@ export class Scope {
 	/**
 	 * Only used for cleanup
 	 */
-	public registerStore(store: Store<unknown>): void {
+	public registerStore(store: Store<EveryStore, EveryPayload>): void {
 		this.stores.push(store);
 	}
 
-	public registerAction<Payload>(action: Action<Payload>): Subscription | undefined {
+	public registerAction<Payload extends EveryPayload>(
+		action: Action<Payload>
+	): Subscription | undefined {
 		if (this.actionMap.has(action.type)) {
 			throw new ActionAlreadyRegisteredError(action);
 		}
-		this.actionMap.set(action.type, action as Action<unknown>);
+		this.actionMap.set(action.type, action as unknown as Action<EveryPayload>);
 
 		return action
 			.pipe(
