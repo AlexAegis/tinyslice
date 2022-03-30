@@ -84,47 +84,39 @@ abstract class BaseStore<ParentState, Slice, Payload> extends Observable<Slice> 
 		}
 	}
 
-	slice<SubSlice extends Slice[keyof Slice]>(
+	slice<SubSliceKey extends keyof Slice>(
+		key: SubSliceKey,
+		reducerConfigurations: ReducerConfiguration<Slice[SubSliceKey], Payload>[] = [],
+		comparator?: (a: Slice[SubSliceKey], b: Slice[SubSliceKey]) => boolean
+	): StoreSlice<Slice, Slice[SubSliceKey], Payload> {
+		const selector: Selector<Slice, Slice[SubSliceKey]> = (state) => state[key];
+		const merger: Merger<Slice, Slice[SubSliceKey]> = (state, slice) => ({
+			...state,
+			[key]: slice,
+		});
+
+		const initialState = selector(this.state.value);
+
+		return new StoreSlice<Slice, Slice[SubSliceKey], Payload>(
+			this as BaseStore<unknown, Slice, Payload>,
+			selector,
+			merger,
+			{
+				scope: this.scope,
+				initialState,
+				reducerConfigurations,
+				comparator,
+				lazy: false,
+			}
+		);
+	}
+
+	sliceSelect<SubSlice extends Slice[keyof Slice]>(
 		selector: Selector<Slice, SubSlice>,
 		merger: Merger<Slice, SubSlice>,
-		reducers?: ReducerConfiguration<SubSlice, Payload>[],
-		comparator?: (a: SubSlice, b: SubSlice) => boolean
-	): StoreSlice<Slice, SubSlice, Payload>;
-	slice<
-		SubSliceKey extends keyof Slice,
-		SubSlice extends Slice[SubSliceKey] = Slice[SubSliceKey]
-	>(
-		key: SubSliceKey,
-		reducers?: ReducerConfiguration<SubSlice, Payload>[],
-		comparator?: (a: SubSlice, b: SubSlice) => boolean
-	): StoreSlice<Slice, SubSlice, Payload>;
-	slice<
-		SubSliceKey extends keyof Slice,
-		SubSlice extends Slice[SubSliceKey] = Slice[SubSliceKey]
-	>(
-		keyOrSelector: SubSliceKey | Selector<Slice, SubSlice>,
-		mergerOrReducers?: Merger<Slice, SubSlice> | ReducerConfiguration<SubSlice, Payload>[],
-		reducersOrComparator?:
-			| ((a: SubSlice, b: SubSlice) => boolean)
-			| ReducerConfiguration<SubSlice, Payload>[],
+		reducerConfigurations: ReducerConfiguration<SubSlice, Payload>[] = [],
 		comparator?: (a: SubSlice, b: SubSlice) => boolean
 	): StoreSlice<Slice, SubSlice, Payload> {
-		let selector: Selector<Slice, SubSlice>;
-		let merger: Merger<Slice, SubSlice>;
-		let reducerConfigurations: ReducerConfiguration<SubSlice, Payload>[];
-
-		if (typeof keyOrSelector === 'string') {
-			selector = (state) => state[keyOrSelector] as SubSlice;
-			merger = (state, slice) => ({ ...state, [keyOrSelector]: slice });
-			reducerConfigurations =
-				(mergerOrReducers as ReducerConfiguration<SubSlice, Payload>[]) ?? [];
-		} else {
-			selector = keyOrSelector as Selector<Slice, SubSlice>;
-			merger = mergerOrReducers as Merger<Slice, SubSlice>;
-			reducerConfigurations =
-				(reducersOrComparator as ReducerConfiguration<SubSlice, Payload>[]) ?? [];
-		}
-
 		const initialState = selector(this.state.value);
 
 		return new StoreSlice(this as BaseStore<unknown, Slice, Payload>, selector, merger, {
@@ -145,56 +137,12 @@ abstract class BaseStore<ParentState, Slice, Payload> extends Observable<Slice> 
 		initialState: SubSlice,
 		reducerConfigurations?: ReducerConfiguration<SubSlice, Payload>[],
 		comparator?: Comparator<SubSlice>
-	): StoreSlice<Slice & Record<AdditionalKey, SubSlice>, SubSlice, Payload>;
-	public addSlice<
-		SubSlice,
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		AdditionalKey extends Exclude<any, keyof Slice> = Exclude<any, keyof Slice>
-	>(
-		selector: Selector<Slice & Record<AdditionalKey, SubSlice>, SubSlice>,
-		wrapper: Merger<Slice & Record<AdditionalKey, SubSlice>, SubSlice>,
-		initialState: SubSlice,
-		reducerConfigurations?: ReducerConfiguration<SubSlice, Payload>[],
-		comparator?: Comparator<SubSlice>
-	): StoreSlice<Slice & Record<AdditionalKey, SubSlice>, SubSlice, Payload>;
-	public addSlice<
-		SubSlice,
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		AdditionalKey extends Exclude<any, keyof Slice> = Exclude<any, keyof Slice>
-	>(
-		keyOrSelector: AdditionalKey | Selector<Slice & Record<AdditionalKey, SubSlice>, SubSlice>,
-		initialStateOrMerger: SubSlice | Merger<Slice & Record<AdditionalKey, SubSlice>, SubSlice>,
-		reducerConfigurationOrInitialState?: ReducerConfiguration<SubSlice, Payload>[] | SubSlice,
-		comparatorOrReducerConfigurations?:
-			| Comparator<SubSlice>
-			| ReducerConfiguration<SubSlice, Payload>[],
-		comparatorOrNothing?: (a: SubSlice, b: SubSlice) => boolean
 	): StoreSlice<Slice & Record<AdditionalKey, SubSlice>, SubSlice, Payload> {
-		let selector: Selector<Slice & Record<AdditionalKey, SubSlice>, SubSlice>;
-		let merger: Merger<Slice & Record<AdditionalKey, SubSlice>, SubSlice>;
-		let initialState: SubSlice;
-		let reducerConfigurations: ReducerConfiguration<SubSlice, Payload>[];
-		let comparator: Comparator<SubSlice>;
-		if (typeof keyOrSelector === 'string') {
-			selector = (state) => state[keyOrSelector as AdditionalKey];
-			merger = (state, slice) => ({ ...state, [keyOrSelector]: slice });
-			initialState = initialStateOrMerger as SubSlice;
-			reducerConfigurations =
-				(reducerConfigurationOrInitialState as ReducerConfiguration<SubSlice, Payload>[]) ??
-				[];
-			comparator = comparatorOrReducerConfigurations as Comparator<SubSlice>;
-		} else {
-			selector = keyOrSelector as Selector<Slice & Record<AdditionalKey, SubSlice>, SubSlice>;
-			merger = initialStateOrMerger as Merger<
-				Slice & Record<AdditionalKey, SubSlice>,
-				SubSlice
-			>;
-			initialState = reducerConfigurationOrInitialState as SubSlice;
-			reducerConfigurations =
-				(comparatorOrReducerConfigurations as ReducerConfiguration<SubSlice, Payload>[]) ??
-				[];
-			comparator = comparatorOrNothing as Comparator<SubSlice>;
-		}
+		const selector = (state: Slice & Record<AdditionalKey, SubSlice>) => state[key];
+		const merger = (state: Slice & Record<AdditionalKey, SubSlice>, slice: SubSlice) => ({
+			...state,
+			[key]: slice,
+		});
 
 		return new StoreSlice(
 			this as unknown as BaseStore<unknown, Slice & Record<AdditionalKey, SubSlice>, Payload>,
@@ -203,7 +151,7 @@ abstract class BaseStore<ParentState, Slice, Payload> extends Observable<Slice> 
 			{
 				scope: this.scope,
 				initialState,
-				reducerConfigurations,
+				reducerConfigurations: reducerConfigurations ?? [],
 				comparator,
 				lazy: true,
 			}

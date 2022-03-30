@@ -9,5 +9,3 @@
 <button on:click={() => countAction.decrement.next(1)}>Sub 1</button>
 <p>Visit <a href="https://kit.svelte.dev">kit.svelte.dev</a> to read the documentation</p>
 <Message />
-
-The current issue is that lazy slices are being used without their initial state

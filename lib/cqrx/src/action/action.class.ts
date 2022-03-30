@@ -94,8 +94,8 @@ export class Action<Payload> extends Subject<Payload> {
 		payloadReducer: PayloadReducer<State, Payload>
 	): ReducerConfiguration<State, Payload> {
 		return {
-			packetReducer: (state: State, actionPacket: ActionPacket<Payload>) =>
-				payloadReducer(state, actionPacket.payload),
+			packetReducer: (state: State, actionPacket: ActionPacket<Payload> | undefined) =>
+				actionPacket ? payloadReducer(state, actionPacket.payload) : state,
 			action: this,
 		};
 	}

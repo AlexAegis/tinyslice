@@ -38,6 +38,10 @@ export class Scope<EveryStore = unknown, EveryPayload = unknown> {
 		);
 	}
 
+	/**
+	 * TODO: add multiple dispatch targets in an array
+	 * TODO: handle flattening multiple values for every dispatch target
+	 */
 	public createEffect<DispatchPayload>(
 		action: Observable<DispatchPayload>,
 		dispatch?: Action<DispatchPayload>

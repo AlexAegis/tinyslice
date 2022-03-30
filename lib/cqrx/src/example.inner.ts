@@ -21,6 +21,7 @@ export interface ExampleState {
 		};
 	};
 }
+
 actionScope.createEffect(innerAction.pipe(map((a) => a + 1)), outerAction);
 
 const store = actionScope.createStore<ExampleState>(
@@ -35,9 +36,9 @@ const fooSlice = store.slice<'foo'>('foo', [
 	middleAction.reduce((state, payload) => ({ ...state, bar: { zed: payload } })),
 ]);
 
-const barSlice = fooSlice.slice<{ zed: number }>(
+const barSlice = fooSlice.sliceSelect<{ zed: number }>(
 	(state) => state.bar,
-	(bar) => ({ bar }),
+	(state, bar) => ({ ...state, bar }),
 	[innerAction.reduce((state, payload) => ({ ...state, zed: state.zed + payload }))]
 );
 

@@ -6,21 +6,23 @@ export interface RootState {
 
 export const scope = new Scope();
 
-const increment = scope.createAction<number>('[Count] increment');
-const decrement = scope.createAction<number>('[Count] decrement');
+export const countAction = {
+	increment: scope.createAction<number>('[Count] increment'),
+	decrement: scope.createAction<number>('[Count] decrement')
+};
 
-export const countAction = { increment, decrement };
+// scope.createEffect(countAction.decrement.pipe(map((a) => a + 1)), countAction.increment);
 
 export const rootStore = scope.createStore<RootState>(
 	{
 		count: 0
 	},
 	[
-		increment.reduce((state, payload) => ({
+		countAction.increment.reduce((state, payload) => ({
 			...state,
 			count: state.count + payload
 		})),
-		decrement.reduce((state, payload) => ({
+		countAction.decrement.reduce((state, payload) => ({
 			...state,
 			count: state.count - payload
 		}))

@@ -1,5 +1,8 @@
 import type { MetaPacketReducer } from '../store/reducer.type';
 
+/**
+ * TODO: Color me green for SUCCESS and red for FAIL(URE)
+ */
 export const createLoggingMetaReducer =
 	<State, Payload = unknown>(): MetaPacketReducer<State, Payload> =>
 	({ action, prevState, nextState }) => {

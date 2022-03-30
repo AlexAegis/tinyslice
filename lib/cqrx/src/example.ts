@@ -1,4 +1,4 @@
-import { map, mapTo, tap } from 'rxjs/operators';
+import { map, tap } from 'rxjs/operators';
 import { Scope } from './store';
 
 const scope = Scope.createScope();
@@ -17,9 +17,7 @@ scope
 	.pipe(tap((a) => console.log('a2', a.payload)))
 	.subscribe();
 
-// Do I really need effects? I can just use the action itself since it is also
-// the dispatcher
-scope.createEffect(countAction.pipe(mapTo({ type: printAction.type, payload: 'eat this' })));
+scope.createEffect(countAction.pipe(map((c) => `FROM EFFECT Count called with ${c}`)), printAction);
 
 // printAction.next('Hello');
 // countAction.next(12);
@@ -54,9 +52,9 @@ const store = scope.createStore<ExampleState>(
 
 store.subscribe((state) => console.log('Full State', JSON.stringify(state)));
 
-const lastPrintedSlice = store.slice<ExampleState['lastPrinted']>(
+const lastPrintedSlice = store.sliceSelect<ExampleState['lastPrinted']>(
 	(state) => state.lastPrinted,
-	(lastPrinted) => ({ lastPrinted }),
+	(state, lastPrinted) => ({ ...state, lastPrinted }),
 	[innerAction.reduce((state, payload) => `${state}${payload}`)]
 );
 
@@ -71,9 +69,9 @@ const fooSlice = store.slice<'foo'>('foo', [
 	}),
 ]);
 
-const barSlice = fooSlice.slice(
+const barSlice = fooSlice.sliceSelect(
 	(state) => state.bar,
-	(bar) => ({ bar })
+	(state, bar) => ({ ...state, bar })
 );
 
 barSlice.subscribe((bar) => console.log('bar', bar));
@@ -82,16 +80,13 @@ lastPrintedSlice.subscribe((lastPrinted) => console.log('lastPrinted', lastPrint
 innerAction.next(1);
 printAction.next('Hello!');
 printAction.next('World!');
-countAction.next(1);
+countAction.next(9);
 innerAction.next(1);
 
 innerAction.next(1);
 
-const newBarSlice = barSlice.addSlice<{ ns: number }>(
-	(state) => state.newBarSlice,
-	(newBarSlice) => ({ newBarSlice }),
-	{ ns: 1 },
-	[countAction.reduce((s) => ({ ...s, ns: s.ns + 1 }))]
-);
+const newBarSlice = barSlice.addSlice<{ ns: number }>('newBarSlice', { ns: 1 }, [
+	countAction.reduce((s) => ({ ...s, ns: s.ns + 1 })),
+]);
 
 newBarSlice.pipe(map((a) => a?.ns)).subscribe((ns) => console.log('ns', ns));

@@ -12,23 +12,24 @@
 		"ncu": "ncu -u"
 	},
 	"dependencies": {
+		"rxjs": "7.5.5",
 		"cqrx": "file:../../lib/cqrx"
 	},
 	"devDependencies": {
 		"@sveltejs/adapter-static": "*",
 		"@sveltejs/kit": "next",
-		"@typescript-eslint/eslint-plugin": "^5.12.0",
-		"@typescript-eslint/parser": "^5.12.0",
-		"eslint": "^8.9.0",
-		"eslint-config-prettier": "^8.3.0",
-		"eslint-plugin-svelte3": "^3.4.0",
-		"prettier": "^2.5.1",
+		"@typescript-eslint/eslint-plugin": "^5.17.0",
+		"@typescript-eslint/parser": "^5.17.0",
+		"eslint": "^8.12.0",
+		"eslint-config-prettier": "^8.5.0",
+		"eslint-plugin-svelte3": "^3.4.1",
+		"prettier": "^2.6.1",
 		"prettier-plugin-svelte": "^2.6.0",
-		"svelte": "^3.46.4",
-		"svelte-check": "^2.4.5",
-		"svelte-preprocess": "^4.10.3",
+		"svelte": "^3.46.5",
+		"svelte-check": "^2.4.6",
+		"svelte-preprocess": "^4.10.4",
 		"tslib": "^2.3.1",
-		"typescript": "^4.5.5"
+		"typescript": "^4.6.3"
 	},
 	"type": "module"
 }
