@@ -1,4 +1,5 @@
-import { Scope } from 'cqrx';
+import { Scope } from '@tiny-slice/core';
+import { TinySliceDevtoolPlugin } from '@tiny-slice/devtools-plugin';
 
 export interface RootState {
 	count: number;
@@ -28,9 +29,11 @@ export const rootStore = scope.createStore<RootState>(
 		}))
 	],
 	{
-		devtoolsPluginOptions: {
-			name: 'myExampleApp'
-		},
+		plugins: [
+			new TinySliceDevtoolPlugin({
+				name: 'myExampleApp'
+			})
+		],
 		useDefaultLogger: true
 	}
 );

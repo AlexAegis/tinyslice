@@ -1,6 +1,6 @@
 {
-	"name": "cqrx-workspace",
-	"description": "Reactive events",
+	"name": "@tinyslice/devtools",
+	"description": "DevTools plugin for TinySlice",
 	"version": "0.0.1",
 	"license": "MIT",
 	"author": {
@@ -29,24 +29,18 @@
 	"config": {
 		"engine-strict": true
 	},
-	"workspaces": [
-		"lib/cqrx",
-		"lib/devtools-plugin",
-		"example/svelte-example"
-	],
 	"scripts": {
-		"start": "npm --workspace svelte-example start",
 		"format": "prettier --write .",
 		"lint:es": "eslint",
 		"lint:format": "prettier --check .",
-		"test": "jest --passWithNoTests",
 		"ncu": "ncu -u",
-		"clean": "rimraf node_modules package-lock.json",
 		"_postinstall": "husky install",
 		"prepublish": "pinst --disable",
 		"postpublish": "pinst --enable"
 	},
+	"main": "src/index.ts",
 	"dependencies": {
+		"rxjs": "7.5.5",
 		"tslib": "^2.3.1"
 	},
 	"devDependencies": {
@@ -65,12 +59,9 @@
 		"husky": "^7.0.4",
 		"jest": "~27.5.1",
 		"lint-staged": "~12.3.7",
-		"markdownlint": "^0.25.1",
-		"markdownlint-cli": "^0.31.1",
 		"npm-check-updates": "~12.5.4",
 		"pinst": "^3.0.0",
 		"prettier": "~2.6.1",
-		"rimraf": "^3.0.2",
 		"source-map-support": "^0.5.21",
 		"ts-node": "10.7.0",
 		"tsconfig-paths": "^3.14.1",

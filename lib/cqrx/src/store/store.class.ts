@@ -16,8 +16,6 @@ import {
 	zip,
 } from 'rxjs';
 import { ActionPacket } from '../action';
-import { DevtoolsPlugin } from '../devtools-plugin/devtools-plugin';
-import type { ReduxDevtoolsExtensionConfig } from '../devtools-plugin/redux-devtools.type';
 import { createLoggingMetaReducer, notNullish } from '../helper';
 import type { Comparator } from './comparator.type';
 import type { Merger } from './merger.type';
@@ -30,6 +28,19 @@ import type {
 import type { Scope } from './scope.class';
 import type { Selector } from './selector.type';
 
+export interface StorePluginHooks<State, Payload> {
+	state$: Observable<ActionReduceSnapshot<State, Payload>>;
+	initialState: State;
+	stateInjector: (state: State) => void;
+}
+
+export interface StorePlugin<State, Payload> {
+	register: (hooks: StorePluginHooks<State, Payload>) => void;
+	onError?: (error: unknown) => void;
+	start: () => void;
+	stop: () => void;
+}
+
 export interface StrictRuntimeChecks {
 	strictStateImmutability: boolean;
 	strictActionImmutability: boolean;
@@ -38,10 +49,7 @@ export interface StrictRuntimeChecks {
 }
 
 export interface StoreOptions<State, Payload = unknown> {
-	/**
-	 * Define to enable the integration. Omit to disable.
-	 */
-	devtoolsPluginOptions?: ReduxDevtoolsExtensionConfig;
+	plugins?: StorePlugin<State, Payload>[];
 	metaReducers?: MetaPacketReducer<State, Payload>[];
 	useDefaultLogger?: boolean;
 	/**
@@ -258,10 +266,10 @@ export class Store<State, Payload = any> extends BaseStore<unknown, State, Paylo
 	protected sliceRegistrations$ = new BehaviorSubject<
 		SliceRegistrationOptions<State, unknown, Payload>[]
 	>([]);
+	private plugins: StorePlugin<State, Payload>[] | undefined;
 
 	public subscribe = this.stateObservable$.subscribe.bind(this.stateObservable$);
 
-	#devtools?: DevtoolsPlugin<State>;
 	#combinedReducer = Store.createCombinedReducer(this.reducerConfigurations);
 	#metaReducerRunner: (snapshot: ActionReduceSnapshot<State, Payload>) => void;
 
@@ -278,7 +286,7 @@ export class Store<State, Payload = any> extends BaseStore<unknown, State, Paylo
 			}
 		}),
 		catchError((error) => {
-			this.#devtools?.error(error);
+			this.plugins?.forEach((plugin) => plugin.onError?.(error));
 			return EMPTY;
 		}),
 		finalize(() => this.state.complete()),
@@ -292,6 +300,7 @@ export class Store<State, Payload = any> extends BaseStore<unknown, State, Paylo
 		private readonly storeOptions?: StoreOptions<State>
 	) {
 		super(scope);
+		this.plugins = this.storeOptions?.plugins?.map((plugin) => this.registerPlugin(plugin));
 
 		scope.registerStore(this as Store<unknown, Payload>);
 
@@ -303,24 +312,21 @@ export class Store<State, Payload = any> extends BaseStore<unknown, State, Paylo
 				: []),
 			...(this.storeOptions?.metaReducers ?? []),
 		]);
+	}
 
-		try {
-			if (this.storeOptions?.devtoolsPluginOptions) {
-				this.#devtools = new DevtoolsPlugin<State>({
-					initialState,
-					state$: this.#storePipeline,
-					stateInjector: (state: State) => this.state.next(state),
-					devtoolsPluginOptions: this.storeOptions.devtoolsPluginOptions,
-				});
-			}
-		} catch (error: unknown) {
-			// couldn't instantiate devtools, no extension installed
-		}
+	private registerPlugin(plugin: StorePlugin<State, Payload>): StorePlugin<State, Payload> {
+		plugin.register({
+			initialState: this.initialState,
+			state$: this.#storePipeline,
+			stateInjector: (state: State) => this.state.next(state),
+		});
+		plugin.start();
+		return plugin;
 	}
 
 	public unsubscribe(): void {
 		super.unsubscribe();
-		this.#devtools?.unsubscribe();
+		this.storeOptions?.plugins?.forEach((plugin) => plugin.stop());
 	}
 }
 

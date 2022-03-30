@@ -13,7 +13,8 @@
 	},
 	"dependencies": {
 		"rxjs": "7.5.5",
-		"cqrx": "file:../../lib/cqrx"
+		"@tiny-slice/core": "file:../../lib/cqrx",
+		"@tiny-slice/devtools-plugin": "file:../../lib/devtools-plugin"
 	},
 	"devDependencies": {
 		"@sveltejs/adapter-static": "*",
