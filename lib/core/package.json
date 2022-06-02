@@ -1,6 +1,6 @@
 {
-	"name": "@tinyslice/devtools-plugin",
-	"description": "DevTools plugin for TinySlice",
+	"name": "@tinyslice/core",
+	"description": "Reactive events",
 	"version": "0.0.1",
 	"license": "MIT",
 	"author": {

@@ -1,5 +1,5 @@
-import { Scope } from '@tiny-slice/core';
-import { TinySliceDevtoolPlugin } from '@tiny-slice/devtools-plugin';
+import { Scope } from '@tinyslice/core';
+import { TinySliceDevtoolPlugin } from '@tinyslice/devtools-plugin';
 
 export interface RootState {
 	count: number;

@@ -1,5 +1,5 @@
 {
-	"name": "svelte-example",
+	"name": "@tinyslice/svelte-example",
 	"version": "0.0.1",
 	"scripts": {
 		"start": "svelte-kit dev",
@@ -13,8 +13,8 @@
 	},
 	"dependencies": {
 		"rxjs": "7.5.5",
-		"@tiny-slice/core": "file:../../lib/cqrx",
-		"@tiny-slice/devtools-plugin": "file:../../lib/devtools-plugin"
+		"@tinyslice/core": "file:../../lib/core",
+		"@tinyslice/devtools-plugin": "file:../../lib/devtools-plugin"
 	},
 	"devDependencies": {
 		"@sveltejs/adapter-static": "*",

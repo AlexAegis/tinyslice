@@ -3,8 +3,8 @@ import { ActionAlreadyRegisteredError } from '../action/action-already-registere
 import type { ActionConfig } from '../action/action-config.interface';
 import type { ActionPacket } from '../action/action-packet.interface';
 import { Action, ActionTuple } from '../action/action.class';
-import { Store, StoreOptions } from '../store/store.class';
 import { ReducerConfiguration } from './reducer.type';
+import { Store, StoreOptions } from './store.class';
 
 export class Scope<EveryStore = unknown, EveryPayload = unknown> {
 	private readonly dispatcherScope = new Subject<ActionPacket<EveryPayload>>();

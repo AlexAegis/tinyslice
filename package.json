@@ -1,5 +1,5 @@
 {
-	"name": "cqrx-workspace",
+	"name": "tinyslice-workspace",
 	"description": "Reactive events",
 	"version": "0.0.1",
 	"license": "MIT",
@@ -8,13 +8,13 @@
 		"name": "AlexAegis",
 		"url": "https://www.github.com/AlexAegis"
 	},
-	"homepage": "https://www.github.com/AlexAegis/cqrx#readme",
-	"repository": "github:AlexAegis/cqrx",
+	"homepage": "https://www.github.com/AlexAegis/tinyslice#readme",
+	"repository": "github:AlexAegis/tinyslice",
 	"bugs": {
-		"url": "https://www.github.com/AlexAegis/cqrx/issues"
+		"url": "https://www.github.com/AlexAegis/tinyslice/issues"
 	},
 	"keywords": [
-		"cqrx",
+		"tinyslice",
 		"cqrs",
 		"actions",
 		"effects",
@@ -30,12 +30,12 @@
 		"engine-strict": true
 	},
 	"workspaces": [
-		"lib/cqrx",
+		"lib/core",
 		"lib/devtools-plugin",
 		"example/svelte-example"
 	],
 	"scripts": {
-		"start": "npm --workspace svelte-example start",
+		"start": "npm --workspace example/svelte-example start",
 		"format": "prettier --write .",
 		"lint:es": "eslint",
 		"lint:format": "prettier --check .",

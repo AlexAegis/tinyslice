@@ -1,4 +1,4 @@
-import { ActionPacket, StorePlugin, StorePluginHooks } from 'cqrx';
+import { ActionPacket, StorePlugin, StorePluginHooks } from '@tinyslice/core';
 import { Subscription, tap } from 'rxjs';
 import { ReduxDevtoolsExtensionConfig } from '.';
 import {

@@ -16,9 +16,9 @@ export class CombinedActions<Payload extends readonly unknown[]> {
 	}
 
 	and<T extends readonly unknown[]>(
-		...action: [...ActionTuple<T>]
+		...action: [...ActionTuple<Payload>]
 	): CombinedActions<Payload | T> {
-		return new CombinedActions(this, ...(action as any));
+		return new CombinedActions(this, ...action);
 	}
 }
 
