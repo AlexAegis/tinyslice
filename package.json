@@ -30,12 +30,16 @@
 		"engine-strict": true
 	},
 	"workspaces": [
-		"lib/core",
-		"lib/devtools-plugin",
-		"example/svelte-example"
+		"libs/core",
+		"libs/angular",
+		"libs/devtools-plugin",
+		"examples/angular",
+		"examples/svelte"
 	],
 	"scripts": {
-		"start": "npm --workspace example/svelte-example start",
+		"start": "npm --workspace examples/svelte start",
+		"start:svelte": "npm --workspace examples/svelte start",
+		"start:angular": "npm --workspace examples/angular start",
 		"format": "prettier --write .",
 		"lint:es": "eslint",
 		"lint:format": "prettier --check .",

@@ -1,0 +1,49 @@
+{
+	"name": "@tinyslice/devtools-plugin",
+	"description": "DevTools plugin for TinySlice",
+	"version": "0.0.1",
+	"license": "MIT",
+	"author": {
+		"email": "alexaegis@gmail.com",
+		"name": "AlexAegis",
+		"url": "https://www.github.com/AlexAegis"
+	},
+	"homepage": "https://www.github.com/AlexAegis/tinyslice#readme",
+	"repository": "github:AlexAegis/tinyslice",
+	"bugs": {
+		"url": "https://www.github.com/AlexAegis/tinyslice/issues"
+	},
+	"keywords": [
+		"tinyslice",
+		"state-management",
+		"redux",
+		"devtools",
+		"cqrs",
+		"actions",
+		"effects",
+		"rxjs",
+		"reactive",
+		"ts",
+		"typescript",
+		"js",
+		"javascript"
+	],
+	"private": true,
+	"config": {
+		"engine-strict": true
+	},
+	"scripts": {
+		"format": "prettier --write .",
+		"lint:es": "eslint",
+		"lint:format": "prettier --check .",
+		"ncu": "ncu -u",
+		"_postinstall": "husky install",
+		"prepublish": "pinst --disable",
+		"postpublish": "pinst --enable"
+	},
+	"main": "src/index.ts",
+	"peerDependencies": {
+		"rxjs": "^7.5.5",
+		"tslib": "^2.4.0"
+	}
+}

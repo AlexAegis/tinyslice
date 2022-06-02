@@ -1,6 +1,6 @@
 {
-	"name": "@tinyslice/devtools-plugin",
-	"description": "DevTools plugin for TinySlice",
+	"name": "@tinyslice/angular",
+	"description": "Reactive events",
 	"version": "0.0.1",
 	"license": "MIT",
 	"author": {
@@ -15,6 +15,7 @@
 	},
 	"keywords": [
 		"tinyslice",
+		"angular",
 		"cqrs",
 		"actions",
 		"effects",
@@ -39,8 +40,10 @@
 		"postpublish": "pinst --enable"
 	},
 	"main": "src/index.ts",
-	"dependencies": {
-		"rxjs": "7.5.5",
-		"tslib": "^2.4.0"
+	"dependencies": {},
+	"peerDependencies": {
+		"rxjs": "^7.5.5",
+		"tslib": "^2.4.0",
+		"@angular/core": "^13.0.0"
 	}
 }
