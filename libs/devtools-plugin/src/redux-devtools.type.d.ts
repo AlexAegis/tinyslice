@@ -2,16 +2,18 @@
  * https://github.com/reduxjs/redux-devtools/blob/main/extension/docs/API/Arguments.md
  * https://github.com/reduxjs/redux-devtools/blob/main/extension/docs/API/Methods.md
  */
-export declare global {
+declare global {
 	// eslint-disable-next-line @typescript-eslint/naming-convention
 	const __REDUX_DEVTOOLS_EXTENSION__: ReduxDevtoolsExtension<unknown> | undefined;
 
 	interface Window {
+		// eslint-disable-next-line @typescript-eslint/naming-convention
 		__REDUX_DEVTOOLS_EXTENSION__?: ReduxDevtoolsExtension<unknown>;
 	}
 }
 
 export interface GlobalReduxDevtools<State = unknown> {
+	// eslint-disable-next-line @typescript-eslint/naming-convention
 	__REDUX_DEVTOOLS_EXTENSION__?: ReduxDevtoolsExtension<State>;
 }
 

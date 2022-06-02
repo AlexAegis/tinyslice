@@ -14,6 +14,24 @@
 			"runtimeArgs": ["-r", "ts-node/register", "-r", "tsconfig-paths/register"],
 			"cwd": "${workspaceRoot}",
 			"internalConsoleOptions": "openOnSessionStart"
+		},
+		{
+			"name": "Angular Example",
+			"type": "chrome",
+			"request": "launch",
+			"url": "http://localhost:4200/",
+			"webRoot": "${workspaceFolder}",
+			"cwd": "${workspaceFolder}",
+			"preLaunchTask": "start:angular-example"
+		},
+		{
+			"name": "Svelte Example",
+			"type": "chrome",
+			"request": "launch",
+			"url": "http://localhost:3000/",
+			"webRoot": "${workspaceFolder}",
+			"cwd": "${workspaceFolder}",
+			"preLaunchTask": "start:svelte-example"
 		}
 	]
 }

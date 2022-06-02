@@ -13,8 +13,10 @@ export class Scope<EveryStore = unknown, EveryPayload = unknown> {
 	private effectSubscriptions = new Subscription();
 	private stores: Store<EveryStore, EveryPayload>[] = [];
 
-	public readonly VOID = this.createAction<void>('VOID');
-	public readonly REGISTER_LAZY_SLICE = this.createAction<string>('REGISTER_LAZY_SLICE');
+	public readonly internalActionVoid = this.createAction<void>('[Internal] VOID');
+	public readonly internalActionRegisterLazySlice = this.createAction<string>(
+		'[Internal] REGISTER_LAZY_SLICE'
+	);
 
 	public static createScope<EveryPayload>(): Scope<EveryPayload> {
 		return new Scope<EveryPayload>();

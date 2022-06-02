@@ -1,0 +1,67 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "start:angular-example",
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
+			"type": "npm",
+			"script": "start:angular-example",
+			"isBackground": true,
+			"options": { "env": { "NODE_OPTIONS": "--max_old_space_size=8192 " } },
+			"problemMatcher": [
+				{
+					"base": "$tsc",
+					"owner": "typescript",
+					"pattern": {
+						"regexp": "^(Error: )?([^\\s].*)[\\(:](\\d+)[,:](\\d+)(?:\\):\\s+|\\s+-\\s+)(error|warning|info)\\s+TS(\\d+)\\s*:\\s*(.*)$",
+						"file": 2,
+						"line": 3,
+						"column": 4,
+						"severity": 5,
+						"code": 6,
+						"message": 7
+					},
+					"background": {
+						"activeOnStart": true,
+						"beginsPattern": "^.*$",
+						"endsPattern": "^.*Compiled successfully..*$"
+					}
+				}
+			]
+		},
+		{
+			"label": "start:svelte-example",
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
+			"type": "npm",
+			"script": "start:svelte-example",
+			"isBackground": true,
+			"options": { "env": { "NODE_OPTIONS": "--max_old_space_size=8192 " } },
+			"problemMatcher": [
+				{
+					"base": "$tsc",
+					"owner": "typescript",
+					"pattern": {
+						"regexp": "^(Error: )?([^\\s].*)[\\(:](\\d+)[,:](\\d+)(?:\\):\\s+|\\s+-\\s+)(error|warning|info)\\s+TS(\\d+)\\s*:\\s*(.*)$",
+						"file": 2,
+						"line": 3,
+						"column": 4,
+						"severity": 5,
+						"code": 6,
+						"message": 7
+					},
+					"background": {
+						"activeOnStart": true,
+						"beginsPattern": "^.*$",
+						"endsPattern": "^.*Compiled successfully..*$"
+					}
+				}
+			]
+		}
+	]
+}

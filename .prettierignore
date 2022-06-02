@@ -1,7 +1,9 @@
 # Add files here to ignore them from prettier formatting
 
-/dist
-/coverage
-/.cache
+dist
+coverage
+.cache
 .vscode/chrome
 CHANGELOG.md
+.angular
+.svelte-kit

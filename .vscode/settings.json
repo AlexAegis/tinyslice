@@ -45,9 +45,7 @@
 	"prettier.prettierPath": "node_modules/prettier",
 	"json.schemas": [
 		{
-			"fileMatch": [
-				"typedoc.json"
-			],
+			"fileMatch": ["typedoc.json"],
 			"url": "https://json.schemastore.org/typedoc"
 		}
 	]

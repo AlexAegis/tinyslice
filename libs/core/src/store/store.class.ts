@@ -88,7 +88,9 @@ abstract class BaseStore<ParentState, Slice, Payload> extends Observable<Slice> 
 		this.sliceRegistrations$.next([...this.sliceRegistrations$.value, sliceRegistration]);
 
 		if (sliceRegistration.lazy) {
-			this.scope.REGISTER_LAZY_SLICE.next(sliceRegistration.lazyNotificationPayload);
+			this.scope.internalActionRegisterLazySlice.next(
+				sliceRegistration.lazyNotificationPayload
+			);
 		}
 	}
 

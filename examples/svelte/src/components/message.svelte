@@ -4,7 +4,7 @@
 	let sideMessage: string | undefined;
 
 	function changeMessage(event: Event) {
-		const message = (event as any as { target?: { value: string } }).target?.value;
+		const message = (event as unknown as { target?: { value: string } }).target?.value;
 		sideMessage = message;
 		messageActions.setMessage.next(message);
 	}
