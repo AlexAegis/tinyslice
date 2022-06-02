@@ -1,7 +1,11 @@
 import { ActionPacket, StorePlugin, StorePluginHooks } from 'cqrx';
 import { Subscription, tap } from 'rxjs';
 import { ReduxDevtoolsExtensionConfig } from '.';
-import { ReduxDevtoolsExtension, ReduxDevtoolsExtensionConnection } from './redux-devtools.type';
+import {
+	GlobalReduxDevtools,
+	ReduxDevtoolsExtension,
+	ReduxDevtoolsExtensionConnection,
+} from './redux-devtools.type';
 
 export const DEFAULT_DEVTOOLS_OPTIONS: Partial<ReduxDevtoolsExtensionConfig> = {
 	name: 'TinySlice',
@@ -126,6 +130,6 @@ export class TinySliceDevtoolPlugin<State = unknown> implements StorePlugin<Stat
 	}
 
 	static getExtension<State>(): ReduxDevtoolsExtension<State> | undefined {
-		return window?.__REDUX_DEVTOOLS_EXTENSION__ as ReduxDevtoolsExtension<State>;
+		return (globalThis as unknown as GlobalReduxDevtools<State>)?.__REDUX_DEVTOOLS_EXTENSION__;
 	}
 }

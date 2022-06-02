@@ -1,9 +1,6 @@
 {
 	"compileOnSave": false,
-	"exclude": [
-		"examples/**",
-		"node_modules"
-	],
+	"exclude": ["examples/**", "node_modules"],
 	"compilerOptions": {
 		"strict": true,
 		"rootDir": ".",
@@ -14,16 +11,11 @@
 		"emitDecoratorMetadata": true,
 		"experimentalDecorators": true,
 		"importHelpers": false,
-		"target": "es2020",
-		"module": "commonjs",
+		"target": "ES2022",
+		"module": "ES2022",
 		"resolveJsonModule": true,
-		"typeRoots": [
-			"node_modules/@types"
-		],
-		"lib": [
-			"es2017",
-			"dom"
-		],
+		"typeRoots": ["node_modules/@types", "lib/devtools-plugin/src/types"],
+		"lib": ["ES2022", "dom"],
 		"skipLibCheck": true,
 		"skipDefaultLibCheck": true,
 		"baseUrl": "."
