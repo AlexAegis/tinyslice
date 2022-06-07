@@ -3,6 +3,8 @@
 	"version": 2,
 	"projects": {
 		"angular": "apps/angular",
-		"angular-e2e": "apps/angular-e2e"
+		"core": "libs/core",
+		"svelte": "apps/svelte",
+		"sveltekit": "apps/sveltekit"
 	}
 }
