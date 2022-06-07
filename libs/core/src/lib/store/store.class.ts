@@ -5,7 +5,6 @@ import {
 	EMPTY,
 	finalize,
 	map,
-	mapTo,
 	Observable,
 	share,
 	skip,
@@ -39,6 +38,7 @@ export interface StorePlugin<State, Payload> {
 	onError?: (error: unknown) => void;
 	start: () => void;
 	stop: () => void;
+	registerAdditionalTrigger?: (trigger: () => void) => void;
 }
 
 export interface StrictRuntimeChecks {
@@ -153,7 +153,6 @@ abstract class BaseStore<ParentState, Slice, Payload> extends Observable<Slice> 
 			...state,
 			[key]: slice,
 		});
-
 		return new StoreSlice(
 			this as unknown as BaseStore<unknown, Slice & Record<AdditionalKey, SubSlice>, Payload>,
 			selector,
@@ -229,7 +228,7 @@ const zipSlices = <ParentSlice, Slice, Payload>(
 					)
 				);
 			} else {
-				return actionDispatcher$.pipe(mapTo([]));
+				return actionDispatcher$.pipe(map(() => []));
 			}
 		})
 	);
@@ -270,7 +269,7 @@ export class Store<State, Payload = any> extends BaseStore<unknown, State, Paylo
 	>([]);
 	private plugins: StorePlugin<State, Payload>[] | undefined;
 
-	public subscribe = this.stateObservable$.subscribe.bind(this.stateObservable$);
+	public override subscribe = this.stateObservable$.subscribe.bind(this.stateObservable$);
 
 	#combinedReducer = Store.createCombinedReducer(this.reducerConfigurations);
 	#metaReducerRunner: (snapshot: ActionReduceSnapshot<State, Payload>) => void;
@@ -296,7 +295,7 @@ export class Store<State, Payload = any> extends BaseStore<unknown, State, Paylo
 	);
 
 	constructor(
-		protected readonly scope: Scope<unknown, Payload>,
+		protected override readonly scope: Scope<unknown, Payload>,
 		public readonly initialState: State,
 		private readonly reducerConfigurations: ReducerConfiguration<State, Payload>[] = [],
 		private readonly storeOptions?: StoreOptions<State>
@@ -305,6 +304,9 @@ export class Store<State, Payload = any> extends BaseStore<unknown, State, Paylo
 		this.plugins = this.storeOptions?.plugins?.map((plugin) => this.registerPlugin(plugin));
 
 		scope.registerStore(this as Store<unknown, Payload>);
+		reducerConfigurations.forEach((reducerConfiguration) =>
+			scope.registerAction(reducerConfiguration.action)
+		);
 
 		this.teardown = this.#storePipeline.subscribe();
 
@@ -326,7 +328,7 @@ export class Store<State, Payload = any> extends BaseStore<unknown, State, Paylo
 		return plugin;
 	}
 
-	public unsubscribe(): void {
+	public override unsubscribe(): void {
 		super.unsubscribe();
 		this.storeOptions?.plugins?.forEach((plugin) => plugin.stop());
 	}
@@ -347,6 +349,7 @@ export interface StoreSliceOptions<Slice, Payload> {
 export interface InitialSnapshot<State> {
 	nextState: State;
 }
+
 export class StoreSlice<ParentSlice, Slice, Payload> extends BaseStore<
 	ParentSlice,
 	Slice,
@@ -354,8 +357,8 @@ export class StoreSlice<ParentSlice, Slice, Payload> extends BaseStore<
 > {
 	protected state = new BehaviorSubject<Slice>(this.options.initialState);
 	protected stateObservable$ = this.state.pipe();
-	subscribe = this.stateObservable$.subscribe.bind(this.stateObservable$);
-	protected scope = this.options.scope;
+	override subscribe = this.stateObservable$.subscribe.bind(this.stateObservable$);
+	protected override scope = this.options.scope;
 	protected sliceRegistrations$ = new BehaviorSubject<
 		SliceRegistrationOptions<Slice, unknown, Payload>[]
 	>([]);
@@ -397,6 +400,10 @@ export class StoreSlice<ParentSlice, Slice, Payload> extends BaseStore<
 		private readonly options: StoreSliceOptions<Slice, Payload>
 	) {
 		super(options.scope);
+
+		options.reducerConfigurations.forEach((reducerConfiguration) =>
+			options.scope.registerAction(reducerConfiguration.action)
+		);
 
 		this.parent.registerSlice({
 			slicePipeline: this.#slicePipeline,

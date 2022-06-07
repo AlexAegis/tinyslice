@@ -1,0 +1,17 @@
+<h1>Welcome to TinySlice! 🍕</h1>
+
+Here's a familiar example of a counter:
+<nz-divider></nz-divider>
+
+<div class="counter">
+	<nz-button-group>
+		<button nz-button (click)="rootStore.decrement.next(1)">-1</button>
+		<button nz-button (click)="rootStore.increment.next(1)">+1</button>
+	</nz-button-group>
+
+	<h2>
+		<span>{{ rootStore.count$ | async }}</span>
+	</h2>
+</div>
+
+todo: change detection on timetravel

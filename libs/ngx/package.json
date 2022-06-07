@@ -1,7 +1,7 @@
 {
-	"name": "@tinyslice/angular",
-	"description": "Reactive events",
+	"name": "@tinyslice/ngx",
 	"version": "0.0.1",
+	"description": "Reactive events",
 	"license": "MIT",
 	"author": {
 		"email": "alexaegis@gmail.com",
@@ -40,10 +40,11 @@
 		"postpublish": "pinst --enable"
 	},
 	"main": "src/index.ts",
-	"dependencies": {},
 	"peerDependencies": {
-		"rxjs": "^7.5.5",
-		"tslib": "^2.4.0",
-		"@angular/core": "^13.0.0"
+		"@angular/common": "^13.3.0",
+		"@angular/core": "^13.3.0"
+	},
+	"dependencies": {
+		"tslib": "^2.3.0"
 	}
 }

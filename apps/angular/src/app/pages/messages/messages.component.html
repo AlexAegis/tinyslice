@@ -1,0 +1,18 @@
+<h1>Messages example</h1>
+<p>Type in something and press enter or send!</p>
+
+<nz-divider></nz-divider>
+<form (submit)="messagesStore.send.next(messageInput.value)">
+	<input #messageInput nz-input />
+	<button nz-button>Send</button>
+</form>
+
+<span>lastMessage: {{ messagesStore.lastMessage$ | async }}</span>
+<div>
+	messages:
+	<ul>
+		<li *ngFor="let message of messagesStore.messages$ | async">
+			{{ message }}
+		</li>
+	</ul>
+</div>

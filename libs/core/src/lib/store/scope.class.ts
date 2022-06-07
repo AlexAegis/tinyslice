@@ -1,5 +1,4 @@
 import { catchError, EMPTY, finalize, map, Observable, Subject, Subscription, tap } from 'rxjs';
-import { ActionAlreadyRegisteredError } from '../action/action-already-registered.error';
 import type { ActionConfig } from '../action/action-config.interface';
 import type { ActionPacket } from '../action/action-packet.interface';
 import { Action, ActionTuple } from '../action/action.class';
@@ -18,12 +17,15 @@ export class Scope<EveryStore = unknown, EveryPayload = unknown> {
 		'[Internal] REGISTER_LAZY_SLICE'
 	);
 
+	constructor() {
+		console.log('SCOPE CREATED!!!!!!!!!!!');
+	}
 	public static createScope<EveryPayload>(): Scope<EveryPayload> {
 		return new Scope<EveryPayload>();
 	}
 
 	public createAction<Payload>(type: string, config?: Partial<ActionConfig>): Action<Payload> {
-		return new Action<Payload>(this as Scope<unknown, unknown>, type, config);
+		return new Action<Payload>(type, config).register(this as Scope<unknown, unknown>);
 	}
 
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -72,8 +74,10 @@ export class Scope<EveryStore = unknown, EveryPayload = unknown> {
 		action: Action<Payload>
 	): Subscription | undefined {
 		if (this.actionMap.has(action.type)) {
-			throw new ActionAlreadyRegisteredError(action);
+			return;
 		}
+		console.log('register action', action.type, this);
+
 		this.actionMap.set(action.type, action as unknown as Action<EveryPayload>);
 
 		return action

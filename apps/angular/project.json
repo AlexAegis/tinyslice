@@ -13,7 +13,10 @@
 				"polyfills": "apps/angular/src/polyfills.ts",
 				"tsConfig": "apps/angular/tsconfig.app.json",
 				"assets": ["apps/angular/src/favicon.ico", "apps/angular/src/assets"],
-				"styles": ["apps/angular/src/styles.css"],
+				"styles": [
+					"node_modules/ng-zorro-antd/ng-zorro-antd.less",
+					"apps/angular/src/styles.css"
+				],
 				"scripts": []
 			},
 			"configurations": {

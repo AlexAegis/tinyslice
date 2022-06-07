@@ -29,6 +29,8 @@ export class TinySliceDevtoolPlugin<State = unknown> implements StorePlugin<Stat
 	private actions: Record<number, ActionPacket<unknown>> = {};
 	private actionsTurnedOff = new Set<number>();
 
+	private additionalTriggers: (() => void)[] = [];
+
 	constructor(private readonly options: ReduxDevtoolsExtensionConfig) {
 		this.extension = TinySliceDevtoolPlugin.getExtension<State>();
 		this.extensionConnection = this.extension?.connect({
@@ -36,6 +38,10 @@ export class TinySliceDevtoolPlugin<State = unknown> implements StorePlugin<Stat
 			...this.options,
 		});
 	}
+
+	registerAdditionalTrigger = (trigger: () => void): void => {
+		this.additionalTriggers.push(trigger);
+	};
 
 	register = (hooks: StorePluginHooks<State, unknown>): void => {
 		this.hooks = hooks;
@@ -110,6 +116,8 @@ export class TinySliceDevtoolPlugin<State = unknown> implements StorePlugin<Stat
 					}
 				}
 			}
+
+			this.additionalTriggers.forEach((trigger) => trigger());
 		});
 	}
 

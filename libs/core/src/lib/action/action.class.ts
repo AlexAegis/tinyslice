@@ -1,4 +1,4 @@
-import { merge, MonoTypeOperatorFunction, Observable, Subject, Subscription } from 'rxjs';
+import { EMPTY, merge, MonoTypeOperatorFunction, Observable, Subject, Subscription } from 'rxjs';
 import { filter } from 'rxjs/operators';
 import type { Scope } from '../store';
 import type { PayloadReducer, ReducerConfiguration } from '../store/reducer.type';
@@ -31,31 +31,28 @@ export class Action<Payload> extends Subject<Payload> {
 
 	private config: ActionConfig;
 
+	private scope: Scope<unknown, unknown> | undefined;
+
 	public get listen$(): Observable<ActionPacket<Payload>> {
-		return this.scope.listen$(this);
+		return this.scope?.listen$(this) ?? EMPTY;
 	}
 
 	and<T>(action: Action<T>) {
 		return new CombinedActions(undefined, this, action);
 	}
 
-	public constructor(
-		private readonly scope: Scope,
-		public type: string,
-		config: Partial<ActionConfig> = DEFAULT_ACTION_CONFIG
-	) {
+	public constructor(public type: string, config: Partial<ActionConfig> = DEFAULT_ACTION_CONFIG) {
 		super();
 		this.config = {
 			...DEFAULT_ACTION_CONFIG,
 			...config,
 		};
-		if (this.config.autoRegister) {
-			this.register();
-		}
 	}
 
-	public register(): void {
+	public register(scope: Scope<unknown, unknown>): this {
+		this.scope = scope;
 		this.#dispatchSubscription = this.scope.registerAction(this);
+		return this;
 	}
 
 	public unregister(): void {
@@ -69,7 +66,7 @@ export class Action<Payload> extends Subject<Payload> {
 	/**
 	 * The finalize operator will take care of removing it from the actionMap
 	 */
-	public unsubscribe(): void {
+	public override unsubscribe(): void {
 		this.unregister();
 		super.unsubscribe();
 	}

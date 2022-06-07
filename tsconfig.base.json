@@ -9,16 +9,17 @@
 		"emitDecoratorMetadata": true,
 		"experimentalDecorators": true,
 		"importHelpers": true,
-		"target": "ES2022",
-		"module": "ES2022",
+		"target": "es2020", // There is a bug in TS for es2022
+		"module": "es2022",
 		"resolveJsonModule": true,
-		"lib": ["ES2022", "dom"],
+		"lib": ["es2022", "dom"],
 		"skipLibCheck": true,
 		"skipDefaultLibCheck": true,
 		"baseUrl": ".",
 		"paths": {
 			"@tinyslice/core": ["libs/core/src/index.ts"],
-			"@tinyslice/devtools-plugin": ["libs/devtools-plugin/src/index.ts"]
+			"@tinyslice/devtools-plugin": ["libs/devtools-plugin/src/index.ts"],
+			"@tinyslice/ngx": ["libs/ngx/src/index.ts"]
 		}
 	},
 	"exclude": ["node_modules", "tmp"]
