@@ -1,9 +1,9 @@
 import { ActionPacket, StorePlugin, StorePluginHooks } from '@tinyslice/core';
 import { Subscription, tap } from 'rxjs';
-import { ReduxDevtoolsExtensionConfig } from '.';
 import {
 	GlobalReduxDevtools,
 	ReduxDevtoolsExtension,
+	ReduxDevtoolsExtensionConfig,
 	ReduxDevtoolsExtensionConnection,
 } from './redux-devtools.type';
 

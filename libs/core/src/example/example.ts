@@ -1,5 +1,5 @@
 import { map, tap } from 'rxjs/operators';
-import { Scope } from './store';
+import { Scope } from '../lib/store';
 
 const scope = Scope.createScope();
 const printAction = scope.createAction<string>('printAction');

@@ -1,6 +1,5 @@
 {
 	"name": "@tinyslice/devtools-plugin",
-	"description": "DevTools plugin for TinySlice",
 	"version": "0.0.1",
 	"license": "MIT",
 	"author": {
@@ -32,6 +31,7 @@
 	"config": {
 		"engine-strict": true
 	},
+	"type": "commonjs",
 	"scripts": {
 		"format": "prettier --write .",
 		"lint:es": "eslint",
@@ -41,9 +41,5 @@
 		"prepublish": "pinst --disable",
 		"postpublish": "pinst --enable"
 	},
-	"main": "src/index.ts",
-	"peerDependencies": {
-		"rxjs": "^7.5.5",
-		"tslib": "^2.4.0"
-	}
+	"main": "src/index.ts"
 }

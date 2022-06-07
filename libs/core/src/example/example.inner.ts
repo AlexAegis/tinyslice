@@ -1,5 +1,5 @@
 import { map, tap } from 'rxjs/operators';
-import { Scope } from './store/scope.class';
+import { Scope } from '../lib/store';
 
 const actionScope = new Scope();
 

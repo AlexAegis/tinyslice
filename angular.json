@@ -4,6 +4,7 @@
 	"projects": {
 		"angular": "apps/angular",
 		"core": "libs/core",
+		"devtools-plugin": "libs/devtools-plugin",
 		"svelte": "apps/svelte",
 		"sveltekit": "apps/sveltekit"
 	}

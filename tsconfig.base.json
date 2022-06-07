@@ -17,7 +17,8 @@
 		"skipDefaultLibCheck": true,
 		"baseUrl": ".",
 		"paths": {
-			"@tinyslice/core": ["libs/core/src/index.ts"]
+			"@tinyslice/core": ["libs/core/src/index.ts"],
+			"@tinyslice/devtools-plugin": ["libs/devtools-plugin/src/index.ts"]
 		}
 	},
 	"exclude": ["node_modules", "tmp"]
