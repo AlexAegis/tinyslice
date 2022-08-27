@@ -9,7 +9,7 @@
 		"emitDecoratorMetadata": true,
 		"experimentalDecorators": true,
 		"importHelpers": true,
-		"target": "es2020", // There is a bug in TS for es2022
+		"target": "es2020",
 		"module": "es2022",
 		"resolveJsonModule": true,
 		"lib": ["es2022", "dom"],

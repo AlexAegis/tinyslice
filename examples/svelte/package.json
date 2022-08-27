@@ -2,7 +2,7 @@
 	"name": "@tinyslice/svelte-example",
 	"version": "0.0.1",
 	"scripts": {
-		"start": "svelte-kit dev",
+		"start": "vite dev",
 		"build": "svelte-kit build",
 		"preview": "svelte-kit preview",
 		"check": "svelte-check --tsconfig ./tsconfig.json",

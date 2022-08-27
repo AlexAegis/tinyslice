@@ -5,7 +5,6 @@
 		"defaultBase": "master"
 	},
 	"cli": {
-		"defaultCollection": "@nrwl/angular",
 		"packageManager": "npm"
 	},
 	"implicitDependencies": {
@@ -23,14 +22,6 @@
 			}
 		}
 	},
-	"targetDependencies": {
-		"build": [
-			{
-				"target": "build",
-				"projects": "dependencies"
-			}
-		]
-	},
 	"generators": {
 		"@nrwl/angular:application": {
 			"style": "css",
@@ -46,5 +37,10 @@
 			"style": "css"
 		}
 	},
-	"defaultProject": "angular"
+	"defaultProject": "angular",
+	"targetDefaults": {
+		"build": {
+			"dependsOn": ["^build"]
+		}
+	}
 }
