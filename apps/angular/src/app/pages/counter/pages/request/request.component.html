@@ -1,0 +1,5 @@
+<button nz-button (click)="requestStore.makeRequest()" [nzLoading]="requestStore.loading$ | async">
+	Make Request
+</button>
+
+<div>Result: {{ requestStore.result$ | async }}</div>

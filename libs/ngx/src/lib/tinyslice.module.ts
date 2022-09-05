@@ -25,13 +25,13 @@ import {
 	TINYSLICE_ROOT_MODULE_INDICATOR_TOKEN,
 } from './services';
 
-export class TinySliceAngularPlugin<State = unknown> implements StorePlugin<State, unknown> {
-	private hooks!: StorePluginHooks<State, unknown>;
+export class TinySliceAngularPlugin<State = unknown> implements StorePlugin<State> {
+	private hooks!: StorePluginHooks<State>;
 	private initialState!: string;
 	private sink = new Subscription();
 
 	constructor(private readonly application: ApplicationRef) {}
-	register = (hooks: StorePluginHooks<State, unknown>): void => {
+	register = (hooks: StorePluginHooks<State>): void => {
 		this.hooks = hooks;
 		this.initialState = JSON.stringify(hooks.initialState);
 	};
@@ -68,11 +68,11 @@ export class TinySliceModule {
 	}
 
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	public static forRoot<RootState = unknown, Payload = any>(
+	public static forRoot<RootState = unknown>(
 		initialState: RootState,
-		reducerConfigurations: ReducerConfiguration<RootState, Payload>[] = [],
+		reducerConfigurations: ReducerConfiguration<RootState>[] = [],
 		effectServices: Type<unknown>[],
-		facade: new (slice: Store<RootState, Payload>, scope: StoreScope) => unknown,
+		facade: new (slice: Store<RootState>, scope: StoreScope) => unknown,
 		storeOptions?: StoreOptions<RootState>
 	): ModuleWithProviders<TinySliceModule> {
 		const scope = Scope.createScope();
@@ -123,14 +123,14 @@ export class TinySliceModule {
 	 * TODO: deal with nested features!
 	 */
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	public static forFeature<Slice, Payload = any>(
+	public static forFeature<Slice>(
 		key: string,
 		initialState: Slice,
-		reducerConfigurations: ReducerConfiguration<Slice, Payload>[] = [],
+		reducerConfigurations: ReducerConfiguration<Slice>[] = [],
 		effectServices: Type<unknown>[],
-		facade: new (slice: StoreSlice<unknown, Slice, Payload>, scope: StoreScope) => unknown
+		facade: new (slice: StoreSlice<unknown, Slice>, scope: StoreScope) => unknown
 	): ModuleWithProviders<TinySliceModule> {
-		const featureToken = new InjectionToken<StoreSlice<unknown, Slice, Payload>>(key);
+		const featureToken = new InjectionToken<StoreSlice<unknown, Slice>>(key);
 		return {
 			ngModule: TinySliceModule,
 			providers: [
@@ -138,7 +138,7 @@ export class TinySliceModule {
 					provide: featureToken,
 					useFactory: (rootStore: AbstractRootStore<Slice>) => {
 						const featureSlice = rootStore.addSlice<Slice>(
-							key,
+							key as never,
 							initialState,
 							reducerConfigurations
 						);

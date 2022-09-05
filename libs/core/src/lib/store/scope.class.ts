@@ -1,69 +1,61 @@
 import { catchError, EMPTY, finalize, map, Observable, Subject, Subscription, tap } from 'rxjs';
 import type { ActionConfig } from '../action/action-config.interface';
-import type { ActionPacket } from '../action/action-packet.interface';
+import { ActionPacket, isActionPacket } from '../action/action-packet.interface';
 import { Action, ActionTuple } from '../action/action.class';
 import { ReducerConfiguration } from './reducer.type';
 import { Store, StoreOptions } from './store.class';
 
-export class Scope<EveryStore = unknown, EveryPayload = unknown> {
-	private readonly dispatcherScope = new Subject<ActionPacket<EveryPayload>>();
-	private readonly actionMap = new Map<string, Action<EveryPayload>>();
+export class Scope<EveryStore = unknown> {
+	private readonly dispatcherScope = new Subject<ActionPacket<unknown>>();
+	private readonly actionMap = new Map<string, Action<unknown>>();
 	public readonly dispatcher$ = this.dispatcherScope.asObservable();
 	private effectSubscriptions = new Subscription();
-	private stores: Store<EveryStore, EveryPayload>[] = [];
+	private stores: Store<EveryStore>[] = [];
 
 	public readonly internalActionVoid = this.createAction<void>('[Internal] VOID');
 	public readonly internalActionRegisterLazySlice = this.createAction<string>(
 		'[Internal] REGISTER_LAZY_SLICE'
 	);
 
-	public static createScope<EveryPayload>(): Scope<EveryPayload> {
-		return new Scope<EveryPayload>();
+	public static createScope<EveryStore>(): Scope<EveryStore> {
+		return new Scope<EveryStore>();
 	}
 
 	public createAction<Payload>(type: string, config?: Partial<ActionConfig>): Action<Payload> {
-		return new Action<Payload>(type, config).register(this as Scope<unknown, unknown>);
+		return new Action<Payload>(type, config).register(this as Scope<unknown>);
 	}
 
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	public createStore<State extends EveryStore, Payload extends EveryPayload = any>(
+	public createStore<State extends EveryStore>(
 		initialState: State,
-		reducerConfigurations: ReducerConfiguration<State, Payload>[] = [],
+		reducerConfigurations: ReducerConfiguration<State>[] = [],
 		storeOptions?: StoreOptions<State>
-	): Store<State, Payload> {
-		return new Store<State, Payload>(
-			this as unknown as Scope<unknown, Payload>,
+	): Store<State> {
+		return new Store<State>(
+			this as unknown as Scope<unknown>,
 			initialState,
 			reducerConfigurations,
 			storeOptions
 		);
 	}
 
-	public createEffect<DispatchPayload>(
-		action: Observable<DispatchPayload>,
-		dispatch?: Action<DispatchPayload> | Action<DispatchPayload>[]
-	): void {
+	public createEffect<Output>(action: Observable<Output | ActionPacket>): void {
 		this.effectSubscriptions.add(
 			action
 				.pipe(
-					tap((payload) => {
-						// Execute on next tick
-						// TODO: Is this what always should happen?
-						// The source-state of the effect can be rendered if
-						// the effect is done on next tick
-						// But effects need to be scheduled to be after
-						// reducers and this is a cheap way of doing it
-						// Otherwise the normal reducer could overwrite whatever
-						// the effect is producing.
-						if (dispatch) {
+					tap((packet) => {
+						if (isActionPacket(packet, this.actionMap)) {
+							// Execute on next tick
+							// TODO: Is this what always should happen?
+							// The source-state of the effect can be rendered if
+							// the effect is done on next tick
+							// But effects need to be scheduled to be after
+							// reducers and this is a cheap way of doing it
+							// Otherwise the normal reducer could overwrite whatever
+							// the effect is producing.
 							setTimeout(() => {
-								if (Array.isArray(dispatch)) {
-									for (const d of dispatch) {
-										d.next(payload);
-									}
-								} else {
-									dispatch.next(payload);
-								}
+								const actionDispatcher = this.actionMap.get(packet.type);
+								actionDispatcher?.next(packet.payload);
 							}, 0);
 						}
 					}),
@@ -79,18 +71,16 @@ export class Scope<EveryStore = unknown, EveryPayload = unknown> {
 	/**
 	 * Only used for cleanup
 	 */
-	public registerStore(store: Store<EveryStore, EveryPayload>): void {
+	public registerStore(store: Store<EveryStore>): void {
 		this.stores.push(store);
 	}
 
-	public registerAction<Payload extends EveryPayload>(
-		action: Action<Payload>
-	): Subscription | undefined {
+	public registerAction<Payload>(action: Action<Payload>): Subscription | undefined {
 		if (this.actionMap.has(action.type)) {
 			return;
 		}
 
-		this.actionMap.set(action.type, action as unknown as Action<EveryPayload>);
+		this.actionMap.set(action.type, action as Action<unknown>);
 
 		return action
 			.pipe(

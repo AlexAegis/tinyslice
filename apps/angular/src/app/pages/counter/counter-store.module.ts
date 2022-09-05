@@ -1,6 +1,6 @@
 import { Injectable, NgModule } from '@angular/core';
 import { Action, StoreScope, StoreSlice, TinySliceModule } from '@tinyslice/ngx';
-import { filter } from 'rxjs';
+import { filter, map } from 'rxjs';
 
 export interface CounterState {
 	count: number;
@@ -17,15 +17,17 @@ export class CounterStore {
 
 	count$ = this.slice.slice('count');
 
-	constructor(public readonly slice: StoreSlice<unknown, CounterState, unknown>) {}
+	constructor(public readonly slice: StoreSlice<unknown, CounterState>) {}
 }
 
 @Injectable()
 class CounterEffects {
 	constructor(public readonly counterStore: CounterStore, private readonly scope: StoreScope) {
 		this.scope.createEffect(
-			this.counterStore.count$.pipe(filter((count) => count >= 10)),
-			CounterStore.decrement
+			this.counterStore.count$.pipe(
+				filter((count) => count >= 10),
+				map((count) => CounterStore.decrement.makePacket(count))
+			)
 		);
 	}
 }

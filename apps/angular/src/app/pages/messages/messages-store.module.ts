@@ -13,7 +13,7 @@ export class MessagesStore {
 	lastMessage$ = this.slice.slice('lastMessage');
 	messages$ = this.slice.slice('messages');
 
-	constructor(public readonly slice: StoreSlice<unknown, MessagesState, unknown>) {}
+	constructor(public readonly slice: StoreSlice<unknown, MessagesState>) {}
 }
 
 @NgModule({

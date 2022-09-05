@@ -14,13 +14,13 @@ export const DEFAULT_DEVTOOLS_OPTIONS: Partial<ReduxDevtoolsExtensionConfig> = {
 /**
  * Skipping is not implemented
  */
-export class TinySliceDevtoolPlugin<State = unknown> implements StorePlugin<State, unknown> {
+export class TinySliceDevtoolPlugin<State = unknown> implements StorePlugin<State> {
 	private extension?: ReduxDevtoolsExtension<State>;
 	private extensionConnection?: ReduxDevtoolsExtensionConnection<State>;
 	private sink = new Subscription();
 	private unsubscribeStateInjector?: () => void;
 
-	private hooks!: StorePluginHooks<State, unknown>;
+	private hooks!: StorePluginHooks<State>;
 	private committedState: string | undefined;
 	private lastState: State | undefined;
 	private initialState!: string;
@@ -43,7 +43,7 @@ export class TinySliceDevtoolPlugin<State = unknown> implements StorePlugin<Stat
 		this.additionalTriggers.push(trigger);
 	};
 
-	register = (hooks: StorePluginHooks<State, unknown>): void => {
+	register = (hooks: StorePluginHooks<State>): void => {
 		this.hooks = hooks;
 		this.initialState = JSON.stringify(hooks.initialState);
 	};

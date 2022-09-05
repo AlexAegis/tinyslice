@@ -8,6 +8,7 @@ import { en_US, NZ_I18N } from 'ng-zorro-antd/i18n';
 import { NzInputModule } from 'ng-zorro-antd/input';
 import { NzLayoutModule } from 'ng-zorro-antd/layout';
 import { NzMenuModule } from 'ng-zorro-antd/menu';
+import { NzSpinModule } from 'ng-zorro-antd/spin';
 import { NzTabsModule } from 'ng-zorro-antd/tabs';
 import { IconsProviderModule } from './icons-provider.module';
 
@@ -23,6 +24,7 @@ import { IconsProviderModule } from './icons-provider.module';
 		NzDividerModule,
 		NzInputModule,
 		NzTabsModule,
+		NzSpinModule,
 	],
 	exports: [
 		CommonModule,
@@ -35,6 +37,7 @@ import { IconsProviderModule } from './icons-provider.module';
 		NzDividerModule,
 		NzInputModule,
 		NzTabsModule,
+		NzSpinModule,
 	],
 	providers: [{ provide: NZ_I18N, useValue: en_US }],
 })

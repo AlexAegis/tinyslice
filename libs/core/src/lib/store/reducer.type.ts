@@ -1,24 +1,23 @@
 import { ActionPacket } from '../action/action-packet.interface';
 import { Action } from '../action/action.class';
 
-export type ActionReduceSnapshot<State, Payload = unknown> = {
-	action: ActionPacket<Payload>;
+export type ActionReduceSnapshot<State> = {
+	action: ActionPacket;
 	prevState: State;
 	nextState: State;
 };
 
-export type MetaPacketReducer<State, Payload = unknown> = (
-	snapshot: ActionReduceSnapshot<State, Payload>
-) => void;
+export type MetaPacketReducer<State> = (snapshot: ActionReduceSnapshot<State>) => void;
 
-export type PacketReducer<State, Payload> = (
+export type PacketReducer<State, Payload = unknown> = (
 	state: State,
 	actionPacket: ActionPacket<Payload> | undefined
 ) => State;
 
-export type PayloadReducer<State, Payload> = (state: State, actionPacket: Payload) => State;
+export type PayloadReducer<State, Payload> = (state: State, payload: Payload) => State;
 
-export type ReducerConfiguration<State, Payload> = {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type ReducerConfiguration<State, Payload = any> = {
 	action: Action<Payload>;
 	packetReducer: PacketReducer<State, Payload>;
 };

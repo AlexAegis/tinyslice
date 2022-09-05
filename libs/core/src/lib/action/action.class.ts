@@ -22,16 +22,18 @@ export class CombinedActions<Payload extends readonly unknown[]> {
 	}
 }
 
+export type ActionDispatch = () => void;
+
 /**
  * TODO: Actions should be able to switch or hold multiple scopes
  * TODO: .and method to chain actions for multireducers and multieffects
  */
-export class Action<Payload> extends Subject<Payload> {
+export class Action<Payload = void> extends Subject<Payload> {
 	#dispatchSubscription?: Subscription;
 
 	private config: ActionConfig;
 
-	private scope: Scope<unknown, unknown> | undefined;
+	private scope: Scope<unknown> | undefined;
 
 	public get listen$(): Observable<ActionPacket<Payload>> {
 		return this.scope?.listen$(this) ?? EMPTY;
@@ -49,7 +51,7 @@ export class Action<Payload> extends Subject<Payload> {
 		};
 	}
 
-	public register(scope: Scope<unknown, unknown>): this {
+	public register(scope: Scope): this {
 		this.scope = scope;
 		this.#dispatchSubscription = this.scope.registerAction(this);
 		return this;
@@ -61,6 +63,10 @@ export class Action<Payload> extends Subject<Payload> {
 
 	public makePacket(payload: Payload): ActionPacket<Payload> {
 		return { type: this.type, payload };
+	}
+
+	public dispatch(payload: Payload): ActionDispatch {
+		return () => this.next(payload);
 	}
 
 	/**
@@ -91,7 +97,7 @@ export class Action<Payload> extends Subject<Payload> {
 		payloadReducer: PayloadReducer<State, Payload>
 	): ReducerConfiguration<State, Payload> {
 		return {
-			packetReducer: (state: State, actionPacket: ActionPacket<Payload> | undefined) =>
+			packetReducer: (state: State, actionPacket: ActionPacket<Payload> | undefined): State =>
 				actionPacket ? payloadReducer(state, actionPacket.payload) : state,
 			action: this,
 		};
