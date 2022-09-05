@@ -1,5 +1,13 @@
 import { CommonModule } from '@angular/common';
-import { ApplicationRef, InjectionToken, ModuleWithProviders, NgModule } from '@angular/core';
+import {
+	ApplicationRef,
+	Inject,
+	InjectionToken,
+	ModuleWithProviders,
+	NgModule,
+	Provider,
+	Type,
+} from '@angular/core';
 import {
 	ReducerConfiguration,
 	Scope,
@@ -10,7 +18,12 @@ import {
 	StoreSlice,
 } from '@tinyslice/core';
 import { Subscription } from 'rxjs';
-import { AbstractRootStore, StoreScope } from './services';
+import {
+	AbstractRootStore,
+	StoreScope,
+	TINYSLICE_EFFECT_SERVICES,
+	TINYSLICE_ROOT_MODULE_INDICATOR_TOKEN,
+} from './services';
 
 export class TinySliceAngularPlugin<State = unknown> implements StorePlugin<State, unknown> {
 	private hooks!: StorePluginHooks<State, unknown>;
@@ -28,17 +41,14 @@ export class TinySliceAngularPlugin<State = unknown> implements StorePlugin<Stat
 	};
 
 	start = (): void => {
-		console.log('asd');
 		this.sink.add(
 			this.hooks.state$.subscribe(() => {
-				console.log('satechangege');
 				this.application.tick();
 			})
 		);
 	};
 
 	stop = (): void => {
-		console.log('asd');
 		this.sink.unsubscribe();
 	};
 }
@@ -46,17 +56,34 @@ export class TinySliceAngularPlugin<State = unknown> implements StorePlugin<Stat
 	imports: [CommonModule],
 })
 export class TinySliceModule {
+	constructor(
+		@Inject(TINYSLICE_ROOT_MODULE_INDICATOR_TOKEN)
+		private readonly rootModuleIndicators: boolean[],
+		@Inject(TINYSLICE_EFFECT_SERVICES)
+		private readonly _effectServices: Type<unknown>[]
+	) {
+		if (this.rootModuleIndicators.length > 1) {
+			throw new Error('More than 1 TinySlice root modules were created!');
+		}
+	}
+
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	public static forRoot<RootState = unknown, Payload = any>(
 		initialState: RootState,
 		reducerConfigurations: ReducerConfiguration<RootState, Payload>[] = [],
-		facade: new (slice: Store<RootState, Payload>) => unknown,
+		effectServices: Type<unknown>[],
+		facade: new (slice: Store<RootState, Payload>, scope: StoreScope) => unknown,
 		storeOptions?: StoreOptions<RootState>
 	): ModuleWithProviders<TinySliceModule> {
 		const scope = Scope.createScope();
 		return {
 			ngModule: TinySliceModule,
 			providers: [
+				{
+					provide: TINYSLICE_ROOT_MODULE_INDICATOR_TOKEN,
+					useValue: true,
+					multi: true,
+				},
 				{
 					provide: StoreScope,
 					useValue: scope,
@@ -78,22 +105,30 @@ export class TinySliceModule {
 				{
 					provide: facade,
 					useClass: facade,
-					deps: [AbstractRootStore],
+					deps: [AbstractRootStore, StoreScope],
 				},
+				...effectServices.map(
+					(effectService) =>
+						({
+							provide: TINYSLICE_EFFECT_SERVICES,
+							useClass: effectService,
+							multi: true,
+						} as Provider)
+				),
 			],
 		};
 	}
 
 	/**
 	 * TODO: deal with nested features!
-	 * TODO: it registers another state the devtools gets two!
 	 */
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	public static forFeature<Slice, Payload = any>(
 		key: string,
 		initialState: Slice,
 		reducerConfigurations: ReducerConfiguration<Slice, Payload>[] = [],
-		facade: new (slice: StoreSlice<unknown, Slice, Payload>) => unknown
+		effectServices: Type<unknown>[],
+		facade: new (slice: StoreSlice<unknown, Slice, Payload>, scope: StoreScope) => unknown
 	): ModuleWithProviders<TinySliceModule> {
 		const featureToken = new InjectionToken<StoreSlice<unknown, Slice, Payload>>(key);
 		return {
@@ -102,7 +137,6 @@ export class TinySliceModule {
 				{
 					provide: featureToken,
 					useFactory: (rootStore: AbstractRootStore<Slice>) => {
-						console.log('rootstore', rootStore);
 						const featureSlice = rootStore.addSlice<Slice>(
 							key,
 							initialState,
@@ -116,8 +150,16 @@ export class TinySliceModule {
 				{
 					provide: facade,
 					useClass: facade,
-					deps: [featureToken],
+					deps: [featureToken, StoreScope],
 				},
+				...effectServices.map(
+					(effectService) =>
+						({
+							provide: TINYSLICE_EFFECT_SERVICES,
+							useClass: effectService,
+							multi: true,
+						} as Provider)
+				),
 			],
 		};
 	}

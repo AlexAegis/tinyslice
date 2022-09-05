@@ -16,8 +16,8 @@ registerLocaleData(en);
 	imports: [
 		BrowserModule,
 		CoreModule,
-		SharedModule,
 		RootStoreModule,
+		SharedModule,
 		RouterModule.forRoot([
 			{ path: '', pathMatch: 'full', redirectTo: '/counter' },
 			{

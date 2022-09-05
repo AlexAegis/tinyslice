@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
-import { RootStore } from '../../core/root-store.module';
+import { CounterStore } from './counter-store.module';
 
 @Component({
 	selector: 'tinyslice-counter',
@@ -8,5 +8,5 @@ import { RootStore } from '../../core/root-store.module';
 	changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class CounterComponent {
-	constructor(public readonly rootStore: RootStore) {}
+	constructor(public readonly counterStore: CounterStore) {}
 }

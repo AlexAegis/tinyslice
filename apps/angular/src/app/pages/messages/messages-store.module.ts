@@ -13,9 +13,7 @@ export class MessagesStore {
 	lastMessage$ = this.slice.slice('lastMessage');
 	messages$ = this.slice.slice('messages');
 
-	constructor(public readonly slice: StoreSlice<unknown, MessagesState, unknown>) {
-		this.send.subscribe((a) => console.log('as', a));
-	}
+	constructor(public readonly slice: StoreSlice<unknown, MessagesState, unknown>) {}
 }
 
 @NgModule({
@@ -33,6 +31,7 @@ export class MessagesStore {
 					messages: [...state.messages, payload],
 				})),
 			],
+			[],
 			MessagesStore
 		),
 	],

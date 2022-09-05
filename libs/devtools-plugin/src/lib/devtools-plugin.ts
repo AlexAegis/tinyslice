@@ -71,7 +71,6 @@ export class TinySliceDevtoolPlugin<State = unknown> implements StorePlugin<Stat
 		);
 
 		this.unsubscribeStateInjector = connection.subscribe((message) => {
-			console.log('message from extension', message);
 			if (message.type === 'DISPATCH') {
 				if (message.payload?.type === 'JUMP_TO_ACTION') {
 					this.hooks.stateInjector(JSON.parse(message.state) as State);

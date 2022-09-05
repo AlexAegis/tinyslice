@@ -1,39 +1,46 @@
-import { Injectable, NgModule } from '@angular/core';
+import { DOCUMENT } from '@angular/common';
+import { Inject, Injectable, NgModule } from '@angular/core';
 import { TinySliceDevtoolPlugin } from '@tinyslice/devtools-plugin';
-import { Action, Store, TinySliceModule } from '@tinyslice/ngx';
+import { Action, Store, StoreScope, TinySliceModule } from '@tinyslice/ngx';
+import { tap } from 'rxjs';
 
 export interface RootState {
-	count: number;
+	title: string;
+}
+
+export class RootStore {
+	static setTitle = new Action<string>('setTitle');
+
+	setTitle = RootStore.setTitle;
+
+	title$ = this.store.slice('title');
+	constructor(public readonly store: Store<RootState>) {}
 }
 
 @Injectable()
-export class RootStore {
-	static increment = new Action<number>('increment');
-	static decrement = new Action<number>('decrement');
-
-	increment = RootStore.increment;
-	decrement = RootStore.decrement;
-
-	count$ = this.store.slice('count');
-	constructor(public readonly store: Store<RootState>) {}
+export class RootStoreEffects {
+	constructor(
+		readonly scope: StoreScope,
+		readonly store: RootStore,
+		@Inject(DOCUMENT) readonly document: Document
+	) {
+		scope.createEffect(store.title$.pipe(tap((title) => (document.title = title))));
+	}
 }
 
 @NgModule({
 	imports: [
 		TinySliceModule.forRoot<RootState>(
 			{
-				count: 0,
+				title: 'myExampleApp',
 			},
 			[
-				RootStore.increment.reduce((state, payload) => ({
+				RootStore.setTitle.reduce((state, payload) => ({
 					...state,
-					count: state.count + payload,
-				})),
-				RootStore.decrement.reduce((state, payload) => ({
-					...state,
-					count: state.count - payload,
+					title: payload,
 				})),
 			],
+			[RootStoreEffects],
 			RootStore,
 			{
 				plugins: [
@@ -45,7 +52,7 @@ export class RootStore {
 			}
 		),
 	],
-	providers: [],
+	providers: [RootStoreEffects],
 	exports: [TinySliceModule],
 })
 export class RootStoreModule {}

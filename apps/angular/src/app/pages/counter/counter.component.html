@@ -5,13 +5,17 @@ Here's a familiar example of a counter:
 
 <div class="counter">
 	<nz-button-group>
-		<button nz-button (click)="rootStore.decrement.next(1)">-1</button>
-		<button nz-button (click)="rootStore.increment.next(1)">+1</button>
+		<button nz-button (click)="counterStore.decrement.next(1)">-1</button>
+		<button nz-button (click)="counterStore.increment.next(1)">+1</button>
 	</nz-button-group>
 
 	<h2>
-		<span>{{ rootStore.count$ | async }}</span>
+		<span>{{ counterStore.count$ | async }}</span>
 	</h2>
 </div>
 
-todo: change detection on timetravel
+<nz-tabset>
+	<nz-tab nzTitle="Tab 1">Content of Tab Pane 1</nz-tab>
+	<nz-tab nzTitle="Tab 2">Content of Tab Pane 2</nz-tab>
+	<nz-tab nzTitle="Tab 3">Content of Tab Pane 3</nz-tab>
+</nz-tabset>

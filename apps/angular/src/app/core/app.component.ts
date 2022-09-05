@@ -1,4 +1,5 @@
 import { Component } from '@angular/core';
+import { RootStore } from './root-store.module';
 
 @Component({
 	selector: 'tinyslice-root',
@@ -8,4 +9,6 @@ import { Component } from '@angular/core';
 export class AppComponent {
 	title = 'angular';
 	isCollapsed = false;
+
+	constructor(public readonly rootStore: RootStore) {}
 }

@@ -17,9 +17,6 @@ export class Scope<EveryStore = unknown, EveryPayload = unknown> {
 		'[Internal] REGISTER_LAZY_SLICE'
 	);
 
-	constructor() {
-		console.log('SCOPE CREATED!!!!!!!!!!!');
-	}
 	public static createScope<EveryPayload>(): Scope<EveryPayload> {
 		return new Scope<EveryPayload>();
 	}
@@ -42,18 +39,34 @@ export class Scope<EveryStore = unknown, EveryPayload = unknown> {
 		);
 	}
 
-	/**
-	 * TODO: add multiple dispatch targets in an array
-	 * TODO: handle flattening multiple values for every dispatch target
-	 */
 	public createEffect<DispatchPayload>(
 		action: Observable<DispatchPayload>,
-		dispatch?: Action<DispatchPayload>
+		dispatch?: Action<DispatchPayload> | Action<DispatchPayload>[]
 	): void {
 		this.effectSubscriptions.add(
 			action
 				.pipe(
-					tap(dispatch),
+					tap((payload) => {
+						// Execute on next tick
+						// TODO: Is this what always should happen?
+						// The source-state of the effect can be rendered if
+						// the effect is done on next tick
+						// But effects need to be scheduled to be after
+						// reducers and this is a cheap way of doing it
+						// Otherwise the normal reducer could overwrite whatever
+						// the effect is producing.
+						if (dispatch) {
+							setTimeout(() => {
+								if (Array.isArray(dispatch)) {
+									for (const d of dispatch) {
+										d.next(payload);
+									}
+								} else {
+									dispatch.next(payload);
+								}
+							}, 0);
+						}
+					}),
 					catchError((error) => {
 						console.error(error);
 						return EMPTY;
@@ -76,7 +89,6 @@ export class Scope<EveryStore = unknown, EveryPayload = unknown> {
 		if (this.actionMap.has(action.type)) {
 			return;
 		}
-		console.log('register action', action.type, this);
 
 		this.actionMap.set(action.type, action as unknown as Action<EveryPayload>);
 
