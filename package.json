@@ -1,7 +1,7 @@
 {
 	"name": "tinyslice",
 	"description": "Reactive events",
-	"version": "0.0.1",
+	"version": "0.1.0",
 	"license": "MIT",
 	"author": {
 		"email": "alexaegis@gmail.com",
@@ -42,18 +42,23 @@
 		"serve:sveltekit": "nx run sveltekit:serve",
 		"serve:svelte": "nx run svelte:serve",
 		"format": "prettier --write .",
-		"lint:es": "eslint",
+		"lint": "nx lint",
+		"lint:es": "eslint --max-warnings=0 .",
 		"lint:format": "prettier --check .",
 		"lint:style": "stylecheck",
 		"test:jest": "jest --passWithNoTests",
 		"ncu": "ncu -u",
 		"clean": "rimraf node_modules package-lock.json",
 		"ng": "nx",
+		"update": "nx migrate latest",
+		"dep-graph": "nx dep-graph",
 		"postinstall": "husky install && node ./decorate-angular-cli.js && ngcc --properties es2020 browser module main",
+		"release": "standard-version",
+		"release:minor": "standard-version --release-as minor",
+		"release:major": "standard-version --release-as major",
 		"start": "nx serve",
 		"build": "nx build",
-		"test": "nx test",
-		"dep-graph": "nx dep-graph"
+		"test": "nx test"
 	},
 	"dependencies": {
 		"@angular/animations": "~14.2.0",
@@ -131,6 +136,7 @@
 		"regenerator-runtime": "^0.13.9",
 		"rimraf": "^3.0.2",
 		"source-map-support": "^0.5.21",
+		"standard-version": "^9.5.0",
 		"stylelint": "^14.11.0",
 		"stylelint-config-prettier": "^9.0.3",
 		"stylelint-config-standard": "^28.0.0",

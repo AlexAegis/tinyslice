@@ -15,7 +15,7 @@
 				"tsConfig": "apps/angular/tsconfig.app.json",
 				"assets": ["apps/angular/src/favicon.ico", "apps/angular/src/assets"],
 				"styles": [
-					"node_modules/ng-zorro-antd/ng-zorro-antd.less",
+					"node_modules/ng-zorro-antd/ng-zorro-antd.min.css",
 					"apps/angular/src/styles.css"
 				],
 				"scripts": []
@@ -25,8 +25,8 @@
 					"budgets": [
 						{
 							"type": "initial",
-							"maximumWarning": "500kb",
-							"maximumError": "1mb"
+							"maximumWarning": "800kb",
+							"maximumError": "2mb"
 						},
 						{
 							"type": "anyComponentStyle",

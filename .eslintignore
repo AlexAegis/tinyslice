@@ -1,0 +1,4 @@
+!.versionrc.js
+dist
+**/node_modules/*
+**/.svelte-kit/*

@@ -352,7 +352,7 @@ export interface InitialSnapshot<State> {
 
 export class StoreSlice<ParentSlice, Slice> extends BaseStore<ParentSlice, Slice> {
 	protected state = new BehaviorSubject<Slice>(this.options.initialState);
-	protected stateObservable$ = this.state.pipe();
+	protected stateObservable$ = this.state.pipe(distinctUntilChanged(this.options.comparator));
 	override subscribe = this.stateObservable$.subscribe.bind(this.stateObservable$);
 	protected override scope = this.options.scope;
 	protected sliceRegistrations$ = new BehaviorSubject<SliceRegistrationOptions<Slice, unknown>[]>(
