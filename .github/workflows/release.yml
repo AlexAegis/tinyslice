@@ -41,7 +41,6 @@ jobs:
       - name: Build
         run: |
           npm run build
-          npm run hoist:core
       - name: Release @tinyslice/core on NPM
         if: env.IS_ON_NPM_CORE != 'true'
         env:

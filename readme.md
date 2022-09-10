@@ -1,5 +1,6 @@
 # tinyslice 🍕
 
+[![Latest NPM Version](https://img.shields.io/npm/v/@tinyslice/core/latest)](https://www.npmjs.com/package/@tinyslice/core)
 [![CI](https://github.com/AlexAegis/tinyslice/workflows/CI/badge.svg)](https://github.com/AlexAegis/tinyslice/actions?query=workflow%3ACI)
 
 A redux style store implementation aimed to reduce boilerplate code.

@@ -1,7 +1,7 @@
 {
 	"name": "@tinyslice/ngx",
-	"version": "0.0.1",
-	"description": "Reactive events",
+	"version": "0.1.1",
+	"description": "Angular wrapper for TinySlice",
 	"license": "MIT",
 	"author": {
 		"email": "alexaegis@gmail.com",
@@ -26,7 +26,7 @@
 		"js",
 		"javascript"
 	],
-	"private": true,
+	"private": false,
 	"config": {
 		"engine-strict": true
 	},

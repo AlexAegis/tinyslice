@@ -1,6 +1,7 @@
 {
 	"name": "@tinyslice/devtools-plugin",
-	"version": "0.0.1",
+	"description": "Redux Devtools plugin for TinySlice",
+	"version": "0.1.1",
 	"license": "MIT",
 	"author": {
 		"email": "alexaegis@gmail.com",
@@ -27,7 +28,7 @@
 		"js",
 		"javascript"
 	],
-	"private": true,
+	"private": false,
 	"config": {
 		"engine-strict": true
 	},
