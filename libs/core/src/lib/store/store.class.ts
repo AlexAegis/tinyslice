@@ -174,19 +174,37 @@ abstract class BaseStore<ParentState, Slice> extends Observable<Slice> {
 			...state,
 			[key]: slice,
 		});
-		return new StoreSlice(
-			this as unknown as BaseStore<unknown, Slice & Record<AdditionalKey, SubSlice>>,
-			selector,
-			merger,
-			`${this.path}${this.path ? '.' : ''}${key.toString()}`,
-			{
-				scope: this.scope,
-				initialState,
-				reducerConfigurations: reducerConfigurations ?? [],
-				comparator,
-				lazy: true,
-			}
-		);
+
+		const path = `${this.path}${this.path ? '.' : ''}${key.toString()}`;
+
+		if (this.scope.slices.has(path)) {
+			// ? If this proves to be error prone just throw an error
+			// ? Double define should be disallowed anyway
+			return this.scope.slices.get(path) as StoreSlice<
+				Slice & Record<AdditionalKey, SubSlice>,
+				SubSlice
+			>;
+		} else {
+			const slice = new StoreSlice(
+				this as unknown as BaseStore<unknown, Slice & Record<AdditionalKey, SubSlice>>,
+				selector,
+				merger,
+				path,
+				{
+					scope: this.scope,
+					initialState:
+						// Giving it a try, if the state was hydrated this slice could be present
+						selector(this.state.value as Slice & Record<AdditionalKey, SubSlice>) ??
+						initialState,
+					reducerConfigurations: reducerConfigurations ?? [],
+					comparator,
+					lazy: true,
+				}
+			);
+
+			this.scope.slices.set(path, slice as unknown);
+			return slice;
+		}
 	}
 
 	protected static createCombinedReducer<State>(
@@ -459,11 +477,7 @@ export class StoreSlice<ParentSlice, Slice> extends BaseStore<ParentSlice, Slice
 		private readonly options: StoreSliceOptions<Slice>
 	) {
 		super(options.scope);
-		if (options.scope.slices.has(path)) {
-			throw new Error('Trying to define the same path twice!');
-		}
 
-		options.scope.slices.add(path);
 		BaseStore.registerDefaultReducers(
 			options.reducerConfigurations,
 			this.setAction,

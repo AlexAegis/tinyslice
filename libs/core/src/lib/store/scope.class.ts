@@ -13,7 +13,7 @@ export class Scope<EveryStore = unknown> {
 	private effectSubscriptions = new Subscription();
 	private stores: Store<EveryStore>[] = [];
 
-	public slices = new Set<string>();
+	public slices = new Map<string, unknown>();
 
 	public readonly internalActionVoid = this.createAction<void>(
 		`${TINYSLICE_ACTION_INTERNAL_PREFIX} void`
