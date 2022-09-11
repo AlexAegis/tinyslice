@@ -14,8 +14,13 @@ import {
 	withLatestFrom,
 	zip,
 } from 'rxjs';
-import { ActionPacket } from '../action';
-import { createLoggingMetaReducer, notNullish } from '../helper';
+import { Action, ActionPacket } from '../action';
+import {
+	createLoggingMetaReducer,
+	notNullish,
+	TINYSLICE_ACTION_DEFAULT_PREFIX,
+	updateObject,
+} from '../helper';
 import type { Comparator } from './comparator.type';
 import type { Merger } from './merger.type';
 import type {
@@ -72,6 +77,10 @@ abstract class BaseStore<ParentState, Slice> extends Observable<Slice> {
 	protected abstract merger: Merger<ParentState, Slice> | undefined;
 	protected abstract stateObservable$: Observable<Slice>;
 	protected action$: Observable<ActionPacket>;
+	protected abstract path: string;
+
+	public abstract readonly setAction: Action<Slice>;
+	public abstract readonly updateAction: Action<Slice>;
 
 	protected abstract sliceRegistrations$: BehaviorSubject<
 		SliceRegistrationOptions<Slice, unknown>[]
@@ -115,6 +124,7 @@ abstract class BaseStore<ParentState, Slice> extends Observable<Slice> {
 			this as BaseStore<unknown, Slice>,
 			selector,
 			merger,
+			`${this.path}${this.path ? '.' : ''}${key.toString()}`,
 			{
 				scope: this.scope,
 				initialState,
@@ -133,13 +143,19 @@ abstract class BaseStore<ParentState, Slice> extends Observable<Slice> {
 	): StoreSlice<Slice, SubSlice> {
 		const initialState = selector(this.state.value);
 
-		return new StoreSlice(this as BaseStore<unknown, Slice>, selector, merger, {
-			scope: this.scope,
-			initialState,
-			reducerConfigurations,
-			comparator,
-			lazy: false,
-		});
+		return new StoreSlice(
+			this as BaseStore<unknown, Slice>,
+			selector,
+			merger,
+			`${this.path}${this.path ? '.' : ''}${selector.toString()}`,
+			{
+				scope: this.scope,
+				initialState,
+				reducerConfigurations,
+				comparator,
+				lazy: false,
+			}
+		);
 	}
 
 	/**
@@ -162,6 +178,7 @@ abstract class BaseStore<ParentState, Slice> extends Observable<Slice> {
 			this as unknown as BaseStore<unknown, Slice & Record<AdditionalKey, SubSlice>>,
 			selector,
 			merger,
+			`${this.path}${this.path ? '.' : ''}${key.toString()}`,
 			{
 				scope: this.scope,
 				initialState,
@@ -196,6 +213,21 @@ abstract class BaseStore<ParentState, Slice> extends Observable<Slice> {
 			reducerConfigurations.forEach((metaReducer) => metaReducer(snapshot));
 	}
 
+	protected static registerDefaultReducers<State>(
+		reducerConfigurations: ReducerConfiguration<State>[],
+		setAction: Action<State>,
+		updateAction: Action<State>
+	) {
+		reducerConfigurations.unshift({
+			action: setAction,
+			packetReducer: (state, packet) => packet?.payload ?? state,
+		});
+
+		reducerConfigurations.unshift({
+			action: updateAction,
+			packetReducer: (state, packet) => updateObject(state, packet?.payload),
+		});
+	}
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	public root<T>(): Store<T> {
 		let current = this as BaseStore<unknown, unknown>;
@@ -203,6 +235,22 @@ abstract class BaseStore<ParentState, Slice> extends Observable<Slice> {
 			current = current.parent;
 		}
 		return current as Store<T>;
+	}
+
+	public set(slice: Slice): void {
+		this.setAction.next(slice);
+	}
+
+	public update(slice: Slice): void {
+		this.updateAction.next(slice);
+	}
+
+	set ngModel(value: Slice) {
+		this.set(value);
+	}
+
+	get ngModel(): Slice {
+		return this.state.value;
 	}
 
 	protected set teardown(subscription: Subscription) {
@@ -264,6 +312,7 @@ const createReducerPipeline = <Slice, SubSlice>(
 export class Store<State> extends BaseStore<unknown, State> {
 	protected parent = undefined;
 	protected merger = undefined;
+	protected path = '';
 	protected state = new BehaviorSubject<State>(this.initialState);
 	protected stateObservable$ = this.state.asObservable();
 	protected sliceRegistrations$ = new BehaviorSubject<SliceRegistrationOptions<State, unknown>[]>(
@@ -296,6 +345,9 @@ export class Store<State> extends BaseStore<unknown, State> {
 		share()
 	);
 
+	public readonly setAction = new Action<State>(`${TINYSLICE_ACTION_DEFAULT_PREFIX} set`);
+	public readonly updateAction = new Action<State>(`${TINYSLICE_ACTION_DEFAULT_PREFIX} update`);
+
 	constructor(
 		protected override readonly scope: Scope<unknown>,
 		public readonly initialState: State,
@@ -303,7 +355,10 @@ export class Store<State> extends BaseStore<unknown, State> {
 		private readonly storeOptions?: StoreOptions<State>
 	) {
 		super(scope);
+		this.path;
 		this.plugins = this.storeOptions?.plugins?.map((plugin) => this.registerPlugin(plugin));
+
+		BaseStore.registerDefaultReducers(reducerConfigurations, this.setAction, this.updateAction);
 
 		scope.registerStore(this as Store<unknown>);
 		reducerConfigurations.forEach((reducerConfiguration) =>
@@ -359,6 +414,13 @@ export class StoreSlice<ParentSlice, Slice> extends BaseStore<ParentSlice, Slice
 		[]
 	);
 
+	public readonly setAction = new Action<Slice>(
+		`${TINYSLICE_ACTION_DEFAULT_PREFIX} set ${this.path}`
+	);
+	public readonly updateAction = new Action<Slice>(
+		`${TINYSLICE_ACTION_DEFAULT_PREFIX} update ${this.path}`
+	);
+
 	#combinedReducer = BaseStore.createCombinedReducer(this.options.reducerConfigurations);
 
 	#parentListener: Observable<Slice> = this.parent.pipe(
@@ -393,9 +455,20 @@ export class StoreSlice<ParentSlice, Slice> extends BaseStore<ParentSlice, Slice
 		protected readonly parent: BaseStore<unknown, ParentSlice>,
 		protected readonly selector: Selector<ParentSlice, Slice>,
 		protected readonly merger: Merger<ParentSlice, Slice>,
+		protected readonly path: string,
 		private readonly options: StoreSliceOptions<Slice>
 	) {
 		super(options.scope);
+		if (options.scope.slices.has(path)) {
+			throw new Error('Trying to define the same path twice!');
+		}
+
+		options.scope.slices.add(path);
+		BaseStore.registerDefaultReducers(
+			options.reducerConfigurations,
+			this.setAction,
+			this.updateAction
+		);
 
 		options.reducerConfigurations.forEach((reducerConfiguration) =>
 			options.scope.registerAction(reducerConfiguration.action)

@@ -2,6 +2,7 @@ import { catchError, EMPTY, finalize, map, Observable, Subject, Subscription, ta
 import type { ActionConfig } from '../action/action-config.interface';
 import { ActionPacket, isActionPacket } from '../action/action-packet.interface';
 import { Action, ActionTuple } from '../action/action.class';
+import { TINYSLICE_ACTION_INTERNAL_PREFIX } from '../helper';
 import { ReducerConfiguration } from './reducer.type';
 import { Store, StoreOptions } from './store.class';
 
@@ -12,9 +13,13 @@ export class Scope<EveryStore = unknown> {
 	private effectSubscriptions = new Subscription();
 	private stores: Store<EveryStore>[] = [];
 
-	public readonly internalActionVoid = this.createAction<void>('[Internal] VOID');
+	public slices = new Set<string>();
+
+	public readonly internalActionVoid = this.createAction<void>(
+		`${TINYSLICE_ACTION_INTERNAL_PREFIX} void`
+	);
 	public readonly internalActionRegisterLazySlice = this.createAction<string>(
-		'[Internal] REGISTER_LAZY_SLICE'
+		`${TINYSLICE_ACTION_INTERNAL_PREFIX} register lazy slice`
 	);
 
 	public static createScope<EveryStore>(): Scope<EveryStore> {

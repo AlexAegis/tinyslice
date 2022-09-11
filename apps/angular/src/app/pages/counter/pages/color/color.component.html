@@ -1,7 +1,11 @@
 <nz-button-group>
-	<button nz-button (click)="colorStore.setColor.next('red')">Red</button>
-	<button nz-button (click)="colorStore.setColor.next('green')">Green</button>
-	<button nz-button (click)="colorStore.setColor.next('blue')">Blue</button>
+	<button nz-button (click)="colorStore.color$.set('red')">Red</button>
+	<button nz-button (click)="colorStore.color$.set('green')">Green</button>
+	<button nz-button (click)="colorStore.color$.set('blue')">Blue</button>
 </nz-button-group>
 
-{{ colorStore.color$ | async }}
+<input
+	[style]="{ backgroundColor: colorStore.color$ | async }"
+	[(ngModel)]="colorStore.color$.ngModel"
+/>
+<span>{{ colorStore.color$ | async }}</span>

@@ -9,11 +9,9 @@ export interface CounterState {
 export class CounterStore {
 	static increment = new Action<number>('increment');
 	static decrement = new Action<number>('decrement');
-	static setValue = new Action<number>('setValue');
 
 	increment = CounterStore.increment;
 	decrement = CounterStore.decrement;
-	setValue = CounterStore.setValue;
 
 	count$ = this.slice.slice('count');
 
@@ -47,10 +45,6 @@ class CounterEffects {
 				CounterStore.decrement.reduce((state, payload) => ({
 					...state,
 					count: state.count - payload,
-				})),
-				CounterStore.setValue.reduce((state, payload) => ({
-					...state,
-					count: payload,
 				})),
 			],
 			[CounterEffects],
