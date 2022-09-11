@@ -40,7 +40,7 @@ jobs:
         run: npm install --legacy-peer-deps
       - name: Build
         run: |
-          npm run build
+          npm run build -- --baseHref=/${{ github.event.repository.name }}/
       - name: Release @tinyslice/core on NPM
         if: env.IS_ON_NPM_CORE != 'true'
         env:
@@ -65,6 +65,9 @@ jobs:
         run: |
           npm config set '//registry.npmjs.org/:_authToken' "${NPM_TOKEN}"
           npm publish ./dist/libs/ngx --access public
+      - name: Use index.html as 404.html
+        run: |
+          cp ./dist/apps/angular/index.html ./dist/apps/angular/404.html
       - name: Deploy Angular Example to Github Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
