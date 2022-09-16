@@ -41,5 +41,11 @@
 		"prepublish": "pinst --disable",
 		"postpublish": "pinst --enable"
 	},
-	"main": "src/index.ts"
+	"main": "src/index.js",
+	"peerDependencies": {
+		"rxjs": "^7.5.6"
+	},
+	"dependencies": {
+		"tslib": "^2.4.0"
+	}
 }

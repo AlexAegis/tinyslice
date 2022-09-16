@@ -39,12 +39,13 @@
 		"prepublish": "pinst --disable",
 		"postpublish": "pinst --enable"
 	},
-	"main": "src/index.ts",
+	"main": "src/index.js",
 	"peerDependencies": {
 		"@angular/common": "^13.3.0",
-		"@angular/core": "^13.3.0"
+		"@angular/core": "^13.3.0",
+		"rxjs": "^7.5.6"
 	},
 	"dependencies": {
-		"tslib": "^2.3.0"
+		"tslib": "^2.4.0"
 	}
 }
