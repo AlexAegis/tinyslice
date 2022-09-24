@@ -6,6 +6,6 @@
 
 <input
 	[style]="{ backgroundColor: colorStore.color$ | async }"
-	[(ngModel)]="colorStore.color$.ngModel"
+	[(ngModel)]="colorStore.color$.value"
 />
 <span>{{ colorStore.color$ | async }}</span>
