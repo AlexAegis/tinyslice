@@ -3,160 +3,385 @@ import { Action } from '../action';
 import { Scope } from './scope.class';
 import { Store, StoreSlice } from './store.class';
 
-export interface RootState {
-	optional: OptionalSlice | undefined;
-}
+const createMockObserver = <T>(): Observer<T> => ({
+	next: jest.fn(),
+	complete: jest.fn(),
+	error: jest.fn(),
+});
 
-export interface OptionalSlice {
-	inner: string;
-}
-
-describe('Store', () => {
-	let scope!: Scope;
-
-	let rootStore!: Store<RootState>;
-	let optionalSlice!: StoreSlice<RootState, OptionalSlice>;
-	let optionalInnerSlice!: StoreSlice<OptionalSlice, string>;
-
-	const definedOptionalInnerSlice = 'foo';
-	const definedOptionalSlice: OptionalSlice = { inner: definedOptionalInnerSlice };
-
-	let externalOptionalSliceSetAction!: Action<OptionalSlice>;
-	let externalOptionalInnerSliceSetAction!: Action<string>;
-
+describe('store', () => {
 	let sink!: Subscription;
-
-	const initialRootState: RootState = {
-		optional: undefined,
-	};
-
-	const rootObserver: Observer<RootState> = {
-		next: jest.fn(),
-		complete: jest.fn(),
-		error: jest.fn(),
-	};
-
-	const optionalSliceObserver: Observer<OptionalSlice> = {
-		next: jest.fn(),
-		complete: jest.fn(),
-		error: jest.fn(),
-	};
-
-	const optionalInnerSliceObserver: Observer<string> = {
-		next: jest.fn(),
-		complete: jest.fn(),
-		error: jest.fn(),
-	};
+	let scope!: Scope;
 
 	beforeEach(() => {
 		sink = new Subscription();
-
 		scope = new Scope();
-
-		externalOptionalSliceSetAction = scope.createAction<OptionalSlice>(
-			'setOptionalSliceExternal'
-		);
-		externalOptionalInnerSliceSetAction = scope.createAction<string>(
-			'setOptionalInnerSliceExternal'
-		);
-
-		rootStore = scope.createStore<RootState>(initialRootState);
-		optionalSlice = rootStore.slice('optional', [
-			externalOptionalSliceSetAction.reduce((state, payload) => {
-				// ??????????
-				expect(state).toBeDefined();
-				return {
-					...state,
-					...payload,
-				};
-			}),
-		]);
-		optionalInnerSlice = optionalSlice.slice('inner', [
-			externalOptionalInnerSliceSetAction.reduce((state, payload) => {
-				// ??????????
-				expect(state).toBeDefined();
-				return payload;
-			}),
-		]);
-
-		sink.add(rootStore.subscribe(rootObserver));
-		sink.add(optionalSlice.subscribe(optionalSliceObserver));
-		sink.add(optionalInnerSlice.subscribe(optionalInnerSliceObserver));
 	});
 
 	afterEach(() => jest.clearAllMocks());
 	afterEach(() => sink.unsubscribe());
 
-	it('should emit the initial state immediately', () => {
-		expect(rootObserver.next).toHaveBeenLastCalledWith(initialRootState);
+	describe('unsubscribe', () => {
+		interface RootSlice {
+			foo: FooSlice;
+		}
 
-		expect(rootObserver.next).toHaveBeenCalledTimes(1);
-		expect(rootObserver.error).toHaveBeenCalledTimes(0);
-		expect(rootObserver.complete).toHaveBeenCalledTimes(0);
+		interface FooSlice {
+			bar: string;
+		}
+
+		let rootSlice!: Store<RootSlice>;
+		let fooSlice!: StoreSlice<RootSlice, FooSlice>;
+		let barSlice!: StoreSlice<FooSlice, string>;
+
+		const initialRootSlice: RootSlice = {
+			foo: { bar: 'zed' },
+		};
+
+		const rootObserver: Observer<RootSlice> = createMockObserver();
+		const fooSliceObserver: Observer<FooSlice> = createMockObserver();
+		const barSliceObserver: Observer<string> = createMockObserver();
+
+		beforeEach(() => {
+			rootSlice = scope.createStore<RootSlice>(initialRootSlice);
+
+			fooSlice = rootSlice.slice('foo');
+			barSlice = fooSlice.slice('bar');
+
+			sink.add(rootSlice.subscribe(rootObserver));
+			sink.add(fooSlice.subscribe(fooSliceObserver));
+			sink.add(barSlice.subscribe(barSliceObserver));
+		});
+
+		it('should complete all subscribers if the root store is shut down', () => {
+			rootSlice.unsubscribe();
+			expect(rootObserver.next).toHaveBeenCalledTimes(1);
+			expect(rootObserver.error).toHaveBeenCalledTimes(0);
+			expect(rootObserver.complete).toHaveBeenCalledTimes(1);
+
+			expect(fooSliceObserver.next).toHaveBeenCalledTimes(1);
+			expect(fooSliceObserver.error).toHaveBeenCalledTimes(0);
+			expect(fooSliceObserver.complete).toHaveBeenCalledTimes(1);
+
+			expect(barSliceObserver.next).toHaveBeenCalledTimes(1);
+			expect(barSliceObserver.error).toHaveBeenCalledTimes(0);
+			expect(barSliceObserver.complete).toHaveBeenCalledTimes(1);
+		});
+
+		it('should complete all child slices if the slice is unsubscribed but not the parent', () => {
+			fooSlice.unsubscribe();
+			expect(rootObserver.next).toHaveBeenCalledTimes(1);
+			expect(rootObserver.error).toHaveBeenCalledTimes(0);
+			expect(rootObserver.complete).toHaveBeenCalledTimes(0);
+
+			expect(fooSliceObserver.next).toHaveBeenCalledTimes(1);
+			expect(fooSliceObserver.error).toHaveBeenCalledTimes(0);
+			expect(fooSliceObserver.complete).toHaveBeenCalledTimes(1);
+
+			expect(barSliceObserver.next).toHaveBeenCalledTimes(1);
+			expect(barSliceObserver.error).toHaveBeenCalledTimes(0);
+			expect(barSliceObserver.complete).toHaveBeenCalledTimes(1);
+		});
+
+		it('should complete the leaf slices if the slice is unsubscribed but not the parents', () => {
+			barSlice.unsubscribe();
+			expect(rootObserver.next).toHaveBeenCalledTimes(1);
+			expect(rootObserver.error).toHaveBeenCalledTimes(0);
+			expect(rootObserver.complete).toHaveBeenCalledTimes(0);
+
+			expect(fooSliceObserver.next).toHaveBeenCalledTimes(1);
+			expect(fooSliceObserver.error).toHaveBeenCalledTimes(0);
+			expect(fooSliceObserver.complete).toHaveBeenCalledTimes(0);
+
+			expect(barSliceObserver.next).toHaveBeenCalledTimes(1);
+			expect(barSliceObserver.error).toHaveBeenCalledTimes(0);
+			expect(barSliceObserver.complete).toHaveBeenCalledTimes(1);
+		});
+	});
+	describe('slices', () => {
+		interface RootSlice {
+			foo: FooSlice;
+			unchanging: string;
+		}
+
+		interface FooSlice {
+			bar: BarSlice;
+			ber: string;
+		}
+
+		interface BarSlice {
+			zed: number;
+		}
+
+		let rootSlice!: Store<RootSlice>;
+		let fooSlice!: StoreSlice<RootSlice, FooSlice>;
+		let barSlice!: StoreSlice<FooSlice, BarSlice>;
+		let zedSlice!: StoreSlice<BarSlice, number>;
+		let berSlice!: StoreSlice<FooSlice, string>;
+
+		let unchangingSlice!: StoreSlice<RootSlice, string>;
+
+		const initialZedSlice = 1;
+		const initialBarSlice: BarSlice = { zed: initialZedSlice };
+		const initialBerSlice = 'tangerine';
+		const initialFooSlice: FooSlice = { bar: initialBarSlice, ber: initialBerSlice };
+		const initialUnchangingSlice = 'solid';
+		const initialRootSlice: RootSlice = {
+			foo: initialFooSlice,
+			unchanging: initialUnchangingSlice,
+		};
+
+		const rootObserver: Observer<RootSlice> = createMockObserver();
+		const fooSliceObserver: Observer<FooSlice> = createMockObserver();
+		const barSliceObserver: Observer<BarSlice> = createMockObserver();
+		const berSliceObserver: Observer<string> = createMockObserver();
+		const zedSliceObserver: Observer<number> = createMockObserver();
+		const unchangingSliceObserver: Observer<string> = createMockObserver();
+
+		beforeEach(() => {
+			rootSlice = scope.createStore<RootSlice>(initialRootSlice);
+
+			fooSlice = rootSlice.slice('foo');
+			barSlice = fooSlice.slice('bar');
+			zedSlice = barSlice.slice('zed');
+			berSlice = fooSlice.slice('ber');
+			unchangingSlice = rootSlice.slice('unchanging');
+
+			sink.add(rootSlice.subscribe(rootObserver));
+			sink.add(fooSlice.subscribe(fooSliceObserver));
+			sink.add(barSlice.subscribe(barSliceObserver));
+			sink.add(berSlice.subscribe(berSliceObserver));
+			sink.add(zedSlice.subscribe(zedSliceObserver));
+			sink.add(unchangingSlice.subscribe(unchangingSliceObserver));
+		});
+
+		beforeEach(() => {
+			// Assert initial Setup
+			expect(rootObserver.next).toHaveBeenLastCalledWith(initialRootSlice);
+			expect(fooSliceObserver.next).toHaveBeenLastCalledWith(initialFooSlice);
+			expect(barSliceObserver.next).toHaveBeenLastCalledWith(initialBarSlice);
+			expect(berSliceObserver.next).toHaveBeenLastCalledWith(initialBerSlice);
+			expect(zedSliceObserver.next).toHaveBeenLastCalledWith(initialZedSlice);
+			expect(unchangingSliceObserver.next).toHaveBeenLastCalledWith(initialUnchangingSlice);
+
+			expect(rootObserver.next).toHaveBeenCalledTimes(1);
+			expect(fooSliceObserver.next).toHaveBeenCalledTimes(1);
+			expect(barSliceObserver.next).toHaveBeenCalledTimes(1);
+			expect(berSliceObserver.next).toHaveBeenCalledTimes(1);
+			expect(zedSliceObserver.next).toHaveBeenCalledTimes(1);
+			expect(unchangingSliceObserver.next).toHaveBeenCalledTimes(1);
+		});
+
+		describe('updating the root node', () => {
+			it('should emit shallow on a shallow update', () => {
+				rootSlice.set({
+					...rootSlice.value,
+				});
+
+				expect(rootObserver.next).toHaveBeenLastCalledWith(initialRootSlice);
+				expect(fooSliceObserver.next).toHaveBeenLastCalledWith(initialFooSlice);
+				expect(barSliceObserver.next).toHaveBeenLastCalledWith(initialBarSlice);
+				expect(berSliceObserver.next).toHaveBeenLastCalledWith(initialBerSlice);
+				expect(zedSliceObserver.next).toHaveBeenLastCalledWith(initialZedSlice);
+				expect(unchangingSliceObserver.next).toHaveBeenLastCalledWith(
+					initialUnchangingSlice
+				);
+
+				expect(rootObserver.next).toHaveBeenCalledTimes(2);
+				expect(fooSliceObserver.next).toHaveBeenCalledTimes(1);
+				expect(barSliceObserver.next).toHaveBeenCalledTimes(1);
+				expect(berSliceObserver.next).toHaveBeenCalledTimes(1);
+				expect(zedSliceObserver.next).toHaveBeenCalledTimes(1);
+				expect(unchangingSliceObserver.next).toHaveBeenCalledTimes(1);
+			});
+
+			it('should emit on changed nodes only', () => {
+				const nextBerSlice = 'fusilli';
+				const nextFooSlice = {
+					...rootSlice.value.foo,
+					ber: nextBerSlice,
+				};
+				const nextRootSlice = {
+					...rootSlice.value,
+					foo: nextFooSlice,
+				};
+				rootSlice.set(nextRootSlice);
+
+				expect(rootObserver.next).toHaveBeenLastCalledWith(nextRootSlice);
+				expect(fooSliceObserver.next).toHaveBeenLastCalledWith(nextFooSlice);
+				expect(barSliceObserver.next).toHaveBeenLastCalledWith(initialBarSlice);
+				expect(berSliceObserver.next).toHaveBeenLastCalledWith(nextBerSlice);
+				expect(zedSliceObserver.next).toHaveBeenLastCalledWith(initialZedSlice);
+				expect(unchangingSliceObserver.next).toHaveBeenLastCalledWith(
+					initialUnchangingSlice
+				);
+
+				expect(rootObserver.next).toHaveBeenCalledTimes(2);
+				expect(fooSliceObserver.next).toHaveBeenCalledTimes(2);
+				expect(barSliceObserver.next).toHaveBeenCalledTimes(1);
+				expect(berSliceObserver.next).toHaveBeenCalledTimes(2);
+				expect(zedSliceObserver.next).toHaveBeenCalledTimes(1);
+				expect(unchangingSliceObserver.next).toHaveBeenCalledTimes(1);
+			});
+		});
+
+		describe('updating a leaf node', () => {
+			it('should emit on all slices up to the root if a leaf is updated', () => {
+				const nextZedSlice = initialZedSlice + 1;
+				zedSlice.set(nextZedSlice);
+
+				expect(zedSliceObserver.next).toHaveBeenLastCalledWith(nextZedSlice);
+
+				expect(rootObserver.next).toHaveBeenCalledTimes(2);
+				expect(fooSliceObserver.next).toHaveBeenCalledTimes(2);
+				expect(barSliceObserver.next).toHaveBeenCalledTimes(2);
+				expect(berSliceObserver.next).toHaveBeenCalledTimes(1);
+				expect(zedSliceObserver.next).toHaveBeenCalledTimes(2);
+				expect(unchangingSliceObserver.next).toHaveBeenCalledTimes(1);
+			});
+		});
+
+		describe('updating a non-root, non-leaf node', () => {
+			it('should emit on all nodes up to the root from an updated node and on all changed nodes down, leaf changed scenario', () => {
+				const nextZedSlice = initialZedSlice + 1;
+				barSlice.set({ zed: nextZedSlice });
+
+				expect(zedSliceObserver.next).toHaveBeenLastCalledWith(nextZedSlice);
+
+				expect(rootObserver.next).toHaveBeenCalledTimes(2);
+				expect(fooSliceObserver.next).toHaveBeenCalledTimes(2);
+				expect(barSliceObserver.next).toHaveBeenCalledTimes(2);
+				expect(berSliceObserver.next).toHaveBeenCalledTimes(1);
+				expect(zedSliceObserver.next).toHaveBeenCalledTimes(2);
+				expect(unchangingSliceObserver.next).toHaveBeenCalledTimes(1);
+			});
+
+			it('should emit on all nodes up to the root from an updated node and on all changed nodes down, leaf unchanged scenario', () => {
+				barSlice.set({ zed: initialZedSlice });
+
+				expect(zedSliceObserver.next).toHaveBeenLastCalledWith(initialZedSlice);
+
+				expect(rootObserver.next).toHaveBeenCalledTimes(2);
+				expect(fooSliceObserver.next).toHaveBeenCalledTimes(2);
+				expect(barSliceObserver.next).toHaveBeenCalledTimes(2);
+				expect(berSliceObserver.next).toHaveBeenCalledTimes(1);
+				expect(zedSliceObserver.next).toHaveBeenCalledTimes(1);
+				expect(unchangingSliceObserver.next).toHaveBeenCalledTimes(1);
+			});
+		});
 	});
 
-	it('should complete all subscribers if the root store is shut down', () => {
-		rootStore.unsubscribe();
-		expect(rootObserver.next).toHaveBeenCalledTimes(1);
-		expect(rootObserver.error).toHaveBeenCalledTimes(0);
-		expect(rootObserver.complete).toHaveBeenCalledTimes(1);
+	describe('shallow optional slices', () => {
+		interface ShallowRootSlice {
+			data: string | undefined;
+		}
 
-		expect(optionalSliceObserver.next).toHaveBeenCalledTimes(1);
-		expect(optionalSliceObserver.error).toHaveBeenCalledTimes(0);
-		expect(optionalSliceObserver.complete).toHaveBeenCalledTimes(1);
+		let rootSlice!: Store<ShallowRootSlice>;
+		let shallowOptionalSlice!: StoreSlice<ShallowRootSlice, string>;
 
-		expect(optionalInnerSliceObserver.next).toHaveBeenCalledTimes(1);
-		expect(optionalInnerSliceObserver.error).toHaveBeenCalledTimes(0);
-		expect(optionalInnerSliceObserver.complete).toHaveBeenCalledTimes(1);
+		const initialRootSlice: ShallowRootSlice = {
+			data: undefined,
+		};
+
+		const rootObserver: Observer<ShallowRootSlice> = createMockObserver();
+		const shallowOptionalSliceObserver: Observer<string> = createMockObserver();
+
+		beforeEach(() => {
+			rootSlice = scope.createStore<ShallowRootSlice>(initialRootSlice);
+			shallowOptionalSlice = rootSlice.slice('data');
+			sink.add(rootSlice.subscribe(rootObserver));
+			sink.add(shallowOptionalSlice.subscribe(shallowOptionalSliceObserver));
+		});
+
+		it('should be able to be set from its parent', () => {
+			expect(shallowOptionalSliceObserver.next).toHaveBeenLastCalledWith(undefined);
+			rootSlice.set({ data: 'foo' });
+			expect(shallowOptionalSliceObserver.next).toHaveBeenLastCalledWith('foo');
+		});
+
+		it('should be able to be set from the premade set action', () => {
+			expect(shallowOptionalSliceObserver.next).toHaveBeenLastCalledWith(undefined);
+			shallowOptionalSlice.set('foo');
+			expect(shallowOptionalSliceObserver.next).toHaveBeenLastCalledWith('foo');
+		});
 	});
 
-	it('should complete all child slices if the slice is unsubscribed but not the parent', () => {
-		optionalSlice.unsubscribe();
-		expect(rootObserver.next).toHaveBeenCalledTimes(1);
-		expect(rootObserver.error).toHaveBeenCalledTimes(0);
-		expect(rootObserver.complete).toHaveBeenCalledTimes(0);
+	describe('deep optional slices', () => {
+		interface RootSlice {
+			deepOptional: DeepOptionalSlice | undefined;
+		}
 
-		expect(optionalSliceObserver.next).toHaveBeenCalledTimes(1);
-		expect(optionalSliceObserver.error).toHaveBeenCalledTimes(0);
-		expect(optionalSliceObserver.complete).toHaveBeenCalledTimes(1);
+		interface DeepOptionalSlice {
+			data: string;
+		}
 
-		expect(optionalInnerSliceObserver.next).toHaveBeenCalledTimes(1);
-		expect(optionalInnerSliceObserver.error).toHaveBeenCalledTimes(0);
-		expect(optionalInnerSliceObserver.complete).toHaveBeenCalledTimes(1);
-	});
+		let rootSlice!: Store<RootSlice>;
+		let optionalSlice!: StoreSlice<RootSlice, DeepOptionalSlice>;
+		let optionalInnerSlice!: StoreSlice<DeepOptionalSlice, string>;
 
-	it('should complete the leaf slices if the slice is unsubscribed but not the parents', () => {
-		optionalInnerSlice.unsubscribe();
-		expect(rootObserver.next).toHaveBeenCalledTimes(1);
-		expect(rootObserver.error).toHaveBeenCalledTimes(0);
-		expect(rootObserver.complete).toHaveBeenCalledTimes(0);
+		const definedOptionalInnerSlice = 'foo';
+		const definedOptionalSlice: DeepOptionalSlice = { data: definedOptionalInnerSlice };
 
-		expect(optionalSliceObserver.next).toHaveBeenCalledTimes(1);
-		expect(optionalSliceObserver.error).toHaveBeenCalledTimes(0);
-		expect(optionalSliceObserver.complete).toHaveBeenCalledTimes(0);
+		let externalOptionalSliceSetAction!: Action<DeepOptionalSlice>;
+		let externalOptionalInnerSliceSetAction!: Action<string>;
 
-		expect(optionalInnerSliceObserver.next).toHaveBeenCalledTimes(1);
-		expect(optionalInnerSliceObserver.error).toHaveBeenCalledTimes(0);
-		expect(optionalInnerSliceObserver.complete).toHaveBeenCalledTimes(1);
-	});
+		const initialRootSlice: RootSlice = {
+			deepOptional: undefined,
+		};
 
-	describe('Optional Slices', () => {
+		const rootSliceWithOptionalSlice: RootSlice = {
+			deepOptional: definedOptionalSlice,
+		};
+
+		const rootObserver: Observer<RootSlice> = createMockObserver();
+		const optionalSliceObserver: Observer<DeepOptionalSlice> = createMockObserver();
+		const optionalInnerSliceObserver: Observer<string> = createMockObserver();
+
+		beforeEach(() => {
+			externalOptionalSliceSetAction = scope.createAction<DeepOptionalSlice>(
+				'setOptionalSliceExternal'
+			);
+			externalOptionalInnerSliceSetAction = scope.createAction<string>(
+				'setOptionalInnerSliceExternal'
+			);
+
+			rootSlice = scope.createStore<RootSlice>(initialRootSlice, []);
+
+			optionalSlice = rootSlice.slice('deepOptional', [
+				externalOptionalSliceSetAction.reduce((state, payload) => {
+					return {
+						...state,
+						...payload,
+					};
+				}),
+			]);
+			optionalInnerSlice = optionalSlice.slice('data', [
+				externalOptionalInnerSliceSetAction.reduce((state, payload) => {
+					return payload;
+				}),
+			]);
+
+			sink.add(rootSlice.subscribe(rootObserver));
+			sink.add(optionalSlice.subscribe(optionalSliceObserver));
+			sink.add(optionalInnerSlice.subscribe(optionalInnerSliceObserver));
+		});
+
 		it('should be undefined initially', () => {
-			expect(optionalSlice.value?.inner).toBeUndefined();
+			expect(optionalSlice.value?.data).toBeUndefined();
 		});
 
 		it('should not emit if the parent was changed but the optional slice not', () => {
-			expect(optionalSlice.value?.inner).toBeUndefined();
+			expect(optionalSlice.value?.data).toBeUndefined();
 		});
 
 		it('should emit undefined if the slice becomes uninitialzed', () => {
-			expect(optionalSlice.value?.inner).toBeUndefined();
+			expect(optionalSlice.value?.data).toBeUndefined();
 		});
 
 		it('should be able to be initialized from their parent', () => {
 			expect(optionalSliceObserver.next).toHaveBeenLastCalledWith(undefined);
 
-			rootStore.set({ optional: definedOptionalSlice });
+			rootSlice.set({ deepOptional: definedOptionalSlice });
 
 			expect(optionalSliceObserver.next).toHaveBeenLastCalledWith(definedOptionalSlice);
 			expect(optionalInnerSliceObserver.next).toHaveBeenLastCalledWith(
@@ -165,31 +390,52 @@ describe('Store', () => {
 		});
 
 		it('should be able to be initialized from the premade set action', () => {
+			expect(rootObserver.next).toHaveBeenLastCalledWith(initialRootSlice);
 			expect(optionalSliceObserver.next).toHaveBeenLastCalledWith(undefined);
+			expect(optionalInnerSliceObserver.next).toHaveBeenLastCalledWith(undefined);
+			expect(rootObserver.next).toHaveBeenCalledTimes(1);
+			expect(optionalSliceObserver.next).toHaveBeenCalledTimes(1);
+			expect(optionalInnerSliceObserver.next).toHaveBeenCalledTimes(1);
 			optionalSlice.set(definedOptionalSlice);
+			expect(rootObserver.next).toHaveBeenLastCalledWith(rootSliceWithOptionalSlice);
 			expect(optionalSliceObserver.next).toHaveBeenLastCalledWith(definedOptionalSlice);
 			expect(optionalInnerSliceObserver.next).toHaveBeenLastCalledWith(
 				definedOptionalInnerSlice
 			);
+			expect(rootObserver.next).toHaveBeenCalledTimes(2);
+			expect(optionalSliceObserver.next).toHaveBeenCalledTimes(2);
+			expect(optionalInnerSliceObserver.next).toHaveBeenCalledTimes(2);
 		});
 
 		it('should be able to be initialized from the explicit set action', () => {
+			expect(rootObserver.next).toHaveBeenLastCalledWith(initialRootSlice);
 			expect(optionalSliceObserver.next).toHaveBeenLastCalledWith(undefined);
+			expect(optionalInnerSliceObserver.next).toHaveBeenLastCalledWith(undefined);
+			expect(rootObserver.next).toHaveBeenCalledTimes(1);
+			expect(optionalSliceObserver.next).toHaveBeenCalledTimes(1);
+			expect(optionalInnerSliceObserver.next).toHaveBeenCalledTimes(1);
 			externalOptionalSliceSetAction.next(definedOptionalSlice);
 			expect(optionalSliceObserver.next).toHaveBeenLastCalledWith(definedOptionalSlice);
 			expect(optionalInnerSliceObserver.next).toHaveBeenLastCalledWith(
 				definedOptionalInnerSlice
 			);
+			expect(rootObserver.next).toHaveBeenCalledTimes(2);
+			expect(optionalSliceObserver.next).toHaveBeenCalledTimes(2);
+			expect(optionalInnerSliceObserver.next).toHaveBeenCalledTimes(2);
 		});
 
 		it('should not react to reducers on slices with undefined parents', () => {
+			expect(rootObserver.next).toHaveBeenLastCalledWith(initialRootSlice);
 			expect(optionalSliceObserver.next).toHaveBeenLastCalledWith(undefined);
 			expect(optionalInnerSliceObserver.next).toHaveBeenLastCalledWith(undefined);
+			expect(rootObserver.next).toHaveBeenCalledTimes(1);
 			expect(optionalSliceObserver.next).toHaveBeenCalledTimes(1);
 			expect(optionalInnerSliceObserver.next).toHaveBeenCalledTimes(1);
 			optionalInnerSlice.set(definedOptionalInnerSlice);
+			expect(rootObserver.next).toHaveBeenLastCalledWith(initialRootSlice);
 			expect(optionalSliceObserver.next).toHaveBeenLastCalledWith(undefined);
 			expect(optionalInnerSliceObserver.next).toHaveBeenLastCalledWith(undefined);
+			expect(rootObserver.next).toHaveBeenCalledTimes(1);
 			expect(optionalSliceObserver.next).toHaveBeenCalledTimes(1);
 			expect(optionalInnerSliceObserver.next).toHaveBeenCalledTimes(1);
 		});

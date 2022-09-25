@@ -19,13 +19,15 @@ import { Action, ActionPacket } from '../action';
 import {
 	createLoggingMetaReducer,
 	isNonNullable,
+	isNullish,
 	TINYSLICE_ACTION_DEFAULT_PREFIX,
 	updateObject,
 } from '../helper';
 import type { Comparator } from './comparator.type';
 import type { Merger } from './merger.type';
-import type {
+import {
 	ActionReduceSnapshot,
+	isActionReduceSnapshot,
 	MetaPacketReducer,
 	PacketReducer,
 	ReducerConfiguration,
@@ -77,7 +79,7 @@ abstract class BaseStore<ParentState, Slice> extends Observable<NonNullable<Slic
 	protected abstract parent: BaseStore<unknown, ParentState> | undefined;
 	protected abstract merger: Merger<ParentState, Slice> | undefined;
 	protected abstract stateObservable$: Observable<Slice>;
-	protected action$: Observable<ActionPacket>;
+	protected actions$: Observable<ActionPacket>;
 	protected abstract path: string;
 
 	public abstract readonly setAction: Action<Slice>;
@@ -91,7 +93,7 @@ abstract class BaseStore<ParentState, Slice> extends Observable<NonNullable<Slic
 
 	constructor(protected scope: Scope<unknown>) {
 		super();
-		this.action$ = scope.dispatcher$;
+		this.actions$ = scope.dispatcher$;
 	}
 
 	/**
@@ -114,10 +116,16 @@ abstract class BaseStore<ParentState, Slice> extends Observable<NonNullable<Slic
 		comparator?: Comparator<Slice[SubSliceKey] | undefined>
 	): StoreSlice<Slice, NonNullable<Slice[SubSliceKey]>> {
 		const selector: Selector<Slice, Slice[SubSliceKey]> = (state) => state[key];
-		const merger: Merger<Slice, Slice[SubSliceKey]> = (state, slice) => ({
-			...state,
-			[key]: slice,
-		});
+		const merger: Merger<Slice, Slice[SubSliceKey]> = (state, slice) => {
+			console.log('merger', key.toString(), state, slice);
+			if (isNullish(state) /* || isNullish(slice)*/) {
+				return state;
+			}
+			return {
+				...state,
+				[key]: slice,
+			};
+		};
 
 		return new StoreSlice<Slice, NonNullable<Slice[SubSliceKey]>>(
 			this as BaseStore<unknown, Slice>,
@@ -212,22 +220,32 @@ abstract class BaseStore<ParentState, Slice> extends Observable<NonNullable<Slic
 	}
 
 	protected static createCombinedReducer<State>(
+		debugPath: string,
 		reducerConfigurations: ReducerConfiguration<State>[] = []
 	): PacketReducer<State> {
+		console.log('createCombinedReducer "', debugPath, '", ', reducerConfigurations);
 		return (state: State, action: ActionPacket | undefined) => {
+			let nextState = state;
 			if (action) {
-				return reducerConfigurations
+				nextState = reducerConfigurations
 					.filter(
 						(reducerConfiguration) => reducerConfiguration.action.type === action.type
 					)
-					.reduce(
-						(accumulator, { packetReducer }) =>
-							accumulator ? packetReducer(accumulator, action) : state,
-						state
-					);
-			} else {
-				return state;
+					.reduce((acc, { packetReducer }) => packetReducer(acc, action), state);
 			}
+
+			console.log(
+				'inside combined reducer of "',
+				debugPath,
+				'" \n action: ',
+				action,
+				' \n state: ',
+				state,
+				' \n nextState: ',
+				nextState
+			);
+
+			return nextState;
 		};
 	}
 
@@ -245,12 +263,18 @@ abstract class BaseStore<ParentState, Slice> extends Observable<NonNullable<Slic
 	) {
 		reducerConfigurations.unshift({
 			action: setAction,
-			packetReducer: (state, packet) => packet?.payload ?? state,
+			packetReducer: (state, packet) => {
+				console.log('set', state, packet);
+				return packet?.payload ?? state;
+			},
 		});
 
 		reducerConfigurations.unshift({
 			action: updateAction,
-			packetReducer: (state, packet) => updateObject(state, packet?.payload),
+			packetReducer: (state, packet) => {
+				console.log('update!', state, packet);
+				return updateObject(state, packet?.payload);
+			},
 		});
 	}
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -263,6 +287,7 @@ abstract class BaseStore<ParentState, Slice> extends Observable<NonNullable<Slic
 	}
 
 	public set(slice: Slice): void {
+		console.log('set!');
 		this.setAction.next(slice);
 	}
 
@@ -290,22 +315,37 @@ abstract class BaseStore<ParentState, Slice> extends Observable<NonNullable<Slic
 }
 
 const zipSlices = <ParentSlice, Slice>(
-	sliceRegistrations$: Observable<SliceRegistrationOptions<ParentSlice, Slice | undefined>[]>,
-	actionDispatcher$: Observable<ActionPacket | undefined>
-): Observable<SliceChange<ParentSlice, Slice | undefined>[]> =>
+	sliceRegistrations$: Observable<SliceRegistrationOptions<Slice, unknown>[]>,
+	actionDispatcher$: Observable<ActionPacket | undefined>,
+	parentSlice: BaseStore<unknown, ParentSlice> | undefined,
+	parentStateIsDefinedOrRoot: boolean,
+	debugPath: string
+): Observable<SliceChange<Slice, unknown>[]> =>
 	sliceRegistrations$.pipe(
 		switchMap((sliceRegistrations) => {
+			console.log(
+				'zipSlices, path: "',
+				debugPath,
+				'"',
+				'parentStateIsDefinedOrRoot: ',
+				parentStateIsDefinedOrRoot,
+				'\n sliceRegistrations: ',
+				sliceRegistrations
+			);
+
 			if (sliceRegistrations.length) {
 				return zip(
-					sliceRegistrations.map((sliceRegistration) =>
-						sliceRegistration.slicePipeline.pipe(
-							map((snapshot) => ({
-								snapshot,
-								selector: sliceRegistration.selector,
-								merger: sliceRegistration.merger,
-							}))
+					sliceRegistrations
+						// .filter((reg) => isNonNullable(reg.parent.value))
+						.map(({ slicePipeline, selector, merger }) =>
+							slicePipeline.pipe(
+								map((snapshot) => ({
+									snapshot,
+									selector,
+									merger,
+								}))
+							)
 						)
-					)
 				);
 			} else {
 				return actionDispatcher$.pipe(map(() => []));
@@ -313,26 +353,80 @@ const zipSlices = <ParentSlice, Slice>(
 		})
 	);
 
-const createReducerPipeline = <Slice, SubSlice>(
+/**
+ */
+const createReducerPipeline = <ParentSlice, Slice>(
 	dispatcher$: Observable<ActionPacket>,
 	state$: Observable<Slice>,
-	registeredSlices$: Observable<SliceRegistrationOptions<Slice, SubSlice>[]>,
-	combinedReducer: PacketReducer<Slice>
+	registeredSlices$: Observable<SliceRegistrationOptions<Slice, unknown>[]>,
+	combinedReducer: PacketReducer<Slice>,
+	parent: BaseStore<unknown, ParentSlice> | undefined,
+	debugPath: string
 ): Observable<ActionReduceSnapshot<Slice>> =>
-	zip(dispatcher$, zipSlices<Slice, SubSlice>(registeredSlices$, dispatcher$)).pipe(
+	zip(
+		dispatcher$,
+		zipSlices<ParentSlice, Slice>(
+			registeredSlices$,
+			dispatcher$,
+			parent,
+			parent ? isNonNullable(parent.value) : true,
+			debugPath
+		)
+	).pipe(
 		withLatestFrom(state$),
 		map(([[action, sliceChanges], prevState]) => {
-			const stateWithChanges = sliceChanges.reduce(
-				(accumulator, next) =>
-					next.merger(accumulator, next.snapshot.nextState) ?? accumulator,
-				prevState
+			const parentStateIsUndefined = parent ? isNullish(parent.value) : false;
+
+			if (parentStateIsUndefined) {
+				return {
+					action,
+					prevState,
+					nextState: prevState,
+				};
+			}
+
+			const nextStateWithSliceChangesOnly = sliceChanges
+				.filter((sliceChange) => {
+					if (isActionReduceSnapshot(sliceChange.snapshot)) {
+						return sliceChange.snapshot.prevState !== sliceChange.snapshot.nextState;
+					} else {
+						return true;
+					}
+				})
+				.reduce(
+					(parentSliceState, sliceChange) =>
+						sliceChange.merger(parentSliceState, sliceChange.snapshot.nextState) ??
+						parentSliceState,
+					prevState
+				);
+
+			const nextState = combinedReducer(nextStateWithSliceChangesOnly, action);
+
+			console.log(
+				'reducerpipeline, path: "',
+				debugPath,
+				'" redu pipeline.\nActionType: ',
+				action.type,
+				'\n sliceChanges: ',
+				sliceChanges,
+				'\n prevState: ',
+				prevState,
+				'\n nextStateWithSliceChangesOnly: ',
+				nextStateWithSliceChangesOnly,
+				'\n nextState: ',
+				nextState,
+
+				'\n parentStateIsUndefined: ',
+				parentStateIsUndefined
 			);
+
 			return {
-				action: action as ActionPacket,
-				prevState: prevState,
-				nextState: combinedReducer(stateWithChanges, action as ActionPacket),
+				action,
+				prevState,
+				nextState,
 			};
-		})
+		}),
+		distinctUntilChanged()
 	);
 
 // TODO: make it rehydratable, maybe add a unique name to each store (forward that to the devtoolsPluginOptions and remove name from there)
@@ -342,26 +436,30 @@ export class Store<State> extends BaseStore<unknown, State> {
 	protected merger = undefined;
 	protected path = '';
 	protected state = new BehaviorSubject<State>(this.initialState);
-	protected stateObservable$ = this.state.pipe(filter(isNonNullable));
+	protected stateObservable$ = this.state.pipe(distinctUntilChanged());
 	protected sliceRegistrations$ = new BehaviorSubject<SliceRegistrationOptions<State, unknown>[]>(
 		[]
 	);
 	private plugins: StorePlugin<State>[] | undefined;
 
-	public override subscribe = this.stateObservable$.subscribe.bind(this.stateObservable$);
+	public override subscribe = this.stateObservable$
+		.pipe(filter(isNonNullable))
+		.subscribe.bind(this.stateObservable$);
 
-	#combinedReducer = Store.createCombinedReducer(this.reducerConfigurations);
+	#combinedReducer = Store.createCombinedReducer(this.path, this.reducerConfigurations);
 	#metaReducerRunner: (snapshot: ActionReduceSnapshot<State>) => void;
 
-	#storePipeline = createReducerPipeline<State, unknown>(
-		this.action$,
+	#storePipeline = createReducerPipeline<unknown, State>(
+		this.actions$,
 		this.stateObservable$,
 		this.sliceRegistrations$,
-		this.#combinedReducer
+		this.#combinedReducer,
+		this.parent,
+		this.path
 	).pipe(
 		tap((snapshot) => {
-			if (snapshot.prevState && snapshot.nextState) {
-				this.#metaReducerRunner(snapshot as ActionReduceSnapshot<State>);
+			if (isActionReduceSnapshot(snapshot)) {
+				this.#metaReducerRunner(snapshot);
 			}
 
 			if (snapshot.prevState !== snapshot.nextState) {
@@ -389,10 +487,14 @@ export class Store<State> extends BaseStore<unknown, State> {
 		this.path;
 		this.plugins = this.storeOptions?.plugins?.map((plugin) => this.registerPlugin(plugin));
 
-		BaseStore.registerDefaultReducers(reducerConfigurations, this.setAction, this.updateAction);
+		BaseStore.registerDefaultReducers(
+			this.reducerConfigurations,
+			this.setAction,
+			this.updateAction
+		);
 
 		scope.registerStore(this as Store<unknown>);
-		reducerConfigurations.forEach((reducerConfiguration) =>
+		this.reducerConfigurations.forEach((reducerConfiguration) =>
 			scope.registerAction(reducerConfiguration.action)
 		);
 
@@ -456,11 +558,15 @@ export class StoreSlice<ParentSlice, Slice> extends BaseStore<ParentSlice, Slice
 		`${TINYSLICE_ACTION_DEFAULT_PREFIX} update ${this.path}`
 	);
 
-	#combinedReducer = BaseStore.createCombinedReducer(this.options.reducerConfigurations);
+	#combinedReducer = BaseStore.createCombinedReducer(
+		this.path,
+		this.options.reducerConfigurations
+	);
 
 	#parentListener = this.parent.pipe(
 		finalize(() => this.unsubscribe()),
 		skip(1), // Skip the initially emitted one
+
 		map((parentState) => {
 			const slice = this.selector(parentState);
 			if (this.options.lazy && !isNonNullable(slice)) {
@@ -474,13 +580,17 @@ export class StoreSlice<ParentSlice, Slice> extends BaseStore<ParentSlice, Slice
 		tap((parentSlice) => this.state.next(parentSlice))
 	);
 
-	#slicePipeline = createReducerPipeline(
-		this.scope.dispatcher$,
+	#slicePipeline = createReducerPipeline<ParentSlice, Slice>(
+		this.actions$,
 		this.stateObservable$,
 		this.sliceRegistrations$,
-		this.#combinedReducer
+		this.#combinedReducer,
+		this.parent,
+		this.path
 	).pipe(
 		tap((snapshot) => {
+			console.log('#slicePipeline', this.path, snapshot);
+			// TODO: use comparator
 			if (snapshot.prevState !== snapshot.nextState) {
 				this.state.next(snapshot.nextState);
 			}
@@ -508,6 +618,7 @@ export class StoreSlice<ParentSlice, Slice> extends BaseStore<ParentSlice, Slice
 
 		this.parent.registerSlice({
 			slicePipeline: this.#slicePipeline,
+			parent: this.parent,
 			selector,
 			merger: merger as Merger<ParentSlice, unknown>,
 			lazy: this.options.lazy,
@@ -519,15 +630,12 @@ export class StoreSlice<ParentSlice, Slice> extends BaseStore<ParentSlice, Slice
 }
 
 export interface SliceRegistrationOptions<ParentSlice, Slice> {
+	parent: BaseStore<unknown, ParentSlice>;
 	slicePipeline: Observable<ActionReduceSnapshot<Slice> | InitialSnapshot<Slice>>;
 	merger: Merger<ParentSlice, unknown>;
 	selector: Selector<ParentSlice, unknown>;
 	lazy: boolean;
 	lazyNotificationPayload: string;
-}
-
-export interface InitialSnapshot<State> {
-	nextState: State;
 }
 
 export interface SliceChange<ParentSlice, Slice> {
