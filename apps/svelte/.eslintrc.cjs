@@ -1,7 +1,12 @@
-export default {
+module.exports = {
 	parser: '@typescript-eslint/parser',
+	extends: [
+		'../../.eslintrc.json',
+		'eslint:recommended',
+		'plugin:@typescript-eslint/recommended',
+		'prettier',
+	],
 	plugins: ['svelte3', '@typescript-eslint'],
-	extends: ['../../.eslintrc.json'],
 	ignorePatterns: ['!**/*', 'vitest.config.ts'],
 	overrides: [
 		{
@@ -25,6 +30,15 @@ export default {
 		},
 	],
 	settings: {
-		'svelte3/typescript': import('typescript'),
+		'svelte3/typescript': require('typescript'),
+	},
+	parserOptions: {
+		sourceType: 'module',
+		ecmaVersion: 2018,
+	},
+	env: {
+		browser: true,
+		es2017: true,
+		node: true,
 	},
 };
