@@ -70,4 +70,4 @@ jobs:
         run: |
           curl -Os https://uploader.codecov.io/latest/linux/codecov
           chmod +x codecov
-          ./codecov -s coverage/* -t ${{ secrets.CODECOV_TOKEN }}
+          ./codecov
