@@ -1,0 +1,4 @@
+covee:
+  precision: 2
+  round: down
+  range: '100...100'

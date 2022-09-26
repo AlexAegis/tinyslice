@@ -27,6 +27,7 @@ import type { Comparator } from './comparator.type';
 import type { Merger } from './merger.type';
 import {
 	ActionReduceSnapshot,
+	InitialSnapshot,
 	isActionReduceSnapshot,
 	MetaPacketReducer,
 	PacketReducer,
@@ -42,7 +43,7 @@ export type ValueOf<T> = T[keyof T];
 export type KeyOf<T> = keyof T;
 
 export interface StorePluginHooks<State> {
-	state$: Observable<ActionReduceSnapshot<State | undefined>>;
+	state$: Observable<ActionReduceSnapshot<State>>;
 	initialState: State;
 	stateInjector: (state: State) => void;
 }
@@ -532,10 +533,6 @@ export interface StoreSliceOptions<Slice> {
 	 * of the root initialState
 	 */
 	lazy: boolean;
-}
-
-export interface InitialSnapshot<State> {
-	nextState: State;
 }
 
 export class StoreSlice<ParentSlice, Slice> extends BaseStore<ParentSlice, Slice> {
