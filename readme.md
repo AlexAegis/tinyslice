@@ -1,5 +1,6 @@
 # tinyslice 🍕
 
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/ea8fd24a0797484e87f223b74aa0917f)](https://app.codacy.com/gh/AlexAegis/tinyslice?utm_source=github.com&utm_medium=referral&utm_content=AlexAegis/tinyslice&utm_campaign=Badge_Grade_Settings)
 [![Latest NPM Version](https://img.shields.io/npm/v/@tinyslice/core/latest)](https://www.npmjs.com/package/@tinyslice/core)
 [![CI](https://github.com/AlexAegis/tinyslice/workflows/CI/badge.svg)](https://github.com/AlexAegis/tinyslice/actions?query=workflow%3ACI)
 
