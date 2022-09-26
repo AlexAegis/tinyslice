@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { HttpClientModule } from '@angular/common/http';
 import { NgModule } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzDividerModule } from 'ng-zorro-antd/divider';
 import { en_US, NZ_I18N } from 'ng-zorro-antd/i18n';
@@ -18,6 +19,7 @@ import { IconsProviderModule } from './icons-provider.module';
 		FormsModule,
 		HttpClientModule,
 		IconsProviderModule,
+		RouterModule,
 		NzLayoutModule,
 		NzMenuModule,
 		NzButtonModule,
@@ -31,6 +33,7 @@ import { IconsProviderModule } from './icons-provider.module';
 		FormsModule,
 		HttpClientModule,
 		IconsProviderModule,
+		RouterModule,
 		NzLayoutModule,
 		NzMenuModule,
 		NzButtonModule,

@@ -16,6 +16,6 @@ import { RequestComponent } from './pages/request/request.component';
 		SharedModule,
 	],
 	providers: [ColorStore, RequestStore],
-	exports: [CounterComponent],
+	exports: [CounterComponent, CounterStoreModule],
 })
 export class CounterModule {}
