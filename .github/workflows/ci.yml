@@ -62,11 +62,12 @@ jobs:
       - name: test
         run: npm run test
       - name: Upload coverage result to codacy
-        run: |
-          export CODACY_PROJECT_TOKEN=${{ secrets.CODACY_PROJECT_TOKEN }}
-          bash <(curl -Ls https://coverage.codacy.com/get.sh)
+        uses: codacy/codacy-coverage-reporter-action@v1
+        with:
+          project-token: ${{ secrets.CODACY_PROJECT_TOKEN }}
+          coverage-reports: coverage/apps/angular/lcov.info,coverage/libs/core/lcov.info,coverage/libs/devtools-plugin/lcov.info,coverage/libs/ngx/lcov.info
       - name: Upload coverage result to codecov
-        run: |
-          curl -Os https://uploader.codecov.io/latest/linux/codecov
-          chmod +x codecov
-          ./codecov
+        uses: codecov/codecov-action@v3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          directory: coverage
