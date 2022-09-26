@@ -5,6 +5,7 @@ import {
 	InjectionToken,
 	ModuleWithProviders,
 	NgModule,
+	Optional,
 	Provider,
 	Type,
 } from '@angular/core';
@@ -60,6 +61,7 @@ export class TinySliceModule {
 		@Inject(TINYSLICE_ROOT_MODULE_INDICATOR_TOKEN)
 		private readonly rootModuleIndicators: boolean[],
 		@Inject(TINYSLICE_EFFECT_SERVICES)
+		@Optional()
 		private readonly _effectServices: Type<unknown>[]
 	) {
 		if (this.rootModuleIndicators.length > 1) {
