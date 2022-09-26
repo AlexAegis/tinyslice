@@ -29,6 +29,10 @@
 	"config": {
 		"engine-strict": true
 	},
+	"engines": {
+		"node": ">=16.0.0",
+		"npm": ">=8.0.0"
+	},
 	"workspaces": [
 		"libs/core",
 		"libs/angular",
