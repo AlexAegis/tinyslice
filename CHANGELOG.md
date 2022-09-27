@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.2.0](https://github.com/AlexAegis/tinyslice/compare/v0.1.3...v0.2.0) (2022-09-27)
+
+
+### Features
+
+* nullish slices ([4f02f9d](https://github.com/AlexAegis/tinyslice/commit/4f02f9d1982c91c7a9c34947c2018c1d59de9ee6))
+* nullish slices ([75920a9](https://github.com/AlexAegis/tinyslice/commit/75920a987ee4a10a0330d7ebc49d00c17be43b9d))
+* refactor slice implementation ([cd40f35](https://github.com/AlexAegis/tinyslice/commit/cd40f35dad6bbcb66b092ed2ccc2688d335d204f))
+
 ## [0.1.3](https://github.com/AlexAegis/tinyslice/compare/v0.1.2...v0.1.3) (2022-09-16)
 
 ### Bug Fixes
