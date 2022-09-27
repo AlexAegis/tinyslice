@@ -24,7 +24,7 @@ export interface ExampleState {
 
 actionScope.createEffect(innerAction.pipe(map((a) => outerAction.makePacket(a + 1))));
 
-const store = actionScope.createStore<ExampleState>(
+const store = actionScope.createRootSlice<ExampleState>(
 	{
 		out: 1,
 		foo: { bar: { zed: 2 } },

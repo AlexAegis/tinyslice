@@ -1,20 +1,20 @@
 import { TestBed } from '@angular/core/testing';
-import { Store } from '@tinyslice/core';
+import { RootSlice } from '@tinyslice/core';
 import { TinySliceModule } from './tinyslice.module';
 
 describe('TinySliceModule', () => {
-	interface RootSlice {
+	interface RootState {
 		foo: number;
 	}
 
 	class RootStore {
-		constructor(public readonly store: Store<RootSlice>) {}
+		constructor(public readonly store: RootSlice<RootState>) {}
 	}
 
 	beforeEach(async () => {
 		await TestBed.configureTestingModule({
 			declarations: [],
-			imports: [TinySliceModule.forRoot<RootSlice>({ foo: 1 }, [], [], RootStore)],
+			imports: [TinySliceModule.forRoot<RootState>({ foo: 1 }, [], [], RootStore)],
 		}).compileComponents();
 	});
 

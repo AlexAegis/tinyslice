@@ -1,5 +1,5 @@
 import { Injectable, NgModule } from '@angular/core';
-import { Action, StoreScope, StoreSlice, TinySliceModule } from '@tinyslice/ngx';
+import { Action, Scope, Slice, TinySliceModule } from '@tinyslice/ngx';
 import { filter, map } from 'rxjs';
 
 export interface CounterState {
@@ -15,12 +15,12 @@ export class CounterStore {
 
 	count$ = this.slice.slice('count');
 
-	constructor(public readonly slice: StoreSlice<unknown, CounterState>) {}
+	constructor(public readonly slice: Slice<unknown, CounterState>) {}
 }
 
 @Injectable()
 class CounterEffects {
-	constructor(public readonly counterStore: CounterStore, private readonly scope: StoreScope) {
+	constructor(public readonly counterStore: CounterStore, private readonly scope: Scope) {
 		this.scope.createEffect(
 			this.counterStore.count$.pipe(
 				filter((count) => count >= 10),

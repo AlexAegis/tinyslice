@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Action } from '@tinyslice/core';
-import { StoreScope } from '@tinyslice/ngx';
+import { Scope } from '@tinyslice/ngx';
 import { catchError, delay, map, of, switchMap } from 'rxjs';
 import { CounterStore } from '../../counter-store.module';
 
@@ -48,7 +48,7 @@ export class RequestStore {
 	loading$ = this.slice.slice('loading');
 	result$ = this.slice.slice('result');
 
-	constructor(private readonly counterStore: CounterStore, readonly scope: StoreScope) {
+	constructor(private readonly counterStore: CounterStore, readonly scope: Scope) {
 		scope.createEffect(
 			this.request.pipe(
 				switchMap((request) =>

@@ -1,5 +1,5 @@
 import { NgModule } from '@angular/core';
-import { Action, StoreSlice, TinySliceModule } from '@tinyslice/ngx';
+import { Action, Slice, TinySliceModule } from '@tinyslice/ngx';
 
 export interface MessagesState {
 	lastMessage: string | undefined;
@@ -27,7 +27,7 @@ export class MessagesStore {
 		}
 	);
 
-	constructor(public readonly slice: StoreSlice<unknown, MessagesState>) {}
+	constructor(public readonly slice: Slice<unknown, MessagesState>) {}
 }
 
 @NgModule({

@@ -1,4 +1,4 @@
-export const updateObject = <T>(base: T, other: T): T => {
+export const updateObject = <T, O extends T>(base: T, other: O | Partial<T>): T => {
 	if (other !== undefined && other !== null) {
 		if (typeof base === 'object') {
 			if (Array.isArray(base)) {
@@ -13,7 +13,7 @@ export const updateObject = <T>(base: T, other: T): T => {
 				return { ...base, ...other };
 			}
 		} else {
-			return other;
+			return base;
 		}
 	} else {
 		return base;

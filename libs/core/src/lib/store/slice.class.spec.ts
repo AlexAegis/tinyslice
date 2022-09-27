@@ -1,7 +1,7 @@
 import { Observer, Subscription } from 'rxjs';
 import { Action } from '../action';
 import { Scope } from './scope.class';
-import { Store, StoreSlice } from './store.class';
+import { RootSlice, Slice } from './slice.class';
 
 const createMockObserver = <T>(): Observer<T> => ({
 	next: jest.fn(),
@@ -9,7 +9,7 @@ const createMockObserver = <T>(): Observer<T> => ({
 	error: jest.fn(),
 });
 
-describe('store', () => {
+describe('slice', () => {
 	let sink!: Subscription;
 	let scope!: Scope;
 
@@ -22,28 +22,28 @@ describe('store', () => {
 	afterEach(() => sink.unsubscribe());
 
 	describe('unsubscribe', () => {
-		interface RootSlice {
-			foo: FooSlice;
+		interface RootState {
+			foo: FooState;
 		}
 
-		interface FooSlice {
+		interface FooState {
 			bar: string;
 		}
 
-		let rootSlice!: Store<RootSlice>;
-		let fooSlice!: StoreSlice<RootSlice, FooSlice>;
-		let barSlice!: StoreSlice<FooSlice, string>;
+		let rootSlice!: RootSlice<RootState>;
+		let fooSlice!: Slice<RootState, FooState>;
+		let barSlice!: Slice<FooState, string>;
 
-		const initialRootSlice: RootSlice = {
+		const initialRootSlice: RootState = {
 			foo: { bar: 'zed' },
 		};
 
-		const rootObserver: Observer<RootSlice> = createMockObserver();
-		const fooSliceObserver: Observer<FooSlice> = createMockObserver();
+		const rootObserver: Observer<RootState> = createMockObserver();
+		const fooSliceObserver: Observer<FooState> = createMockObserver();
 		const barSliceObserver: Observer<string> = createMockObserver();
 
 		beforeEach(() => {
-			rootSlice = scope.createStore<RootSlice>(initialRootSlice);
+			rootSlice = scope.createRootSlice<RootState>(initialRootSlice);
 
 			fooSlice = rootSlice.slice('foo');
 			barSlice = fooSlice.slice('bar');
@@ -99,47 +99,47 @@ describe('store', () => {
 		});
 	});
 	describe('slices', () => {
-		interface RootSlice {
-			foo: FooSlice;
+		interface RootState {
+			foo: FooState;
 			unchanging: string;
 		}
 
-		interface FooSlice {
-			bar: BarSlice;
+		interface FooState {
+			bar: BarState;
 			ber: string;
 		}
 
-		interface BarSlice {
+		interface BarState {
 			zed: number;
 		}
 
-		let rootSlice!: Store<RootSlice>;
-		let fooSlice!: StoreSlice<RootSlice, FooSlice>;
-		let barSlice!: StoreSlice<FooSlice, BarSlice>;
-		let zedSlice!: StoreSlice<BarSlice, number>;
-		let berSlice!: StoreSlice<FooSlice, string>;
+		let rootSlice!: RootSlice<RootState>;
+		let fooSlice!: Slice<RootState, FooState>;
+		let barSlice!: Slice<FooState, BarState>;
+		let zedSlice!: Slice<BarState, number>;
+		let berSlice!: Slice<FooState, string>;
 
-		let unchangingSlice!: StoreSlice<RootSlice, string>;
+		let unchangingSlice!: Slice<RootState, string>;
 
 		const initialZedSlice = 1;
-		const initialBarSlice: BarSlice = { zed: initialZedSlice };
+		const initialBarSlice: BarState = { zed: initialZedSlice };
 		const initialBerSlice = 'tangerine';
-		const initialFooSlice: FooSlice = { bar: initialBarSlice, ber: initialBerSlice };
+		const initialFooSlice: FooState = { bar: initialBarSlice, ber: initialBerSlice };
 		const initialUnchangingSlice = 'solid';
-		const initialRootSlice: RootSlice = {
+		const initialRootSlice: RootState = {
 			foo: initialFooSlice,
 			unchanging: initialUnchangingSlice,
 		};
 
-		const rootObserver: Observer<RootSlice> = createMockObserver();
-		const fooSliceObserver: Observer<FooSlice> = createMockObserver();
-		const barSliceObserver: Observer<BarSlice> = createMockObserver();
+		const rootObserver: Observer<RootState> = createMockObserver();
+		const fooSliceObserver: Observer<FooState> = createMockObserver();
+		const barSliceObserver: Observer<BarState> = createMockObserver();
 		const berSliceObserver: Observer<string> = createMockObserver();
 		const zedSliceObserver: Observer<number> = createMockObserver();
 		const unchangingSliceObserver: Observer<string> = createMockObserver();
 
 		beforeEach(() => {
-			rootSlice = scope.createStore<RootSlice>(initialRootSlice);
+			rootSlice = scope.createRootSlice<RootState>(initialRootSlice);
 
 			fooSlice = rootSlice.slice('foo');
 			barSlice = fooSlice.slice('bar');
@@ -272,22 +272,22 @@ describe('store', () => {
 	});
 
 	describe('shallow optional slices', () => {
-		interface ShallowRootSlice {
+		interface ShallowRootState {
 			data: string | undefined;
 		}
 
-		let rootSlice!: Store<ShallowRootSlice>;
-		let shallowOptionalSlice!: StoreSlice<ShallowRootSlice, string>;
+		let rootSlice!: RootSlice<ShallowRootState>;
+		let shallowOptionalSlice!: Slice<ShallowRootState, string>;
 
-		const initialRootSlice: ShallowRootSlice = {
+		const initialRootSlice: ShallowRootState = {
 			data: undefined,
 		};
 
-		const rootObserver: Observer<ShallowRootSlice> = createMockObserver();
+		const rootObserver: Observer<ShallowRootState> = createMockObserver();
 		const shallowOptionalSliceObserver: Observer<string> = createMockObserver();
 
 		beforeEach(() => {
-			rootSlice = scope.createStore<ShallowRootSlice>(initialRootSlice);
+			rootSlice = scope.createRootSlice<ShallowRootState>(initialRootSlice);
 			shallowOptionalSlice = rootSlice.slice('data');
 			sink.add(rootSlice.subscribe(rootObserver));
 			sink.add(shallowOptionalSlice.subscribe(shallowOptionalSliceObserver));
@@ -307,7 +307,7 @@ describe('store', () => {
 	});
 
 	describe('deep optional slices', () => {
-		interface RootSlice {
+		interface RootState {
 			deepOptional: DeepOptionalSlice | undefined;
 		}
 
@@ -315,9 +315,9 @@ describe('store', () => {
 			data: string;
 		}
 
-		let rootSlice!: Store<RootSlice>;
-		let optionalSlice!: StoreSlice<RootSlice, DeepOptionalSlice>;
-		let optionalInnerSlice!: StoreSlice<DeepOptionalSlice, string>;
+		let rootSlice!: RootSlice<RootState>;
+		let optionalSlice!: Slice<RootState, DeepOptionalSlice>;
+		let optionalInnerSlice!: Slice<DeepOptionalSlice, string>;
 
 		const definedOptionalInnerSlice = 'foo';
 		const definedOptionalSlice: DeepOptionalSlice = { data: definedOptionalInnerSlice };
@@ -325,15 +325,15 @@ describe('store', () => {
 		let externalOptionalSliceSetAction!: Action<DeepOptionalSlice>;
 		let externalOptionalInnerSliceSetAction!: Action<string>;
 
-		const initialRootSlice: RootSlice = {
+		const initialRootSlice: RootState = {
 			deepOptional: undefined,
 		};
 
-		const rootSliceWithOptionalSlice: RootSlice = {
+		const rootSliceWithOptionalSlice: RootState = {
 			deepOptional: definedOptionalSlice,
 		};
 
-		const rootObserver: Observer<RootSlice> = createMockObserver();
+		const rootObserver: Observer<RootState> = createMockObserver();
 		const optionalSliceObserver: Observer<DeepOptionalSlice> = createMockObserver();
 		const optionalInnerSliceObserver: Observer<string> = createMockObserver();
 
@@ -345,20 +345,16 @@ describe('store', () => {
 				'setOptionalInnerSliceExternal'
 			);
 
-			rootSlice = scope.createStore<RootSlice>(initialRootSlice, []);
+			rootSlice = scope.createRootSlice<RootState>(initialRootSlice, []);
 
 			optionalSlice = rootSlice.slice('deepOptional', [
-				externalOptionalSliceSetAction.reduce((state, payload) => {
-					return {
-						...state,
-						...payload,
-					};
-				}),
+				externalOptionalSliceSetAction.reduce((state, payload) => ({
+					...state,
+					...payload,
+				})),
 			]);
 			optionalInnerSlice = optionalSlice.slice('data', [
-				externalOptionalInnerSliceSetAction.reduce((state, payload) => {
-					return payload;
-				}),
+				externalOptionalInnerSliceSetAction.reduce((_state, payload) => payload),
 			]);
 
 			sink.add(rootSlice.subscribe(rootObserver));

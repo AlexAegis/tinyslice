@@ -13,7 +13,7 @@ export interface OptionalInnerSlice {
 }
 const setNonOptional = scope.createAction<string>('set nonopt');
 
-const rootStore = scope.createStore<RootStore>(
+const rootStore = scope.createRootSlice<RootStore>(
 	{
 		optional: undefined,
 		nonOptional: 'foo',

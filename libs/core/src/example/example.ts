@@ -37,7 +37,7 @@ export interface ExampleState {
 	};
 }
 
-const store = scope.createStore<ExampleState>(
+const store = scope.createRootSlice<ExampleState>(
 	{
 		lastPrinted: undefined,
 		lastCounted: undefined,

@@ -1,7 +1,7 @@
 import { DOCUMENT } from '@angular/common';
 import { Inject, Injectable, NgModule } from '@angular/core';
 import { TinySliceDevtoolPlugin } from '@tinyslice/devtools-plugin';
-import { Action, Store, StoreScope, TinySliceModule } from '@tinyslice/ngx';
+import { Action, RootSlice, Scope, TinySliceModule } from '@tinyslice/ngx';
 import { tap } from 'rxjs';
 
 export interface RootState {
@@ -14,13 +14,13 @@ export class RootStore {
 	setTitle = RootStore.setTitle;
 
 	title$ = this.store.slice('title');
-	constructor(public readonly store: Store<RootState>) {}
+	constructor(public readonly store: RootSlice<RootState>) {}
 }
 
 @Injectable()
 export class RootStoreEffects {
 	constructor(
-		readonly scope: StoreScope,
+		readonly scope: Scope,
 		readonly store: RootStore,
 		@Inject(DOCUMENT) readonly document: Document
 	) {

@@ -4,14 +4,14 @@ import { ActionPacket, isActionPacket } from '../action/action-packet.interface'
 import { Action, ActionTuple } from '../action/action.class';
 import { TINYSLICE_ACTION_INTERNAL_PREFIX } from '../helper';
 import { ReducerConfiguration } from './reducer.type';
-import { Store, StoreOptions } from './store.class';
+import { RootSlice, Slice, SliceOptions } from './slice.class';
 
-export class Scope<EveryStore = unknown> {
+export class Scope<EveryRootState = unknown> {
 	private readonly dispatcherScope = new Subject<ActionPacket<unknown>>();
 	private readonly actionMap = new Map<string, Action<unknown>>();
 	public readonly dispatcher$ = this.dispatcherScope.asObservable();
 	private effectSubscriptions = new Subscription();
-	private stores: Store<EveryStore>[] = [];
+	private stores: RootSlice<EveryRootState>[] = [];
 
 	public slices = new Map<string, unknown>();
 
@@ -30,14 +30,13 @@ export class Scope<EveryStore = unknown> {
 		return new Action<Payload>(type, config).register(this as Scope<unknown>);
 	}
 
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	public createStore<State extends EveryStore>(
+	public createRootSlice<State extends EveryRootState>(
 		initialState: State,
 		reducerConfigurations: ReducerConfiguration<State>[] = [],
-		storeOptions?: StoreOptions<State>
-	): Store<State> {
-		return new Store<State>(
-			this as unknown as Scope<unknown>,
+		storeOptions?: SliceOptions<State>
+	): RootSlice<State> {
+		return Slice.createRootSlice(
+			this as Scope<unknown>,
 			initialState,
 			reducerConfigurations,
 			storeOptions
@@ -76,7 +75,7 @@ export class Scope<EveryStore = unknown> {
 	/**
 	 * Only used for cleanup
 	 */
-	public registerStore(store: Store<EveryStore>): void {
+	public registerRootSlice(store: RootSlice<EveryRootState>): void {
 		this.stores.push(store);
 	}
 

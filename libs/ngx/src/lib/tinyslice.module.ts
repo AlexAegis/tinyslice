@@ -11,28 +11,27 @@ import {
 } from '@angular/core';
 import {
 	ReducerConfiguration,
+	RootSlice,
 	Scope,
-	Store,
-	StoreOptions,
-	StorePlugin,
-	StorePluginHooks,
-	StoreSlice,
+	Slice,
+	SliceOptions,
+	TinySlicePlugin,
+	TinySlicePluginHooks,
 } from '@tinyslice/core';
 import { Subscription } from 'rxjs';
 import {
-	AbstractRootStore,
-	StoreScope,
+	ROOT_STORE,
 	TINYSLICE_EFFECT_SERVICES,
 	TINYSLICE_ROOT_MODULE_INDICATOR_TOKEN,
 } from './services';
 
-export class TinySliceAngularPlugin<State = unknown> implements StorePlugin<State> {
-	private hooks!: StorePluginHooks<State>;
+export class TinySliceAngularPlugin<State = unknown> implements TinySlicePlugin<State> {
+	private hooks!: TinySlicePluginHooks<State>;
 	private initialState!: string;
 	private sink = new Subscription();
 
 	constructor(private readonly application: ApplicationRef) {}
-	register = (hooks: StorePluginHooks<State>): void => {
+	register = (hooks: TinySlicePluginHooks<State>): void => {
 		this.hooks = hooks;
 		this.initialState = JSON.stringify(hooks.initialState);
 	};
@@ -74,8 +73,8 @@ export class TinySliceModule {
 		initialState: RootState,
 		reducerConfigurations: ReducerConfiguration<RootState>[] = [],
 		effectServices: Type<unknown>[],
-		facade: new (slice: Store<RootState>, scope: StoreScope) => unknown,
-		storeOptions?: StoreOptions<RootState>
+		facade: new (slice: RootSlice<RootState>, scope: Scope) => unknown,
+		storeOptions?: SliceOptions<RootState>
 	): ModuleWithProviders<TinySliceModule> {
 		const scope = Scope.createScope();
 		return {
@@ -87,27 +86,31 @@ export class TinySliceModule {
 					multi: true,
 				},
 				{
-					provide: StoreScope,
+					provide: Scope,
 					useValue: scope,
 				},
 				{
-					provide: AbstractRootStore,
+					provide: ROOT_STORE,
 					useFactory: (scope: Scope, application: ApplicationRef) => {
 						storeOptions?.plugins?.forEach((plugin) =>
 							plugin.registerAdditionalTrigger?.(() => application.tick())
 						);
 
-						return scope.createStore<RootState>(initialState, reducerConfigurations, {
-							...storeOptions,
-							plugins: storeOptions?.plugins,
-						});
+						return scope.createRootSlice<RootState>(
+							initialState,
+							reducerConfigurations,
+							{
+								...storeOptions,
+								plugins: storeOptions?.plugins,
+							}
+						);
 					},
-					deps: [StoreScope, ApplicationRef],
+					deps: [Scope, ApplicationRef],
 				},
 				{
 					provide: facade,
 					useClass: facade,
-					deps: [AbstractRootStore, StoreScope],
+					deps: [ROOT_STORE, Scope],
 				},
 				...effectServices.map(
 					(effectService) =>
@@ -125,34 +128,27 @@ export class TinySliceModule {
 	 * TODO: deal with nested features!
 	 */
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	public static forFeature<Slice>(
+	public static forFeature<State>(
 		key: string,
-		initialState: Slice,
-		reducerConfigurations: ReducerConfiguration<Slice>[] = [],
+		initialState: State,
+		reducers: ReducerConfiguration<State>[] = [],
 		effectServices: Type<unknown>[],
-		facade: new (slice: StoreSlice<unknown, Slice>, scope: StoreScope) => unknown
+		facade: new (slice: Slice<unknown, State>, scope: Scope) => unknown
 	): ModuleWithProviders<TinySliceModule> {
-		const featureToken = new InjectionToken<StoreSlice<unknown, Slice>>(key);
+		const featureToken = new InjectionToken<Slice<unknown, State>>(key);
 		return {
 			ngModule: TinySliceModule,
 			providers: [
 				{
 					provide: featureToken,
-					useFactory: (rootStore: AbstractRootStore<Slice>) => {
-						const featureSlice = rootStore.addSlice<Slice>(
-							key as never,
-							initialState,
-							reducerConfigurations
-						);
-
-						return featureSlice;
-					},
-					deps: [AbstractRootStore],
+					useFactory: (rootStore: RootSlice<unknown>) =>
+						rootStore.addSlice<State, string>(key, initialState, reducers),
+					deps: [ROOT_STORE],
 				},
 				{
 					provide: facade,
 					useClass: facade,
-					deps: [featureToken, StoreScope],
+					deps: [featureToken, Scope],
 				},
 				...effectServices.map(
 					(effectService) =>

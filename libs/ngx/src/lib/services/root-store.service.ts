@@ -1,5 +1,4 @@
-import { Store, StoreSlice } from '@tinyslice/core';
+import { InjectionToken } from '@angular/core';
+import { RootSlice } from '@tinyslice/core';
 
-export abstract class AbstractRootStore<RootState> extends Store<RootState> {}
-
-export abstract class AbstractFeatureStore<Slice> extends StoreSlice<unknown, Slice> {}
+export const ROOT_STORE = new InjectionToken<RootSlice<unknown>>('ROOT_STORE');
