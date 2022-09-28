@@ -76,7 +76,6 @@ export class TinySliceModule {
 		facade: new (slice: RootSlice<RootState>, scope: Scope) => unknown,
 		storeOptions?: SliceOptions<RootState>
 	): ModuleWithProviders<TinySliceModule> {
-		const scope = Scope.createScope();
 		return {
 			ngModule: TinySliceModule,
 			providers: [
@@ -87,7 +86,7 @@ export class TinySliceModule {
 				},
 				{
 					provide: Scope,
-					useValue: scope,
+					useFactory: () => new Scope(),
 				},
 				{
 					provide: ROOT_STORE,
