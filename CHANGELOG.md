@@ -2,8 +2,15 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
-## [0.2.0](https://github.com/AlexAegis/tinyslice/compare/v0.1.3...v0.2.0) (2022-09-27)
+## [0.2.1](https://github.com/AlexAegis/tinyslice/compare/v0.2.0...v0.2.1) (2022-09-28)
 
+### Bug Fixes
+
+* moved field initialization to constructor ([c2dbd81](https://github.com/AlexAegis/tinyslice/commit/c2dbd818a22874110e00ca351678d5ff14e8f8c6))
+* ngx root scope provider ([66daa53](https://github.com/AlexAegis/tinyslice/commit/66daa53f404e1abb836b657394d0336eadd3f933))
+* updateObject fn update non objects should be a replace ([dfa2cc5](https://github.com/AlexAegis/tinyslice/commit/dfa2cc5c9addc4c3abb6bee4bb6a202810cbdfcc))
+
+## [0.2.0](https://github.com/AlexAegis/tinyslice/compare/v0.1.3...v0.2.0) (2022-09-27)
 
 ### Features
 
