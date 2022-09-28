@@ -1,8 +1,7 @@
 import { rootStore, scope } from '../store';
 
 export const messageActions = {
-	setMessage: scope.createAction<string | undefined>('[Message] set'),
-	setSideMessage: scope.createAction<string | undefined>('[Message] set side message'),
+	sendMessage: scope.createAction<string | undefined>('[Message] send'),
 	clearMessage: scope.createAction<void>('[Message] clear'),
 	setSecondMessage: scope.createAction<string>('[Message] set second message'),
 };
@@ -17,7 +16,7 @@ export const messageSlice = rootStore.addSlice<MessageState>(
 	'message',
 	{ lastMessage: undefined, messageHistory: [], sideMessage: undefined },
 	[
-		messageActions.setMessage.reduce((state, payload) => ({
+		messageActions.sendMessage.reduce((state, payload) => ({
 			...state,
 			lastMessage: payload,
 			messageHistory: payload ? [...state.messageHistory, payload] : state.messageHistory,
@@ -29,9 +28,7 @@ export const messageSlice = rootStore.addSlice<MessageState>(
 	]
 );
 
-export const sideMessage$ = messageSlice.slice('sideMessage', [
-	messageActions.setSideMessage.reduce((_state, payload) => payload),
-]);
+export const sideMessage$ = messageSlice.slice('sideMessage');
 
 export const messageHistory$ = messageSlice.slice('messageHistory');
 
