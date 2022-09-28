@@ -71,28 +71,7 @@ export type RootSlice<State> = Slice<never, State>;
  */
 export class Slice<ParentState, State> extends Observable<State> {
 	#sink = new Subscription();
-
-	#state$ = new BehaviorSubject<State>(this.initialState);
-
-	#absolutePath: string = this.#calculateAbsolutePath();
-
-	public readonly setAction = new Action<State>(
-		`${TINYSLICE_ACTION_DEFAULT_PREFIX} set  ${this.#absolutePath}`
-	);
-	public readonly updateAction = new Action<Partial<State>>(
-		`${TINYSLICE_ACTION_DEFAULT_PREFIX} update ${this.#absolutePath}`
-	);
-
-	#observableState$ = this.#state$.pipe(distinctUntilChanged());
-
-	#reducerConfigurations$ = new BehaviorSubject<ReducerConfiguration<State>[]>([
-		this.setAction.reduce((state, payload) => payload ?? state),
-		this.updateAction.reduce((state, payload) => updateObject(state, payload)),
-		...this.initialReducers,
-	]);
-
 	#metaReducerConfigurations$ = new BehaviorSubject<MetaPacketReducer<State>[]>([]);
-
 	#metaReducer$ = this.#metaReducerConfigurations$.pipe(
 		map((metaReducerConfigurations) => (snapshot: ReduceActionSliceSnapshot<State>) => {
 			for (const metaReducerConfiguration of metaReducerConfigurations) {
@@ -101,139 +80,31 @@ export class Slice<ParentState, State> extends Observable<State> {
 		})
 	);
 
-	#autoRegisterReducerActions$ = this.#reducerConfigurations$.pipe(
-		tap((reducerConfigurations) => {
-			for (const reducerConfiguration of reducerConfigurations) {
-				this.scope.registerAction(reducerConfiguration.action);
-			}
-		})
-	);
+	#scope: Scope;
+	#initialState: State;
+	#parentCoupling: SliceCoupling<ParentState, State> | undefined;
+	#initialReducers: ReducerConfiguration<State>[];
+	#sliceOptions: SliceOptions<State> | undefined;
+	#state$: BehaviorSubject<State>;
+	#pathSegment: string;
+	#absolutePath: string;
+	setAction: Action<State>;
+	updateAction: Action<Partial<State>>;
+	#observableState$: Observable<State>;
+	#reducerConfigurations$: BehaviorSubject<ReducerConfiguration<State>[]>;
+	#autoRegisterReducerActions$: Observable<ReducerConfiguration<State, unknown>[]>;
+	#sliceReducer$: Observable<PacketReducer<State>>;
+	#plugins$: BehaviorSubject<TinySlicePlugin<State>[]>;
+	#autoRegisterPlugins$: Observable<unknown>;
 
-	#sliceReducer$: Observable<PacketReducer<State>> = this.#reducerConfigurations$.pipe(
-		map((reducerConfigurations) => (state, action) => {
-			let nextState = state;
-			if (action) {
-				nextState = reducerConfigurations
-					.filter((rc) => rc.action.type === action.type)
-					.reduce((acc, { packetReducer }) => packetReducer(acc, action), state);
-			}
-			return nextState;
-		})
-	);
-
-	#plugins$ = new BehaviorSubject<TinySlicePlugin<State>[]>(this.sliceOptions?.plugins ?? []);
-
-	#autoRegisterPlugins$ = this.#plugins$.pipe(
-		startWith([]),
-		pairwise(),
-		tap(([p, n]) => {
-			for (const plugin of p) {
-				plugin.stop();
-			}
-			for (const plugin of n) {
-				this.#registerPlugin(plugin);
-			}
-		})
-	);
 	#slices$ = new BehaviorSubject<Record<string, SliceRegistration<State, unknown>>>({});
-	override subscribe = this.#observableState$.subscribe.bind(this.#observableState$);
+
+	override subscribe;
+
 	// Listens to the parent for changes to select itself from
 	// check if the parent could do it instead
-	#parentListener = this.parentCoupling?.parentSlice.pipe(
-		finalize(() => this.unsubscribe()),
-		skip(1),
-		map((parentState) => {
-			const slice = this.parentCoupling?.selector(parentState);
-
-			if (this.parentCoupling?.lazy && !isNonNullable(slice)) {
-				return this.initialState;
-			} else {
-				return slice;
-			}
-		}),
-
-		distinctUntilChanged(),
-		tap((parentSlice) => this.#state$.next(parentSlice as State))
-	);
-
-	#pipeline: Observable<ReduceActionSliceSnapshot<State>> = zip(
-		this.scope.dispatcher$,
-		this.#slices$.pipe(
-			map((sliceRegistrations) => Object.values(sliceRegistrations)),
-			switchMap((sliceRegistrations) => {
-				if (sliceRegistrations.length) {
-					return zip(
-						sliceRegistrations.map((sliceRegistration) =>
-							sliceRegistration.slice.#pipeline.pipe(
-								map((snapshot) => ({ snapshot, sliceRegistration }))
-							)
-						)
-					);
-				} else {
-					return this.scope.dispatcher$.pipe(map(() => []));
-				}
-			})
-		)
-	).pipe(
-		withLatestFrom(this.#state$, this.#sliceReducer$),
-		map(([[action, sliceChanges], prevState, reducer]): ReduceActionSliceSnapshot<State> => {
-			if (this.#isRootOrParentStateUndefined()) {
-				return {
-					action,
-					prevState,
-					nextState: prevState,
-				};
-			}
-
-			const withSliceChanges: State = sliceChanges
-				.filter(
-					(sliceChange) =>
-						sliceChange.snapshot.prevState !== sliceChange.snapshot.nextState
-				)
-				.reduce(
-					(prevState, sliceChange) =>
-						sliceChange.sliceRegistration.merger(
-							prevState,
-							sliceChange.snapshot.nextState
-						),
-					prevState
-				);
-
-			const nextState = reducer(withSliceChanges, action);
-
-			return {
-				action,
-				prevState,
-				nextState,
-			};
-		}),
-		tap((snapshot) => {
-			if (snapshot.prevState !== snapshot.nextState) {
-				this.#state$.next(snapshot.nextState);
-			}
-		}),
-		withLatestFrom(this.#metaReducer$),
-		tap(([snapshot, metaReducer]) => {
-			metaReducer(snapshot);
-			if (snapshot.prevState !== snapshot.nextState) {
-				this.#state$.next(snapshot.nextState);
-			}
-		}),
-		map(([snapshot, _metaReducer]) => snapshot),
-		catchError((error) =>
-			this.#plugins$.pipe(
-				take(1),
-				tap((plugins) => {
-					for (const plugin of plugins) {
-						plugin.onError?.(error);
-					}
-				}),
-				switchMap(() => EMPTY)
-			)
-		),
-		finalize(() => this.unsubscribe()),
-		share() // Listened to by child slices
-	);
+	#parentListener: Observable<State | undefined> | undefined;
+	#pipeline: Observable<ReduceActionSliceSnapshot<State>>;
 
 	/**
 	 *
@@ -242,57 +113,226 @@ export class Slice<ParentState, State> extends Observable<State> {
 	 * unique on it's parent.
 	 */
 	private constructor(
-		private readonly scope: Scope,
-		private readonly initialState: State,
-		private readonly parentCoupling: SliceCoupling<ParentState, State> | undefined,
-		private readonly pathSegment: string,
-		private readonly initialReducers: ReducerConfiguration<State>[],
-		private readonly sliceOptions?: SliceOptions<State>
+		scope: Scope,
+		initialState: State,
+		parentCoupling: SliceCoupling<ParentState, State> | undefined,
+		pathSegment: string,
+		initialReducers: ReducerConfiguration<State>[] = [],
+		sliceOptions: SliceOptions<State> = {}
 	) {
 		super();
+		this.#scope = scope;
+		this.#pathSegment = pathSegment;
+		this.#initialState = initialState;
+		this.#parentCoupling = parentCoupling;
+		this.#initialReducers = initialReducers;
+		this.#sliceOptions = sliceOptions;
 
-		// setTimeout(() => {
-		// 	this.#plugins$.next(this.#plugins$.value);
-		// }, 1000);
+		this.#absolutePath = Slice.calculateAbsolutePath(parentCoupling, pathSegment);
 
-		if (this.parentCoupling) {
-			this.parentCoupling.parentSlice.#registerSlice({
+		this.setAction = new Action<State>(
+			`${TINYSLICE_ACTION_DEFAULT_PREFIX} set  ${this.#absolutePath}`
+		);
+		this.updateAction = new Action<Partial<State>>(
+			`${TINYSLICE_ACTION_DEFAULT_PREFIX} update ${this.#absolutePath}`
+		);
+
+		this.#state$ = new BehaviorSubject<State>(this.#initialState);
+		this.#observableState$ = this.#state$.pipe(distinctUntilChanged());
+
+		this.#reducerConfigurations$ = new BehaviorSubject<ReducerConfiguration<State>[]>([
+			this.setAction.reduce((state, payload) => payload ?? state),
+			this.updateAction.reduce((state, payload) => updateObject(state, payload)),
+			...this.#initialReducers,
+		]);
+
+		this.#autoRegisterReducerActions$ = this.#reducerConfigurations$.pipe(
+			tap((reducerConfigurations) => {
+				for (const reducerConfiguration of reducerConfigurations) {
+					this.#scope.registerAction(reducerConfiguration.action);
+				}
+			})
+		);
+
+		this.#sliceReducer$ = this.#reducerConfigurations$.pipe(
+			map((reducerConfigurations) => (state, action) => {
+				let nextState = state;
+				if (action) {
+					nextState = reducerConfigurations
+						.filter((rc) => rc.action.type === action.type)
+						.reduce((acc, { packetReducer }) => packetReducer(acc, action), state);
+				}
+				return nextState;
+			})
+		);
+
+		this.#pipeline = zip(
+			this.#scope.dispatcher$,
+			this.#slices$.pipe(
+				map((sliceRegistrations) => Object.values(sliceRegistrations)),
+				switchMap((sliceRegistrations) => {
+					if (sliceRegistrations.length) {
+						return zip(
+							sliceRegistrations.map((sliceRegistration) =>
+								sliceRegistration.slice.#pipeline.pipe(
+									map((snapshot) => ({ snapshot, sliceRegistration }))
+								)
+							)
+						);
+					} else {
+						return this.#scope.dispatcher$.pipe(map(() => []));
+					}
+				})
+			)
+		).pipe(
+			withLatestFrom(this.#state$, this.#sliceReducer$),
+			map(
+				([
+					[action, sliceChanges],
+					prevState,
+					reducer,
+				]): ReduceActionSliceSnapshot<State> => {
+					if (this.#isRootOrParentStateUndefined()) {
+						return {
+							action,
+							prevState,
+							nextState: prevState,
+						};
+					}
+
+					const withSliceChanges: State = sliceChanges
+						.filter(
+							(sliceChange) =>
+								sliceChange.snapshot.prevState !== sliceChange.snapshot.nextState
+						)
+						.reduce(
+							(prevState, sliceChange) =>
+								sliceChange.sliceRegistration.merger(
+									prevState,
+									sliceChange.snapshot.nextState
+								),
+							prevState
+						);
+
+					const nextState = reducer(withSliceChanges, action);
+
+					return {
+						action,
+						prevState,
+						nextState,
+					};
+				}
+			),
+			tap((snapshot) => {
+				if (snapshot.prevState !== snapshot.nextState) {
+					this.#state$.next(snapshot.nextState);
+				}
+			}),
+			withLatestFrom(this.#metaReducer$),
+			tap(([snapshot, metaReducer]) => {
+				metaReducer(snapshot);
+				if (snapshot.prevState !== snapshot.nextState) {
+					this.#state$.next(snapshot.nextState);
+				}
+			}),
+			map(([snapshot, _metaReducer]) => snapshot),
+			catchError((error) =>
+				this.#plugins$.pipe(
+					take(1),
+					tap((plugins) => {
+						for (const plugin of plugins) {
+							plugin.onError?.(error);
+						}
+					}),
+					switchMap(() => EMPTY)
+				)
+			),
+			finalize(() => this.unsubscribe()),
+			share() // Listened to by child slices
+		);
+
+		this.#plugins$ = new BehaviorSubject<TinySlicePlugin<State>[]>(
+			this.#sliceOptions?.plugins ?? []
+		);
+
+		// Listens to the parent for changes to select itself from
+		// check if the parent could do it instead
+		this.#parentListener = this.#parentCoupling?.parentSlice.pipe(
+			finalize(() => this.unsubscribe()),
+			skip(1),
+			map((parentState) => {
+				const slice = this.#parentCoupling?.selector(parentState);
+
+				if (this.#parentCoupling?.lazy && !isNonNullable(slice)) {
+					return this.#initialState;
+				} else {
+					return slice;
+				}
+			}),
+
+			distinctUntilChanged(),
+			tap((parentSlice) => this.#state$.next(parentSlice as State))
+		);
+
+		this.#autoRegisterPlugins$ = this.#plugins$.pipe(
+			startWith([]),
+			pairwise(),
+			tap(([p, n]) => {
+				for (const plugin of p) {
+					plugin.stop();
+				}
+				for (const plugin of n) {
+					this.#registerPlugin(plugin);
+				}
+			})
+		);
+
+		this.subscribe = this.#observableState$.subscribe.bind(this.#observableState$);
+
+		this.#start();
+	}
+
+	#start() {
+		if (this.#parentCoupling) {
+			this.#parentCoupling.parentSlice.#registerSlice({
 				slice: this,
-				merger: this.parentCoupling.merger,
-				selector: this.parentCoupling.selector,
-				lazy: this.parentCoupling.lazy,
-				lazyNotificationPayload: JSON.stringify(this.initialState),
+				merger: this.#parentCoupling.merger,
+				selector: this.#parentCoupling.selector,
+				lazy: this.#parentCoupling.lazy,
+				lazyNotificationPayload: JSON.stringify(this.#initialState),
 			});
 
 			this.#sink.add(this.#parentListener?.subscribe());
 		}
 
+		this.#scope.slices.set(this.#absolutePath, this);
+
 		this.#sink.add(this.#autoRegisterReducerActions$.subscribe());
 		this.#sink.add(this.#autoRegisterPlugins$.subscribe());
-		// Slices are hot!
-		this.#sink.add(this.#pipeline.subscribe());
-
-		this.scope.slices.set(this.#absolutePath, this);
+		this.#sink.add(this.#pipeline.subscribe()); // Slices are hot!
 	}
 
 	static assembleAbsolutePath(parentAbsolutePath: string, segment: string): string {
 		return `${parentAbsolutePath}${parentAbsolutePath ? '.' : ''}${segment}`;
 	}
 
-	#calculateAbsolutePath(): string {
-		if (this.parentCoupling) {
+	private static calculateAbsolutePath<ParentState, State>(
+		parentCoupling: SliceCoupling<ParentState, State> | undefined,
+		pathSegment: string
+	): string {
+		if (parentCoupling) {
 			return Slice.assembleAbsolutePath(
-				this.parentCoupling.parentSlice.#absolutePath,
-				this.pathSegment
+				parentCoupling.parentSlice.#absolutePath,
+				pathSegment
 			);
 		} else {
-			return this.pathSegment;
+			return pathSegment;
 		}
 	}
 
 	#registerPlugin(plugin: TinySlicePlugin<State>): TinySlicePlugin<State> {
 		plugin.register({
-			initialState: this.initialState,
+			initialState: this.#initialState,
 			state$: this.#pipeline,
 			stateInjector: (state: State) => this.#state$.next(state),
 		});
@@ -317,8 +357,8 @@ export class Slice<ParentState, State> extends Observable<State> {
 	}
 
 	#isRootOrParentStateUndefined(): boolean {
-		return this.parentCoupling
-			? isNullish(this.parentCoupling.parentSlice.#state$.value)
+		return this.#parentCoupling
+			? isNullish(this.#parentCoupling.parentSlice.#state$.value)
 			: false;
 	}
 
@@ -342,7 +382,7 @@ export class Slice<ParentState, State> extends Observable<State> {
 		lazy = false
 	): Slice<State, NonNullable<ChildState>> {
 		return new Slice<State, ChildState>(
-			this.scope,
+			this.#scope,
 			initialState,
 			{
 				parentSlice: this as Slice<unknown, State>,
@@ -429,10 +469,10 @@ export class Slice<ParentState, State> extends Observable<State> {
 			selector(this.#state$.value as State & Record<AdditionalKey, ChildState>) ??
 			initialState;
 
-		if (this.scope.slices.has(path)) {
+		if (this.#scope.slices.has(path)) {
 			// ? If this proves to be error prone just throw an error
 			// ? Double define should be disallowed anyway
-			return this.scope.slices.get(path) as Slice<
+			return this.#scope.slices.get(path) as Slice<
 				State & Record<AdditionalKey, ChildState>,
 				NonNullable<ChildState>
 			>;
@@ -452,19 +492,19 @@ export class Slice<ParentState, State> extends Observable<State> {
 	): SliceDetacher {
 		this.#slices$.next({
 			...this.#slices$.value,
-			[sliceRegistration.slice.pathSegment]: sliceRegistration as SliceRegistration<
+			[sliceRegistration.slice.#pathSegment]: sliceRegistration as SliceRegistration<
 				State,
 				unknown
 			>,
 		});
 
 		if (sliceRegistration.lazy) {
-			this.scope.internalActionRegisterLazySlice.next(
+			this.#scope.internalActionRegisterLazySlice.next(
 				sliceRegistration.lazyNotificationPayload
 			);
 		}
 
-		return () => this.#unregisterSlice(sliceRegistration.slice.pathSegment);
+		return () => this.#unregisterSlice(sliceRegistration.slice.#pathSegment);
 	}
 
 	#unregisterSlice(pathSegment: string): void {
@@ -503,5 +543,9 @@ export class Slice<ParentState, State> extends Observable<State> {
 		this.#metaReducerConfigurations$.complete();
 		this.#reducerConfigurations$.complete();
 		this.#sink.unsubscribe();
+	}
+
+	public asObservable(): Observable<State> {
+		return this.pipe();
 	}
 }
