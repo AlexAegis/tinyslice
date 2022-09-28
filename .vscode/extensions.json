@@ -4,6 +4,7 @@
 		"editorconfig.editorconfig",
 		"angular.ng-template",
 		"nrwl.angular-console",
-		"dbaeumer.vscode-eslint"
+		"dbaeumer.vscode-eslint",
+		"firsttris.vscode-jest-runner"
 	]
 }

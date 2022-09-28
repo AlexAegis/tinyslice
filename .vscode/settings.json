@@ -48,5 +48,6 @@
 			"fileMatch": ["typedoc.json"],
 			"url": "https://json.schemastore.org/typedoc"
 		}
-	]
+	],
+	"jestrunner.runOptions": ["--coverage"]
 }
