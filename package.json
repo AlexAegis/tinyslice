@@ -41,7 +41,6 @@
 		"examples/svelte"
 	],
 	"scripts": {
-		"serve:standalone-svelte": "npm --workspace examples/svelte start",
 		"serve:angular": "nx run angular:serve",
 		"serve:svelte": "nx run svelte:serve",
 		"format": "prettier --write .",
