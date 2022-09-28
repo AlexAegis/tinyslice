@@ -13,7 +13,7 @@ export const updateObject = <T, O extends T>(base: T, other: O | Partial<T>): T 
 				return { ...base, ...other };
 			}
 		} else {
-			return base;
+			return other as O;
 		}
 	} else {
 		return base;
