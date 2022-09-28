@@ -6,7 +6,6 @@
 		"core": "libs/core",
 		"devtools-plugin": "libs/devtools-plugin",
 		"ngx": "libs/ngx",
-		"svelte": "apps/svelte",
-		"sveltekit": "apps/sveltekit"
+		"svelte": "apps/svelte"
 	}
 }

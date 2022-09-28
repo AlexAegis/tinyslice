@@ -14,7 +14,7 @@ export const countAction = {
 
 // scope.createEffect(countAction.decrement.pipe(map((a) => a + 1)), countAction.increment);
 
-export const rootStore = scope.createStore<RootState>(
+export const rootSlice = scope.createRootSlice<RootState>(
 	{
 		count: 0
 	},
@@ -38,4 +38,4 @@ export const rootStore = scope.createStore<RootState>(
 	}
 );
 
-export const count$ = rootStore.slice('count');
+export const count$ = rootSlice.slice('count');

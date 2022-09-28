@@ -1,8 +1,0 @@
-{
-	"name": "sveltekit",
-	"version": "0.2.0",
-	"type": "module",
-	"devDependencies": {
-		"svelte": "../../node_modules/svelte"
-	}
-}
