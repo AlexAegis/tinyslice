@@ -1,7 +1,7 @@
 import { map, tap } from 'rxjs/operators';
 import { Scope } from '../lib/store';
 
-const scope = Scope.createScope();
+const scope = new Scope();
 const printAction = scope.createAction<string>('printAction');
 const countAction = scope.createAction<number>('countAction');
 

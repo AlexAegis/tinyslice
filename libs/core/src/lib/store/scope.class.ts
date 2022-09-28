@@ -22,10 +22,6 @@ export class Scope<EveryRootState = unknown> {
 		`${TINYSLICE_ACTION_INTERNAL_PREFIX} register lazy slice`
 	);
 
-	public static createScope<EveryStore>(): Scope<EveryStore> {
-		return new Scope<EveryStore>();
-	}
-
 	public createAction<Payload>(type: string, config?: Partial<ActionConfig>): Action<Payload> {
 		return new Action<Payload>(type, config).register(this as Scope<unknown>);
 	}
