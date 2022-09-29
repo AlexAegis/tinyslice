@@ -10,7 +10,7 @@ import { RootStore } from './root-store.module';
 export class AppComponent {
 	title = 'angular';
 	isCollapsed = false;
-	version = packageJson.version;
+	version = packageJson?.version;
 
 	constructor(public readonly rootStore: RootStore) {}
 }
