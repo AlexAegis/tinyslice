@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.2.2](https://github.com/AlexAegis/tinyslice/compare/v0.2.1...v0.2.2) (2022-09-29)
+
+### Features
+
+* updated the svelte example ([ee0bfe8](https://github.com/AlexAegis/tinyslice/commit/ee0bfe8025fd8e5c2e49a45fe063c00b10990f64))
+
 ## [0.2.1](https://github.com/AlexAegis/tinyslice/compare/v0.2.0...v0.2.1) (2022-09-28)
 
 ### Bug Fixes
