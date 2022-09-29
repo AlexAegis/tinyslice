@@ -37,7 +37,7 @@ jobs:
           echo "@tinyslice/devtools-plugin is on npm: $IS_ON_NPM_CORE"
           echo "@tinyslice/ngx is on npm: $IS_ON_NPM_CORE"
       - name: Install dependencies
-        run: npm install --legacy-peer-deps
+        run: npm install
       - name: Build all except apps
         run: |
           npm run build -- --exclude angular,svelte

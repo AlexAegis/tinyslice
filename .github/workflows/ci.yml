@@ -29,7 +29,7 @@ jobs:
           node-version: ${{ matrix.node-version }}
       - name: Install packages
         if: steps.cache-packages.outputs.cache-hit != 'true'
-        run: npm install --legacy-peer-deps
+        run: npm install
       - name: build
         run: npm run build
   lint:
@@ -54,7 +54,7 @@ jobs:
           node-version: ${{ matrix.node-version }}
       - name: Install packages
         if: steps.cache-packages.outputs.cache-hit != 'true'
-        run: npm install --legacy-peer-deps
+        run: npm install
       - name: Lint with NX
         run: npm run lint
       - name: Lint with ESLint
@@ -83,7 +83,7 @@ jobs:
           node-version: ${{ matrix.node-version }}
       - name: Install packages
         if: steps.cache-packages.outputs.cache-hit != 'true'
-        run: npm install --legacy-peer-deps
+        run: npm install
       - name: test
         run: npm run test
       - name: Upload coverage result to codacy
