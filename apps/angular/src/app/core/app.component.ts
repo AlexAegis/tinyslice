@@ -1,4 +1,5 @@
 import { Component } from '@angular/core';
+import packageJson from '../../../../../package.json';
 import { RootStore } from './root-store.module';
 
 @Component({
@@ -9,6 +10,7 @@ import { RootStore } from './root-store.module';
 export class AppComponent {
 	title = 'angular';
 	isCollapsed = false;
+	version = packageJson.version;
 
 	constructor(public readonly rootStore: RootStore) {}
 }

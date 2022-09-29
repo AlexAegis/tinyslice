@@ -15,6 +15,7 @@
 		"lib": ["es2022", "dom"],
 		"skipLibCheck": true,
 		"skipDefaultLibCheck": true,
+		"allowSyntheticDefaultImports": true,
 		"baseUrl": ".",
 		"paths": {
 			"@tinyslice/core": ["libs/core/src/index.ts"],
