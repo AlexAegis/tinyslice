@@ -1,5 +1,3 @@
 ---
 exclude_paths:
-  - 'CHANGELOG.md'
-  - '.github/**'
-  - 'readme.md'
+  - '**.md'
