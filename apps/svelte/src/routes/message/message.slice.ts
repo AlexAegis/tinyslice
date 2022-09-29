@@ -1,24 +1,23 @@
-import { rootStore, scope } from '../store';
+import { rootSlice, scope } from '../../root.slice';
 
 export const messageActions = {
-	sendMessage: scope.createAction<string | undefined>('[Message] send'),
+	sendMessage: scope.createAction<string | number | null | undefined>('[Message] send'),
 	clearMessage: scope.createAction<void>('[Message] clear'),
 	setSecondMessage: scope.createAction<string>('[Message] set second message'),
 };
 
 export interface MessageState {
-	lastMessage: string | undefined;
-	sideMessage: string | undefined;
-	messageHistory: string[];
+	lastMessage: string | number | undefined;
+	messageHistory: (string | number)[];
 }
 
-export const messageSlice = rootStore.addSlice<MessageState>(
+export const messageSlice = rootSlice.addSlice<MessageState>(
 	'message',
-	{ lastMessage: undefined, messageHistory: [], sideMessage: undefined },
+	{ lastMessage: undefined, messageHistory: [] },
 	[
 		messageActions.sendMessage.reduce((state, payload) => ({
 			...state,
-			lastMessage: payload,
+			lastMessage: payload ?? undefined,
 			messageHistory: payload ? [...state.messageHistory, payload] : state.messageHistory,
 		})),
 		messageActions.clearMessage.reduce((state) => ({
@@ -28,11 +27,9 @@ export const messageSlice = rootStore.addSlice<MessageState>(
 	]
 );
 
-export const sideMessage$ = messageSlice.slice('sideMessage');
-
 export const messageHistory$ = messageSlice.slice('messageHistory');
 
-export const secondMessage$ = messageHistory$.sliceSelect<string>(
+export const secondMessage$ = messageHistory$.sliceSelect<string | number>(
 	(state) => state?.[1],
 	(state, second) => {
 		const merged = [...state];

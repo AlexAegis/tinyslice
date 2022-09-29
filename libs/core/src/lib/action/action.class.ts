@@ -1,7 +1,7 @@
 import { EMPTY, merge, MonoTypeOperatorFunction, Observable, Subject, Subscription } from 'rxjs';
 import { filter } from 'rxjs/operators';
 import type { Scope } from '../store';
-import type { PayloadReducer, ReducerConfiguration } from '../store/reducer.type';
+import type { ActionReducer, ReducerConfiguration } from '../store/reducer.type';
 import { ActionConfig, DEFAULT_ACTION_CONFIG } from './action-config.interface';
 import { ActionPacket } from './action-packet.interface';
 
@@ -94,11 +94,11 @@ export class Action<Payload = void> extends Subject<Payload> {
 	}
 
 	public reduce<State>(
-		payloadReducer: PayloadReducer<State, Payload>
+		actionReducer: ActionReducer<State, Payload>
 	): ReducerConfiguration<State, Payload> {
 		return {
 			packetReducer: (state: State, actionPacket: ActionPacket<Payload> | undefined): State =>
-				actionPacket ? payloadReducer(state, actionPacket.payload) : state,
+				actionPacket ? actionReducer(state, actionPacket.payload) : state,
 			action: this,
 		};
 	}
