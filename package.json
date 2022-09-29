@@ -60,6 +60,7 @@
 		"release:major": "standard-version --release-as major",
 		"start": "nx serve",
 		"build": "nx run-many --parallel 4 --target build --configuration production",
+		"build:angular": "nx run angular:build:production",
 		"test": "nx run-many --parallel 4 --target test --coverage"
 	},
 	"dependencies": {

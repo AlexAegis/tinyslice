@@ -38,9 +38,9 @@ jobs:
           echo "@tinyslice/ngx is on npm: $IS_ON_NPM_CORE"
       - name: Install dependencies
         run: npm install --legacy-peer-deps
-      - name: Build
+      - name: Build all except apps
         run: |
-          npm run build -- --baseHref=/${{ github.event.repository.name }}/
+          npm run build -- --exclude angular,svelte
       - name: Release @tinyslice/core on NPM
         if: env.IS_ON_NPM_CORE != 'true'
         env:
@@ -65,6 +65,9 @@ jobs:
         run: |
           npm config set '//registry.npmjs.org/:_authToken' "${NPM_TOKEN}"
           npm publish ./dist/libs/ngx --access public
+      - name: Build Github Pages example
+        run: |
+          npm run build:angular -- --baseHref '/${{ github.event.repository.name }}/'
       - name: Use index.html as 404.html
         run: |
           cp ./dist/apps/angular/index.html ./dist/apps/angular/404.html
