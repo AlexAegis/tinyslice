@@ -3,6 +3,7 @@ import {
 	catchError,
 	distinctUntilChanged,
 	EMPTY,
+	filter,
 	finalize,
 	map,
 	Observable,
@@ -18,7 +19,13 @@ import {
 	zip,
 } from 'rxjs';
 import { Action } from '../action';
-import { isNonNullable, isNullish, TINYSLICE_ACTION_DEFAULT_PREFIX, updateObject } from '../helper';
+import {
+	createLoggingMetaReducer,
+	isNonNullable,
+	isNullish,
+	TINYSLICE_ACTION_DEFAULT_PREFIX,
+	updateObject,
+} from '../helper';
 import { Merger } from './merger.type';
 import {
 	MetaPacketReducer,
@@ -49,8 +56,7 @@ export interface SliceRegistration<ParentState, State> {
 	slice: Slice<ParentState, State>;
 	selector: Selector<ParentState, State>;
 	merger: Merger<ParentState, State>;
-	lazy: boolean;
-	lazyNotificationPayload: string;
+	lazyInitialState: State | undefined;
 }
 
 export interface SliceOptions<State> {
@@ -71,14 +77,8 @@ export type RootSlice<State> = Slice<never, State>;
  */
 export class Slice<ParentState, State> extends Observable<State> {
 	#sink = new Subscription();
-	#metaReducerConfigurations$ = new BehaviorSubject<MetaPacketReducer<State>[]>([]);
-	#metaReducer$ = this.#metaReducerConfigurations$.pipe(
-		map((metaReducerConfigurations) => (snapshot: ReduceActionSliceSnapshot<State>) => {
-			for (const metaReducerConfiguration of metaReducerConfigurations) {
-				metaReducerConfiguration(snapshot);
-			}
-		})
-	);
+	#metaReducerConfigurations$: BehaviorSubject<MetaPacketReducer<State>[]>;
+	#metaReducer$: Observable<MetaPacketReducer<State>>;
 
 	#scope: Scope;
 	#initialState: State;
@@ -131,7 +131,7 @@ export class Slice<ParentState, State> extends Observable<State> {
 		this.#absolutePath = Slice.calculateAbsolutePath(parentCoupling, pathSegment);
 
 		this.setAction = new Action<State>(
-			`${TINYSLICE_ACTION_DEFAULT_PREFIX} set  ${this.#absolutePath}`
+			`${TINYSLICE_ACTION_DEFAULT_PREFIX} set ${this.#absolutePath}`
 		);
 		this.updateAction = new Action<Partial<State>>(
 			`${TINYSLICE_ACTION_DEFAULT_PREFIX} update ${this.#absolutePath}`
@@ -150,6 +150,19 @@ export class Slice<ParentState, State> extends Observable<State> {
 			tap((reducerConfigurations) => {
 				for (const reducerConfiguration of reducerConfigurations) {
 					this.#scope.registerAction(reducerConfiguration.action);
+				}
+			})
+		);
+
+		this.#metaReducerConfigurations$ = new BehaviorSubject<MetaPacketReducer<State>[]>([
+			...(this.#sliceOptions?.useDefaultLogger ? [createLoggingMetaReducer<State>()] : []),
+			...(this.#sliceOptions?.metaReducers ?? []),
+		]);
+
+		this.#metaReducer$ = this.#metaReducerConfigurations$.pipe(
+			map((metaReducerConfigurations) => (snapshot: ReduceActionSliceSnapshot<State>) => {
+				for (const metaReducerConfiguration of metaReducerConfigurations) {
+					metaReducerConfiguration(snapshot);
 				}
 			})
 		);
@@ -287,7 +300,9 @@ export class Slice<ParentState, State> extends Observable<State> {
 			})
 		);
 
-		this.subscribe = this.#observableState$.subscribe.bind(this.#observableState$);
+		this.subscribe = this.#observableState$
+			.pipe(filter(isNonNullable))
+			.subscribe.bind(this.#observableState$);
 
 		this.#start();
 	}
@@ -298,8 +313,7 @@ export class Slice<ParentState, State> extends Observable<State> {
 				slice: this,
 				merger: this.#parentCoupling.merger,
 				selector: this.#parentCoupling.selector,
-				lazy: this.#parentCoupling.lazy,
-				lazyNotificationPayload: JSON.stringify(this.#initialState),
+				lazyInitialState: this.#initialState,
 			});
 
 			this.#sink.add(this.#parentListener?.subscribe());
@@ -487,6 +501,7 @@ export class Slice<ParentState, State> extends Observable<State> {
 			) as Slice<State & Record<AdditionalKey, ChildState>, NonNullable<ChildState>>;
 		}
 	}
+
 	#registerSlice<ChildState>(
 		sliceRegistration: SliceRegistration<State, ChildState>
 	): SliceDetacher {
@@ -498,9 +513,9 @@ export class Slice<ParentState, State> extends Observable<State> {
 			>,
 		});
 
-		if (sliceRegistration.lazy) {
-			this.#scope.internalActionRegisterLazySlice.next(
-				sliceRegistration.lazyNotificationPayload
+		if (sliceRegistration.lazyInitialState) {
+			this.setAction.next(
+				sliceRegistration.merger(this.value, sliceRegistration.lazyInitialState)
 			);
 		}
 

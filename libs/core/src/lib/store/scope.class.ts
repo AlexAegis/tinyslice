@@ -18,9 +18,6 @@ export class Scope<EveryRootState = unknown> {
 	public readonly internalActionVoid = this.createAction<void>(
 		`${TINYSLICE_ACTION_INTERNAL_PREFIX} void`
 	);
-	public readonly internalActionRegisterLazySlice = this.createAction<string>(
-		`${TINYSLICE_ACTION_INTERNAL_PREFIX} register lazy slice`
-	);
 
 	public createAction<Payload = void>(
 		type: string,

@@ -64,7 +64,7 @@ export class TinySliceDevtoolPlugin<State = unknown> implements TinySlicePlugin<
 						this.lastState = nextState;
 						this.actions[this.actionId] = action;
 						this.actionId += 1;
-						connection.send(action.type, nextState);
+						connection.send(action, nextState);
 					})
 				)
 				.subscribe()
