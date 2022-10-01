@@ -1,5 +1,5 @@
+import { TINYSLICE_ACTION_PREFIX } from '../internal/consts';
 import type { MetaPacketReducer } from '../store/reducer.type';
-import { TINYSLICE_ACTION_PREFIX } from './consts';
 
 const brightFgColor = '#ffe36a';
 const dimFgColor = '#f9c33c';

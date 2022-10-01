@@ -19,13 +19,8 @@ import {
 	zip,
 } from 'rxjs';
 import { Action } from '../action';
-import {
-	createLoggingMetaReducer,
-	isNonNullable,
-	isNullish,
-	TINYSLICE_ACTION_DEFAULT_PREFIX,
-	updateObject,
-} from '../helper';
+import { createLoggingMetaReducer, isNonNullable, isNullish, updateObject } from '../helper';
+import { TINYSLICE_ACTION_DEFAULT_PREFIX } from '../internal';
 import { Merger } from './merger.type';
 import {
 	MetaPacketReducer,

@@ -2,7 +2,7 @@ import { catchError, EMPTY, finalize, map, Observable, Subject, Subscription, ta
 import type { ActionConfig } from '../action/action-config.interface';
 import { ActionPacket, isActionPacket } from '../action/action-packet.interface';
 import { Action, ActionTuple } from '../action/action.class';
-import { TINYSLICE_ACTION_INTERNAL_PREFIX } from '../helper';
+import { TINYSLICE_ACTION_INTERNAL_PREFIX } from '../internal';
 import { ReducerConfiguration } from './reducer.type';
 import { RootSlice, Slice, SliceOptions } from './slice.class';
 
