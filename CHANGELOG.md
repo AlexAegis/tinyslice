@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.2.3](https://github.com/AlexAegis/tinyslice/compare/v0.2.2...v0.2.3) (2022-10-01)
+
+
+### Features
+
+* reduce lazy slices on add ([3f77a3c](https://github.com/AlexAegis/tinyslice/commit/3f77a3cd08a487ca6107349d1901e16e48f2a6d1))
+
 ## [0.2.2](https://github.com/AlexAegis/tinyslice/compare/v0.2.1...v0.2.2) (2022-09-29)
 
 ### Features
