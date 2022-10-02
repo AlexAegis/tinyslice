@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.2.6](https://github.com/AlexAegis/tinyslice/compare/v0.2.5...v0.2.6) (2022-10-02)
+
+
+### Bug Fixes
+
+* action packet check allow payloadless ([c59d327](https://github.com/AlexAegis/tinyslice/commit/c59d327247f686d9776cd7d6d28fe00a1f6aac18))
+
 ### [0.2.5](https://github.com/AlexAegis/tinyslice/compare/v0.2.4...v0.2.5) (2022-10-02)
 
 
