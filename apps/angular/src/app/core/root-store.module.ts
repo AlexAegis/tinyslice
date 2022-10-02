@@ -10,7 +10,9 @@ import {
 import { filter, map, of, switchMap, take, tap } from 'rxjs';
 import packageJson from '../../../../../package.json';
 
-const PACKAGE_NAME_AND_VERSION = `${packageJson.displayName} (${packageJson.version})`;
+const PACKAGE_NAME_AND_VERSION = `${packageJson?.displayName ?? 'app'} (${
+	packageJson?.version ?? '0.0.0'
+})`;
 
 export interface RootState {
 	title: string;
