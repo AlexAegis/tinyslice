@@ -234,6 +234,47 @@ describe('slice', () => {
 		});
 	});
 
+	describe('error', () => {
+		interface RootState {
+			foo: string;
+		}
+
+		let rootSlice!: RootSlice<RootState>;
+		const initialRootSlice: RootState = {
+			foo: 'zed',
+		};
+
+		let errorTestAction: Action<void>;
+		const testError = new Error('error from test action');
+
+		const rootObserver: Observer<RootState> = createMockObserver();
+
+		let consoleErrorSpy: jest.SpyInstance;
+
+		beforeEach(() => {
+			errorTestAction = scope.createAction('error test action');
+			rootSlice = scope.createRootSlice<RootState>(initialRootSlice, [
+				errorTestAction.reduce((_state) => {
+					throw testError;
+				}),
+			]);
+
+			consoleErrorSpy = jest.spyOn(console, 'error');
+
+			sink.add(rootSlice.subscribe(rootObserver));
+		});
+
+		it('should forward the errors from reducers to the console', () => {
+			errorTestAction.next();
+			expect(rootObserver.next).toHaveBeenCalledTimes(1); // Initial emit
+			expect(rootObserver.error).toHaveBeenCalledTimes(0); // No error surfaced
+			expect(rootObserver.complete).toHaveBeenCalledTimes(0);
+
+			expect(consoleErrorSpy).toHaveBeenCalledTimes(1);
+			expect(consoleErrorSpy).toHaveBeenCalledWith(testError);
+		});
+	});
+
 	describe('slices', () => {
 		interface RootState {
 			foo: FooState;

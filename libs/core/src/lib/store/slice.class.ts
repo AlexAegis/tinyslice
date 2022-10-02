@@ -2,7 +2,6 @@ import {
 	BehaviorSubject,
 	catchError,
 	distinctUntilChanged,
-	EMPTY,
 	filter,
 	finalize,
 	map,
@@ -244,20 +243,21 @@ export class Slice<ParentState, State> extends Observable<State> {
 				}
 			}),
 			map(([snapshot, _metaReducer]) => snapshot),
-			catchError((error) =>
-				this.#plugins$.pipe(
+			catchError((error, pipeline$) => {
+				console.error(error);
+				return this.#plugins$.pipe(
 					take(1),
 					tap((plugins) => {
 						for (const plugin of plugins) {
 							plugin.onError?.(error);
 						}
 					}),
-					switchMap(() => EMPTY)
-				)
-			),
+					switchMap(() => pipeline$)
+				);
+			}),
 			finalize(() => this.unsubscribe()),
 			share() // Listened to by child slices
-		);
+		) as Observable<ReduceActionSliceSnapshot<State>>;
 
 		this.#plugins$ = new BehaviorSubject<TinySlicePlugin<State>[]>(
 			this.#sliceOptions?.plugins ?? []

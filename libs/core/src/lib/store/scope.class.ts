@@ -1,4 +1,4 @@
-import { catchError, EMPTY, finalize, map, Observable, Subject, Subscription, tap } from 'rxjs';
+import { catchError, finalize, map, Observable, Subject, Subscription, tap } from 'rxjs';
 import type { ActionConfig } from '../action/action-config.interface';
 import { ActionPacket, isActionPacket } from '../action/action-packet.interface';
 import { Action, ActionTuple } from '../action/action.class';
@@ -59,9 +59,9 @@ export class Scope<EveryRootState = unknown> {
 							}, 0);
 						}
 					}),
-					catchError((error) => {
+					catchError((error, pipeline$) => {
 						console.error(error);
-						return EMPTY;
+						return pipeline$;
 					})
 				)
 				.subscribe()
