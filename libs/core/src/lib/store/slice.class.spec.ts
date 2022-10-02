@@ -13,6 +13,14 @@ describe('slice', () => {
 	let sink!: Subscription;
 	let scope!: Scope;
 
+	const ROOT_SLICE_NAME = 'root';
+	const FOO_SLICE_NAME = 'foo';
+	const BAR_SLICE_NAME = 'bar';
+	const BER_SLICE_NAME = 'ber';
+	const BOR_SLICE_NAME = 'bor';
+	const ZED_SLICE_NAME = 'zed';
+	const YON_SLICE_NAME = 'yon';
+
 	beforeEach(() => {
 		sink = new Subscription();
 		scope = new Scope();
@@ -37,7 +45,10 @@ describe('slice', () => {
 		let borSlice!: Slice<FooState, string>;
 
 		const initialRootSlice: RootState = {
-			foo: { bar: 'zed', bor: 'yon' },
+			[FOO_SLICE_NAME]: {
+				[BAR_SLICE_NAME]: ZED_SLICE_NAME,
+				[BOR_SLICE_NAME]: YON_SLICE_NAME,
+			},
 		};
 
 		const rootObserver: Observer<RootState> = createMockObserver();
@@ -48,9 +59,9 @@ describe('slice', () => {
 		beforeEach(() => {
 			rootSlice = scope.createRootSlice<RootState>(initialRootSlice);
 
-			fooSlice = rootSlice.slice('foo');
-			barSlice = fooSlice.slice('bar');
-			borSlice = fooSlice.slice('bor');
+			fooSlice = rootSlice.slice(FOO_SLICE_NAME);
+			barSlice = fooSlice.slice(BAR_SLICE_NAME);
+			borSlice = fooSlice.slice(BOR_SLICE_NAME);
 
 			sink.add(rootSlice.subscribe(rootObserver));
 			sink.add(fooSlice.subscribe(fooSliceObserver));
@@ -118,12 +129,12 @@ describe('slice', () => {
 
 	describe('emission', () => {
 		interface RootState {
-			foo: FooState;
+			[FOO_SLICE_NAME]: FooState;
 		}
 
 		interface FooState {
-			bar: string;
-			bor: string;
+			[BAR_SLICE_NAME]: string;
+			[BOR_SLICE_NAME]: string;
 		}
 
 		let rootSlice!: RootSlice<RootState>;
@@ -131,8 +142,14 @@ describe('slice', () => {
 		let barSlice!: Slice<FooState, string>;
 		let borSlice!: Slice<FooState, string>;
 
+		const initialBarSlice = 'a';
+		const initialBorSlice = 'b';
+
 		const initialRootSlice: RootState = {
-			foo: { bar: 'zed', bor: 'yon' },
+			[FOO_SLICE_NAME]: {
+				[BAR_SLICE_NAME]: initialBarSlice,
+				[BOR_SLICE_NAME]: initialBorSlice,
+			},
 		};
 
 		const rootObserver: Observer<RootState> = createMockObserver();
@@ -143,9 +160,9 @@ describe('slice', () => {
 		beforeEach(() => {
 			rootSlice = scope.createRootSlice<RootState>(initialRootSlice);
 
-			fooSlice = rootSlice.slice('foo');
-			barSlice = fooSlice.slice('bar');
-			borSlice = fooSlice.slice('bor');
+			fooSlice = rootSlice.slice(FOO_SLICE_NAME);
+			barSlice = fooSlice.slice(BAR_SLICE_NAME);
+			borSlice = fooSlice.slice(BOR_SLICE_NAME);
 
 			sink.add(rootSlice.subscribe(rootObserver));
 			sink.add(fooSlice.subscribe(fooSliceObserver));
@@ -155,7 +172,7 @@ describe('slice', () => {
 
 		describe('the premade set action', () => {
 			it('should require all fields on a slice and emit all parents and all children', () => {
-				fooSlice.set({ bor: 'bon', bar: 'ber' });
+				fooSlice.set({ [BOR_SLICE_NAME]: 'c', [BAR_SLICE_NAME]: 'd' });
 				expect(rootObserver.next).toHaveBeenCalledTimes(2);
 				expect(rootObserver.error).toHaveBeenCalledTimes(0);
 				expect(rootObserver.complete).toHaveBeenCalledTimes(0);
@@ -195,7 +212,7 @@ describe('slice', () => {
 			});
 
 			it('should emit all parents and all changed children', () => {
-				fooSlice.update({ bor: 'bon' });
+				fooSlice.update({ [BOR_SLICE_NAME]: initialBorSlice + 'change' });
 				expect(rootObserver.next).toHaveBeenCalledTimes(2);
 				expect(rootObserver.error).toHaveBeenCalledTimes(0);
 				expect(rootObserver.complete).toHaveBeenCalledTimes(0);
@@ -234,14 +251,84 @@ describe('slice', () => {
 		});
 	});
 
+	describe('reducers', () => {
+		interface RootState {
+			[FOO_SLICE_NAME]: FooState;
+		}
+
+		interface FooState {
+			[BAR_SLICE_NAME]: string;
+		}
+
+		let rootSlice!: RootSlice<RootState>;
+		let fooSlice!: Slice<RootState, FooState>;
+		let barSlice!: Slice<FooState, string>;
+
+		const initialRootSlice: RootState = {
+			[FOO_SLICE_NAME]: { [BAR_SLICE_NAME]: 'a' },
+		};
+
+		const rootObserver: Observer<RootState> = createMockObserver();
+		const fooSliceObserver: Observer<FooState> = createMockObserver();
+		const barSliceObserver: Observer<string> = createMockObserver();
+
+		let testAction!: Action<void>;
+
+		const reducerSpy = jest.fn<void, [string, string]>();
+
+		beforeEach(() => {
+			testAction = scope.createAction('test');
+			rootSlice = scope.createRootSlice<RootState>(initialRootSlice, [
+				testAction.reduce((state) => {
+					reducerSpy(ROOT_SLICE_NAME, 'a');
+					return state;
+				}),
+			]);
+
+			fooSlice = rootSlice.slice(FOO_SLICE_NAME, [
+				testAction.reduce((state) => {
+					reducerSpy(FOO_SLICE_NAME, 'a');
+					return state;
+				}),
+				testAction.reduce((state) => {
+					reducerSpy(FOO_SLICE_NAME, 'b');
+					return state;
+				}),
+			]);
+			barSlice = fooSlice.slice(BAR_SLICE_NAME, [
+				testAction.reduce((state) => {
+					reducerSpy(BAR_SLICE_NAME, 'b');
+					return state;
+				}),
+				testAction.reduce((state) => {
+					reducerSpy(BAR_SLICE_NAME, 'a');
+					return state;
+				}),
+			]);
+
+			sink.add(rootSlice.subscribe(rootObserver));
+			sink.add(fooSlice.subscribe(fooSliceObserver));
+			sink.add(barSlice.subscribe(barSliceObserver));
+		});
+
+		it('should always be executed from leaf to root, in order of definition', () => {
+			testAction.next();
+			expect(reducerSpy).toHaveBeenNthCalledWith<[string, string]>(1, BAR_SLICE_NAME, 'b');
+			expect(reducerSpy).toHaveBeenNthCalledWith<[string, string]>(2, BAR_SLICE_NAME, 'a');
+			expect(reducerSpy).toHaveBeenNthCalledWith<[string, string]>(3, FOO_SLICE_NAME, 'a');
+			expect(reducerSpy).toHaveBeenNthCalledWith<[string, string]>(4, FOO_SLICE_NAME, 'b');
+			expect(reducerSpy).toHaveBeenNthCalledWith<[string, string]>(5, ROOT_SLICE_NAME, 'a');
+		});
+	});
+
 	describe('error', () => {
 		interface RootState {
-			foo: string;
+			[FOO_SLICE_NAME]: string;
 		}
 
 		let rootSlice!: RootSlice<RootState>;
 		const initialRootSlice: RootState = {
-			foo: 'zed',
+			[FOO_SLICE_NAME]: 'a',
 		};
 
 		let errorTestAction: Action<void>;
@@ -276,18 +363,20 @@ describe('slice', () => {
 	});
 
 	describe('slices', () => {
+		const UNCHANGING_SLICE_NAME = 'unchanging';
+
 		interface RootState {
-			foo: FooState;
+			[FOO_SLICE_NAME]: FooState;
 			unchanging: string;
 		}
 
 		interface FooState {
-			bar: BarState;
+			[BAR_SLICE_NAME]: BarState;
 			ber: string;
 		}
 
 		interface BarState {
-			zed: number;
+			[ZED_SLICE_NAME]: number;
 		}
 
 		let rootSlice!: RootSlice<RootState>;
@@ -299,13 +388,16 @@ describe('slice', () => {
 		let unchangingSlice!: Slice<RootState, string>;
 
 		const initialZedSlice = 1;
-		const initialBarSlice: BarState = { zed: initialZedSlice };
+		const initialBarSlice: BarState = { [ZED_SLICE_NAME]: initialZedSlice };
 		const initialBerSlice = 'tangerine';
-		const initialFooSlice: FooState = { bar: initialBarSlice, ber: initialBerSlice };
+		const initialFooSlice: FooState = {
+			[BAR_SLICE_NAME]: initialBarSlice,
+			[BER_SLICE_NAME]: initialBerSlice,
+		};
 		const initialUnchangingSlice = 'solid';
 		const initialRootSlice: RootState = {
-			foo: initialFooSlice,
-			unchanging: initialUnchangingSlice,
+			[FOO_SLICE_NAME]: initialFooSlice,
+			[UNCHANGING_SLICE_NAME]: initialUnchangingSlice,
 		};
 
 		const rootObserver: Observer<RootState> = createMockObserver();
@@ -318,11 +410,11 @@ describe('slice', () => {
 		beforeEach(() => {
 			rootSlice = scope.createRootSlice<RootState>(initialRootSlice);
 
-			fooSlice = rootSlice.slice('foo');
-			barSlice = fooSlice.slice('bar');
-			zedSlice = barSlice.slice('zed');
-			berSlice = fooSlice.slice('ber');
-			unchangingSlice = rootSlice.slice('unchanging');
+			fooSlice = rootSlice.slice(FOO_SLICE_NAME);
+			barSlice = fooSlice.slice(BAR_SLICE_NAME);
+			zedSlice = barSlice.slice(ZED_SLICE_NAME);
+			berSlice = fooSlice.slice(BER_SLICE_NAME);
+			unchangingSlice = rootSlice.slice(UNCHANGING_SLICE_NAME);
 
 			sink.add(rootSlice.subscribe(rootObserver));
 			sink.add(fooSlice.subscribe(fooSliceObserver));
@@ -376,11 +468,11 @@ describe('slice', () => {
 				const nextBerSlice = 'fusilli';
 				const nextFooSlice = {
 					...rootSlice.value.foo,
-					ber: nextBerSlice,
+					[BER_SLICE_NAME]: nextBerSlice,
 				};
 				const nextRootSlice = {
 					...rootSlice.value,
-					foo: nextFooSlice,
+					[FOO_SLICE_NAME]: nextFooSlice,
 				};
 				rootSlice.set(nextRootSlice);
 
@@ -421,7 +513,7 @@ describe('slice', () => {
 		describe('updating a non-root, non-leaf node', () => {
 			it('should emit on all nodes up to the root from an updated node and on all changed nodes down, leaf changed scenario', () => {
 				const nextZedSlice = initialZedSlice + 1;
-				barSlice.set({ zed: nextZedSlice });
+				barSlice.set({ [ZED_SLICE_NAME]: nextZedSlice });
 
 				expect(zedSliceObserver.next).toHaveBeenLastCalledWith(nextZedSlice);
 
@@ -434,7 +526,7 @@ describe('slice', () => {
 			});
 
 			it('should emit on all nodes up to the root from an updated node and on all changed nodes down, leaf unchanged scenario', () => {
-				barSlice.set({ zed: initialZedSlice });
+				barSlice.set({ [ZED_SLICE_NAME]: initialZedSlice });
 
 				expect(zedSliceObserver.next).toHaveBeenLastCalledWith(initialZedSlice);
 
@@ -450,14 +542,14 @@ describe('slice', () => {
 
 	describe('shallow optional slices', () => {
 		interface ShallowRootState {
-			data: string | undefined;
+			[FOO_SLICE_NAME]: string | undefined;
 		}
 
 		let rootSlice!: RootSlice<ShallowRootState>;
 		let shallowOptionalSlice!: Slice<ShallowRootState, string>;
 
 		const initialRootSlice: ShallowRootState = {
-			data: undefined,
+			[FOO_SLICE_NAME]: undefined,
 		};
 
 		const rootObserver: Observer<ShallowRootState> = createMockObserver();
@@ -465,21 +557,23 @@ describe('slice', () => {
 
 		beforeEach(() => {
 			rootSlice = scope.createRootSlice<ShallowRootState>(initialRootSlice);
-			shallowOptionalSlice = rootSlice.slice('data');
+			shallowOptionalSlice = rootSlice.slice(FOO_SLICE_NAME);
 			sink.add(rootSlice.subscribe(rootObserver));
 			sink.add(shallowOptionalSlice.subscribe(shallowOptionalSliceObserver));
 		});
 
 		it('should be able to be set from its parent', () => {
+			const nextFoo = 'b';
 			expect(shallowOptionalSliceObserver.next).toHaveBeenLastCalledWith(undefined);
-			rootSlice.set({ data: 'foo' });
-			expect(shallowOptionalSliceObserver.next).toHaveBeenLastCalledWith('foo');
+			rootSlice.set({ [FOO_SLICE_NAME]: nextFoo });
+			expect(shallowOptionalSliceObserver.next).toHaveBeenLastCalledWith(nextFoo);
 		});
 
 		it('should be able to be set from the premade set action', () => {
+			const nextFoo = 'b';
 			expect(shallowOptionalSliceObserver.next).toHaveBeenLastCalledWith(undefined);
-			shallowOptionalSlice.set('foo');
-			expect(shallowOptionalSliceObserver.next).toHaveBeenLastCalledWith('foo');
+			shallowOptionalSlice.set(nextFoo);
+			expect(shallowOptionalSliceObserver.next).toHaveBeenLastCalledWith(nextFoo);
 		});
 	});
 

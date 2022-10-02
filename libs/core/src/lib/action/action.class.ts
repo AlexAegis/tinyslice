@@ -43,6 +43,11 @@ export class Action<Payload = void> extends Subject<Payload> {
 		return new CombinedActions(undefined, this, action);
 	}
 
+	/**
+	 * TODO: Make this private, refactor angular solution
+	 * @param type
+	 * @param config
+	 */
 	public constructor(public type: string, config: Partial<ActionConfig> = DEFAULT_ACTION_CONFIG) {
 		super();
 		this.config = {
