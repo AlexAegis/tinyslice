@@ -38,6 +38,7 @@
 		"libs/core",
 		"libs/angular",
 		"libs/devtools-plugin",
+		"libs/hydration-plugin",
 		"examples/angular",
 		"examples/svelte"
 	],

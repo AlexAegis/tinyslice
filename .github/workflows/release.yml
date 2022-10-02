@@ -30,6 +30,8 @@ jobs:
           echo "IS_ON_NPM_CORE=$IS_ON_NPM_CORE" >> $GITHUB_ENV
           IS_ON_NPM_DEVTOOLS_PLUGIN=$(if [ ! -z "$(npm view @tinyslice/devtools-plugin@$VERSION 2> /dev/null)" ]; then echo 'true'; else echo 'false'; fi)
           echo "IS_ON_NPM_DEVTOOLS_PLUGIN=$IS_ON_NPM_DEVTOOLS_PLUGIN" >> $GITHUB_ENV
+          IS_ON_NPM_HYDRATION_PLUGIN=$(if [ ! -z "$(npm view @tinyslice/hydration-plugin@$VERSION 2> /dev/null)" ]; then echo 'true'; else echo 'false'; fi)
+          echo "IS_ON_NPM_HYDRATION_PLUGIN=$IS_ON_NPM_HYDRATION_PLUGIN" >> $GITHUB_ENV
           IS_ON_NPM_NGX=$(if [ ! -z "$(npm view @tinyslice/ngx@$VERSION 2> /dev/null)" ]; then echo 'true'; else echo 'false'; fi)
           echo "IS_ON_NPM_NGX=$IS_ON_NPM_NGX" >> $GITHUB_ENV
           echo "$VERSION"
@@ -57,6 +59,14 @@ jobs:
         run: |
           npm config set '//registry.npmjs.org/:_authToken' "${NPM_TOKEN}"
           npm publish ./dist/libs/devtools-plugin --access public
+      - name: Release @tinyslice/hydration-plugin on NPM
+        if: env.IS_ON_NPM_HYDRATION_PLUGIN != 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          npm config set '//registry.npmjs.org/:_authToken' "${NPM_TOKEN}"
+          npm publish ./dist/libs/hydration-plugin --access public
       - name: Release @tinyslice/ngx on NPM
         if: env.IS_ON_NPM_NGX != 'true'
         env:
