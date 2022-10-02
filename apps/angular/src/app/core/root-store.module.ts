@@ -1,11 +1,20 @@
 import { DOCUMENT } from '@angular/common';
 import { Inject, Injectable, NgModule } from '@angular/core';
-import { TinySliceDevtoolPlugin } from '@tinyslice/devtools-plugin';
-import { Action, RootSlice, Scope, TinySliceModule } from '@tinyslice/ngx';
-import { tap } from 'rxjs';
+import {
+	Action,
+	createLoggingMetaReducer,
+	RootSlice,
+	Scope,
+	TinySliceModule,
+} from '@tinyslice/ngx';
+import { filter, map, of, switchMap, take, tap } from 'rxjs';
+import packageJson from '../../../../../package.json';
+
+const PACKAGE_NAME_AND_VERSION = `${packageJson.displayName} (${packageJson.version})`;
 
 export interface RootState {
 	title: string;
+	debug: boolean;
 }
 
 export class RootStore {
@@ -14,7 +23,38 @@ export class RootStore {
 	setTitle = RootStore.setTitle;
 
 	title$ = this.store.slice('title');
-	constructor(public readonly store: RootSlice<RootState>) {}
+	debug$ = this.store.slice('debug');
+
+	constructor(public readonly store: RootSlice<RootState>, private readonly scope: Scope) {
+		this.scope.createEffect(
+			this.debug$.pipe(
+				filter((debug) => debug),
+				take(1),
+				switchMap((debug) => {
+					if (debug) {
+						return import('@tinyslice/devtools-plugin');
+					} else {
+						return of();
+					}
+				}),
+				map(
+					(pluginBundle) =>
+						new pluginBundle.TinySliceDevtoolPlugin<RootState>({
+							name: PACKAGE_NAME_AND_VERSION,
+						})
+				),
+				tap((plugin) => store.addPlugin(plugin))
+			)
+		);
+
+		this.scope.createEffect(
+			this.debug$.pipe(
+				filter((debug) => debug),
+				take(1),
+				tap(() => store.addMetaReducer(createLoggingMetaReducer<RootState>()))
+			)
+		);
+	}
 }
 
 @Injectable()
@@ -32,7 +72,8 @@ export class RootStoreEffects {
 	imports: [
 		TinySliceModule.forRoot<RootState>(
 			{
-				title: 'myExampleApp',
+				title: PACKAGE_NAME_AND_VERSION,
+				debug: false,
 			},
 			[
 				RootStore.setTitle.reduce((state, payload) => ({
@@ -43,12 +84,8 @@ export class RootStoreEffects {
 			[RootStoreEffects],
 			RootStore,
 			{
-				plugins: [
-					new TinySliceDevtoolPlugin({
-						name: 'myExampleApp',
-					}),
-				],
-				useDefaultLogger: true,
+				plugins: [],
+				useDefaultLogger: false,
 			}
 		),
 	],

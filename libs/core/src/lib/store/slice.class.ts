@@ -321,6 +321,33 @@ export class Slice<ParentState, State> extends Observable<State> {
 		this.#sink.add(this.#pipeline.subscribe()); // Slices are hot!
 	}
 
+	public setPlugins(plugins: TinySlicePlugin<State>[]): void {
+		this.#plugins$.next(plugins);
+	}
+
+	public getPlugins(): TinySlicePlugin<State>[] {
+		return this.#plugins$.value;
+	}
+
+	public addPlugin(...plugins: TinySlicePlugin<State>[]): void {
+		this.#plugins$.next([...this.#plugins$.value, ...plugins]);
+	}
+
+	public setMetaReducers(metaReducerConfigurations: MetaPacketReducer<State>[]): void {
+		this.#metaReducerConfigurations$.next(metaReducerConfigurations);
+	}
+
+	public getMetaReducers(): MetaPacketReducer<State>[] {
+		return this.#metaReducerConfigurations$.value;
+	}
+
+	public addMetaReducer(...metaReducerConfigurations: MetaPacketReducer<State>[]): void {
+		this.#metaReducerConfigurations$.next([
+			...this.#metaReducerConfigurations$.value,
+			...metaReducerConfigurations,
+		]);
+	}
+
 	static assembleAbsolutePath(parentAbsolutePath: string, segment: string): string {
 		return `${parentAbsolutePath}${parentAbsolutePath ? '.' : ''}${segment}`;
 	}
@@ -341,7 +368,7 @@ export class Slice<ParentState, State> extends Observable<State> {
 
 	#registerPlugin(plugin: TinySlicePlugin<State>): TinySlicePlugin<State> {
 		plugin.register({
-			initialState: this.#initialState,
+			initialState: this.#state$.value,
 			state$: this.#pipeline,
 			stateInjector: (state: State) => this.#state$.next(state),
 		});

@@ -1,5 +1,6 @@
 {
 	"name": "tinyslice",
+	"displayName": "TinySlice",
 	"description": "Reactive state management made tiny",
 	"version": "0.2.6",
 	"license": "MIT",

@@ -37,6 +37,11 @@
 		<nz-content>
 			<div class="inner-content">
 				<router-outlet></router-outlet>
+				<div class="content-footer">
+					<button nz-button (click)="rootStore.debug$.set(true)">
+						Enable Debug Mode
+					</button>
+				</div>
 			</div>
 		</nz-content>
 	</nz-layout>

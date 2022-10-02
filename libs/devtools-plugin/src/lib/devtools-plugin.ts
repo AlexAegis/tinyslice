@@ -33,10 +33,6 @@ export class TinySliceDevtoolPlugin<State = unknown> implements TinySlicePlugin<
 
 	constructor(private readonly options: ReduxDevtoolsExtensionConfig) {
 		this.extension = TinySliceDevtoolPlugin.getExtension<State>();
-		this.extensionConnection = this.extension?.connect({
-			...DEFAULT_DEVTOOLS_OPTIONS,
-			...this.options,
-		});
 	}
 
 	registerAdditionalTrigger = (trigger: () => void): void => {
@@ -121,6 +117,10 @@ export class TinySliceDevtoolPlugin<State = unknown> implements TinySlicePlugin<
 	}
 
 	start = (): void => {
+		this.extensionConnection = this.extension?.connect({
+			...DEFAULT_DEVTOOLS_OPTIONS,
+			...this.options,
+		});
 		if (this.extensionConnection) {
 			this.connect(this.extensionConnection);
 		}
@@ -130,6 +130,7 @@ export class TinySliceDevtoolPlugin<State = unknown> implements TinySlicePlugin<
 		this.sink.unsubscribe();
 		this.unsubscribeStateInjector?.();
 		this.extensionConnection?.unsubscribe();
+		this.sink = new Subscription();
 	};
 
 	public error(error: string | Error): void {
