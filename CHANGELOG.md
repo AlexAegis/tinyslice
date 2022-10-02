@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.2.7](https://github.com/AlexAegis/tinyslice/compare/v0.2.6...v0.2.7) (2022-10-02)
+
+
+### Features
+
+* lazy plugins and metareducers ([2698bfa](https://github.com/AlexAegis/tinyslice/commit/2698bfa1b18c1b40babdfef6383bb1a3c143548e))
+
 ### [0.2.6](https://github.com/AlexAegis/tinyslice/compare/v0.2.5...v0.2.6) (2022-10-02)
 
 
