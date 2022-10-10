@@ -57,6 +57,9 @@ export interface SliceOptions<State> {
 	plugins?: TinySlicePlugin<State>[];
 	metaReducers?: MetaPacketReducer<State>[];
 	useDefaultLogger?: boolean;
+}
+
+export interface RootSliceOptions<State> extends SliceOptions<State> {
 	/**
 	 * Runtime checks can slow the store down, turn them off in production,
 	 * they are all on by default.
@@ -402,7 +405,7 @@ export class Slice<ParentState, State> extends Observable<State> {
 		scope: Scope,
 		initialState: State,
 		initialReducers: ReducerConfiguration<State>[],
-		sliceOptions?: SliceOptions<State>
+		sliceOptions?: RootSliceOptions<State>
 	): RootSlice<State> {
 		return new Slice(scope, initialState, undefined, 'root', initialReducers, sliceOptions);
 	}
@@ -412,6 +415,7 @@ export class Slice<ParentState, State> extends Observable<State> {
 		selector: Selector<State, ChildState>,
 		merger: Merger<State, ChildState>,
 		reducers: ReducerConfiguration<ChildState>[],
+		sliceOptions: SliceOptions<ChildState> = {},
 		initialState: ChildState = (this.#state$.value
 			? selector(this.#state$.value)
 			: undefined) as ChildState,
@@ -427,21 +431,24 @@ export class Slice<ParentState, State> extends Observable<State> {
 				lazy,
 			},
 			pathSegment,
-			reducers
+			reducers,
+			sliceOptions
 		) as Slice<State, NonNullable<ChildState>>;
 	}
 
 	public sliceSelect<ChildState extends State[keyof State]>(
 		selector: Selector<State, ChildState>,
 		merger: Merger<State, ChildState>,
-		reducers: ReducerConfiguration<ChildState>[] = []
+		reducers: ReducerConfiguration<ChildState>[] = [],
+		sliceOptions?: SliceOptions<ChildState>
 	): Slice<State, NonNullable<ChildState>> {
-		return this.#slice(selector.toString(), selector, merger, reducers);
+		return this.#slice(selector.toString(), selector, merger, reducers, sliceOptions);
 	}
 
 	public slice<ChildStateKey extends keyof State>(
 		key: ChildStateKey,
-		reducers: ReducerConfiguration<NonNullable<State[ChildStateKey]>>[] = []
+		reducers: ReducerConfiguration<NonNullable<State[ChildStateKey]>>[] = [],
+		sliceOptions?: SliceOptions<State[ChildStateKey]>
 	): Slice<State, NonNullable<State[ChildStateKey]>> {
 		const selector: Selector<State, State[ChildStateKey]> = (state) => state[key];
 		const merger: Merger<State, State[ChildStateKey] | undefined> = (state, slice) => {
@@ -467,7 +474,8 @@ export class Slice<ParentState, State> extends Observable<State> {
 			key.toString(),
 			selector,
 			merger,
-			reducers as ReducerConfiguration<State[ChildStateKey]>[]
+			reducers as ReducerConfiguration<State[ChildStateKey]>[],
+			sliceOptions
 		);
 	}
 
@@ -479,7 +487,8 @@ export class Slice<ParentState, State> extends Observable<State> {
 	addSlice<ChildState, AdditionalKey extends string = string>(
 		key: AdditionalKey,
 		initialState: ChildState,
-		reducers: ReducerConfiguration<ChildState>[] = []
+		reducers: ReducerConfiguration<ChildState>[] = [],
+		sliceOptions?: SliceOptions<ChildState>
 	): Slice<State & Record<AdditionalKey, ChildState>, NonNullable<ChildState>> {
 		const selector: Selector<State, ChildState> = (state) =>
 			(state as State & Record<AdditionalKey, ChildState>)[key];
@@ -518,6 +527,7 @@ export class Slice<ParentState, State> extends Observable<State> {
 				selector,
 				merger,
 				reducers,
+				sliceOptions,
 				initialState,
 				true
 			) as Slice<State & Record<AdditionalKey, ChildState>, NonNullable<ChildState>>;
