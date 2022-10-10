@@ -13,26 +13,31 @@ export interface OptionalInnerSlice {
 }
 const setNonOptional = scope.createAction<string>('set nonopt');
 
-const rootStore = scope.createRootSlice<RootStore>(
+const rootStore = scope.createRootSlice(
 	{
 		optional: undefined,
 		nonOptional: 'foo',
-	},
-	[setNonOptional.reduce((state, payload) => ({ ...state, nonOptional: payload }))]
+	} as RootStore,
+	{
+		reducers: [setNonOptional.reduce((state, payload) => ({ ...state, nonOptional: payload }))],
+		defineInternals: (_slice) => {
+			return 1;
+		},
+	}
 );
 
 rootStore.subscribe((state) => console.log('--root', JSON.stringify(state)));
 
-const optionalSlice = rootStore.slice('optional', [
-	setNonOptional.reduce((state, _payload) => ({ ...state })),
-]);
+const optionalSlice = rootStore.slice('optional', {
+	reducers: [setNonOptional.reduce((state, _payload) => ({ ...state }))],
+});
 optionalSlice.subscribe((state) => console.log('--optionalSlice', JSON.stringify(state)));
 
 const setDataAction = scope.createAction<string>('set data');
 
-const optionalSliceData = optionalSlice.slice('data', [
-	setDataAction.reduce((_state, payload) => payload),
-]);
+const optionalSliceData = optionalSlice.slice('data', {
+	reducers: [setDataAction.reduce((_state, payload) => payload)],
+});
 optionalSliceData.subscribe((state) => console.log('--optionalSliceData', JSON.stringify(state)));
 
 setNonOptional.next('bar');

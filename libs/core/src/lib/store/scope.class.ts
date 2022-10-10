@@ -3,17 +3,17 @@ import type { ActionConfig } from '../action/action-config.interface';
 import { ActionPacket, isActionPacket } from '../action/action-packet.interface';
 import { Action, ActionTuple } from '../action/action.class';
 import { TINYSLICE_ACTION_INTERNAL_PREFIX } from '../internal';
-import { ReducerConfiguration } from './reducer.type';
 import { RootSlice, Slice, SliceOptions } from './slice.class';
 
-export class Scope<EveryRootState = unknown> {
+export class Scope {
 	private readonly dispatcherScope = new Subject<ActionPacket<unknown>>();
 	private readonly actionMap = new Map<string, Action<unknown>>();
 	public readonly dispatcher$ = this.dispatcherScope.asObservable();
 	private effectSubscriptions = new Subscription();
-	private stores: RootSlice<EveryRootState>[] = [];
+	private stores: RootSlice<unknown, unknown>[] = [];
 
 	public slices = new Map<string, unknown>();
+	public sliceInternals = new Map<string, unknown>();
 
 	public readonly internalActionVoid = this.createAction<void>(
 		`${TINYSLICE_ACTION_INTERNAL_PREFIX} void`
@@ -23,20 +23,14 @@ export class Scope<EveryRootState = unknown> {
 		type: string,
 		config?: Partial<ActionConfig>
 	): Action<Payload> {
-		return new Action<Payload>(type, config).register(this as Scope<unknown>);
+		return new Action<Payload>(type, config).register(this);
 	}
 
-	public createRootSlice<State extends EveryRootState>(
+	public createRootSlice<State, Internals>(
 		initialState: State,
-		reducerConfigurations: ReducerConfiguration<State>[] = [],
-		storeOptions?: SliceOptions<State>
-	): RootSlice<State> {
-		return Slice.createRootSlice(
-			this as Scope<unknown>,
-			initialState,
-			reducerConfigurations,
-			storeOptions
-		);
+		storeOptions?: SliceOptions<State, Internals>
+	): RootSlice<State, Internals> {
+		return Slice.createRootSlice(this, initialState, storeOptions);
 	}
 
 	public createEffect<Output>(action: Observable<Output | ActionPacket>): void {
@@ -71,7 +65,7 @@ export class Scope<EveryRootState = unknown> {
 	/**
 	 * Only used for cleanup
 	 */
-	public registerRootSlice(store: RootSlice<EveryRootState>): void {
+	public registerRootSlice(store: RootSlice<unknown, unknown>): void {
 		this.stores.push(store);
 	}
 

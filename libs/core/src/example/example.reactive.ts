@@ -1,11 +1,11 @@
 import { Scope } from '../lib/store';
 
-interface RootSlice {
+interface RootState {
 	foo: number;
 }
 const scope = new Scope();
 
-const rootSlice$ = scope.createRootSlice<RootSlice>({ foo: 1 });
+const rootSlice$ = scope.createRootSlice({ foo: 1 } as RootState);
 const foo$ = rootSlice$.slice('foo');
 
 foo$.subscribe((next) => console.log(`foo$: ${JSON.stringify(next)}`));
