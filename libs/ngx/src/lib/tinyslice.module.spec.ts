@@ -14,7 +14,7 @@ describe('TinySliceModule', () => {
 	beforeEach(async () => {
 		await TestBed.configureTestingModule({
 			declarations: [],
-			imports: [TinySliceModule.forRoot<RootState>({ foo: 1 }, [], [], RootStore)],
+			imports: [TinySliceModule.forRoot<RootState>({ foo: 1 }, [], RootStore)],
 		}).compileComponents();
 	});
 

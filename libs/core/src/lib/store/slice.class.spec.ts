@@ -278,33 +278,39 @@ describe('slice', () => {
 
 		beforeEach(() => {
 			testAction = scope.createAction('test');
-			rootSlice = scope.createRootSlice<RootState>(initialRootSlice, [
-				testAction.reduce((state) => {
-					reducerSpy(ROOT_SLICE_NAME, 'a');
-					return state;
-				}),
-			]);
+			rootSlice = scope.createRootSlice(initialRootSlice, {
+				reducers: [
+					testAction.reduce((state) => {
+						reducerSpy(ROOT_SLICE_NAME, 'a');
+						return state;
+					}),
+				],
+			});
 
-			fooSlice = rootSlice.slice(FOO_SLICE_NAME, [
-				testAction.reduce((state) => {
-					reducerSpy(FOO_SLICE_NAME, 'a');
-					return state;
-				}),
-				testAction.reduce((state) => {
-					reducerSpy(FOO_SLICE_NAME, 'b');
-					return state;
-				}),
-			]);
-			barSlice = fooSlice.slice(BAR_SLICE_NAME, [
-				testAction.reduce((state) => {
-					reducerSpy(BAR_SLICE_NAME, 'b');
-					return state;
-				}),
-				testAction.reduce((state) => {
-					reducerSpy(BAR_SLICE_NAME, 'a');
-					return state;
-				}),
-			]);
+			fooSlice = rootSlice.slice(FOO_SLICE_NAME, {
+				reducers: [
+					testAction.reduce((state) => {
+						reducerSpy(FOO_SLICE_NAME, 'a');
+						return state;
+					}),
+					testAction.reduce((state) => {
+						reducerSpy(FOO_SLICE_NAME, 'b');
+						return state;
+					}),
+				],
+			});
+			barSlice = fooSlice.slice(BAR_SLICE_NAME, {
+				reducers: [
+					testAction.reduce((state) => {
+						reducerSpy(BAR_SLICE_NAME, 'b');
+						return state;
+					}),
+					testAction.reduce((state) => {
+						reducerSpy(BAR_SLICE_NAME, 'a');
+						return state;
+					}),
+				],
+			});
 
 			sink.add(rootSlice.subscribe(rootObserver));
 			sink.add(fooSlice.subscribe(fooSliceObserver));
@@ -340,11 +346,13 @@ describe('slice', () => {
 
 		beforeEach(() => {
 			errorTestAction = scope.createAction('error test action');
-			rootSlice = scope.createRootSlice<RootState>(initialRootSlice, [
-				errorTestAction.reduce((_state) => {
-					throw testError;
-				}),
-			]);
+			rootSlice = scope.createRootSlice(initialRootSlice, {
+				reducers: [
+					errorTestAction.reduce((_state) => {
+						throw testError;
+					}),
+				],
+			});
 
 			consoleErrorSpy = jest.spyOn(console, 'error');
 
@@ -616,17 +624,21 @@ describe('slice', () => {
 				'setOptionalInnerSliceExternal'
 			);
 
-			rootSlice = scope.createRootSlice<RootState>(initialRootSlice, []);
+			rootSlice = scope.createRootSlice(initialRootSlice);
 
-			optionalSlice = rootSlice.slice('deepOptional', [
-				externalOptionalSliceSetAction.reduce((state, payload) => ({
-					...state,
-					...payload,
-				})),
-			]);
-			optionalInnerSlice = optionalSlice.slice('data', [
-				externalOptionalInnerSliceSetAction.reduce((_state, payload) => payload),
-			]);
+			optionalSlice = rootSlice.slice('deepOptional', {
+				reducers: [
+					externalOptionalSliceSetAction.reduce((state, payload) => ({
+						...state,
+						...payload,
+					})),
+				],
+			});
+			optionalInnerSlice = optionalSlice.slice('data', {
+				reducers: [
+					externalOptionalInnerSliceSetAction.reduce((_state, payload) => payload),
+				],
+			});
 
 			sink.add(rootSlice.subscribe(rootObserver));
 			sink.add(optionalSlice.subscribe(optionalSliceObserver));

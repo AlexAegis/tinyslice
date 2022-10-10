@@ -27,22 +27,24 @@ export class RequestStore {
 	requestSuccess = new Action<string>('requestSuccess');
 	requestFailure = new Action<string>('requestFailure');
 
-	slice = this.counterStore.slice.addSlice<RequestState>(
+	slice = this.counterStore.slice.addSlice(
 		'request',
-		{ result: undefined, loading: false },
-		[
-			this.request.reduce((state) => ({ ...state, loading: true })),
-			this.requestSuccess.reduce((state, payload) => ({
-				...state,
-				result: payload,
-				loading: false,
-			})),
-			this.requestFailure.reduce((state, payload) => ({
-				...state,
-				result: payload,
-				loading: false,
-			})),
-		]
+		{ result: undefined, loading: false } as RequestState,
+		{
+			reducers: [
+				this.request.reduce((state) => ({ ...state, loading: true })),
+				this.requestSuccess.reduce((state, payload) => ({
+					...state,
+					result: payload,
+					loading: false,
+				})),
+				this.requestFailure.reduce((state, payload) => ({
+					...state,
+					result: payload,
+					loading: false,
+				})),
+			],
+		}
 	);
 
 	loading$ = this.slice.slice('loading');

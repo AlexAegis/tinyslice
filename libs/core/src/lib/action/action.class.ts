@@ -1,4 +1,4 @@
-import { EMPTY, merge, MonoTypeOperatorFunction, Observable, Subject, Subscription } from 'rxjs';
+import { EMPTY, MonoTypeOperatorFunction, Observable, Subject, Subscription } from 'rxjs';
 import { filter } from 'rxjs/operators';
 import type { Scope } from '../store';
 import type { ActionReducer, ReducerConfiguration } from '../store/reducer.type';
@@ -8,19 +8,6 @@ import { ActionPacket } from './action-packet.interface';
 export type ActionTuple<T> = {
 	[K in keyof T]: Action<T[K]>;
 };
-
-export class CombinedActions<Payload extends readonly unknown[]> {
-	combinedActions: Observable<ActionPacket<Payload[number]>>;
-	constructor(chain?: CombinedActions<Payload>, ...action: [...ActionTuple<Payload>]) {
-		this.combinedActions = merge(...action.map((a) => a.listen$));
-	}
-
-	and<T extends readonly unknown[]>(
-		...action: [...ActionTuple<Payload>]
-	): CombinedActions<Payload | T> {
-		return new CombinedActions(this, ...action);
-	}
-}
 
 export type ActionDispatch = () => void;
 
@@ -33,14 +20,10 @@ export class Action<Payload = void> extends Subject<Payload> {
 
 	private config: ActionConfig;
 
-	private scope: Scope<unknown> | undefined;
+	private scope: Scope | undefined;
 
 	public get listen$(): Observable<ActionPacket<Payload>> {
 		return this.scope?.listen$(this) ?? EMPTY;
-	}
-
-	and<T>(action: Action<T>) {
-		return new CombinedActions(undefined, this, action);
 	}
 
 	/**

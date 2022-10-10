@@ -77,17 +77,18 @@ export class RootStoreEffects {
 				title: PACKAGE_NAME_AND_VERSION,
 				debug: false,
 			},
-			[
-				RootStore.setTitle.reduce((state, payload) => ({
-					...state,
-					title: payload,
-				})),
-			],
+
 			[RootStoreEffects],
 			RootStore,
 			{
 				plugins: [],
 				useDefaultLogger: false,
+				reducers: [
+					RootStore.setTitle.reduce((state, payload) => ({
+						...state,
+						title: payload,
+					})),
+				],
 			}
 		),
 	],

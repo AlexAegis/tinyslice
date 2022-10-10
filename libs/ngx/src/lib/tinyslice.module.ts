@@ -71,10 +71,9 @@ export class TinySliceModule {
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	public static forRoot<RootState = unknown>(
 		initialState: RootState,
-		reducerConfigurations: ReducerConfiguration<RootState>[] = [],
 		effectServices: Type<unknown>[],
 		facade: new (slice: RootSlice<RootState>, scope: Scope) => unknown,
-		storeOptions?: SliceOptions<RootState>
+		storeOptions?: SliceOptions<never, RootState, unknown>
 	): ModuleWithProviders<TinySliceModule> {
 		return {
 			ngModule: TinySliceModule,
@@ -95,14 +94,7 @@ export class TinySliceModule {
 							plugin.registerAdditionalTrigger?.(() => application.tick())
 						);
 
-						return scope.createRootSlice<RootState>(
-							initialState,
-							reducerConfigurations,
-							{
-								...storeOptions,
-								plugins: storeOptions?.plugins,
-							}
-						);
+						return scope.createRootSlice<RootState>(initialState, storeOptions);
 					},
 					deps: [Scope, ApplicationRef],
 				},
@@ -141,7 +133,7 @@ export class TinySliceModule {
 				{
 					provide: featureToken,
 					useFactory: (rootStore: RootSlice<unknown>) =>
-						rootStore.addSlice<State, string>(key, initialState, reducers),
+						rootStore.addSlice<State, string>(key, initialState, { reducers }),
 					deps: [ROOT_STORE],
 				},
 				{

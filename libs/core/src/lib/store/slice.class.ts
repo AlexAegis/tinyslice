@@ -49,15 +49,19 @@ export interface SliceRegistration<ParentState, State, Internals> {
 	lazyInitialState: State | undefined;
 }
 
-export interface SliceOptions<State, Internals> {
+export interface SliceOptions<ParentState, State, Internals> {
 	reducers?: ReducerConfiguration<State>[];
 	plugins?: TinySlicePlugin<State>[];
 	metaReducers?: MetaPacketReducer<State>[];
-	defineInternals?: (slice: Slice<unknown, State, Internals>) => Internals;
+	/**
+	 * ? Setting the passed slices Internal generic to unknown is crucial for
+	 * ? type inference to work
+	 */
+	defineInternals?: (slice: Slice<ParentState, State, unknown>) => Internals;
 	useDefaultLogger?: boolean;
 }
 
-export interface RootSliceOptions<State, Internals> extends SliceOptions<State, Internals> {
+export interface RootSliceOptions<State, Internals> extends SliceOptions<never, State, Internals> {
 	/**
 	 * Runtime checks can slow the store down, turn them off in production,
 	 * they are all on by default.
@@ -65,10 +69,10 @@ export interface RootSliceOptions<State, Internals> extends SliceOptions<State, 
 	runtimeChecks?: StrictRuntimeChecks;
 }
 
-export type RootSlice<State, Internals> = Slice<never, State, Internals>;
+export type RootSlice<State, Internals = unknown> = Slice<never, State, Internals>;
 
 export interface SliceConstructOptions<ParentState, State, Internals>
-	extends SliceOptions<State, Internals> {
+	extends SliceOptions<ParentState, State, Internals> {
 	scope: Scope;
 	initialState: State;
 	parentCoupling?: SliceCoupling<ParentState, State>;
@@ -76,14 +80,14 @@ export interface SliceConstructOptions<ParentState, State, Internals>
 }
 
 export interface DiceConstructOptions<State, ChildState, ChildInternals, DiceKey>
-	extends SliceOptions<ChildState, ChildInternals> {
+	extends SliceOptions<State, ChildState, ChildInternals> {
 	initialState: ChildState;
 	getAllKeys: (state: State) => DiceKey[];
 }
 
-const extractSliceOptions = <State, Internals>(
-	constructOptions?: SliceOptions<State, Internals>
-): SliceOptions<State, Internals> => {
+const extractSliceOptions = <ParentState, State, Internals>(
+	constructOptions?: SliceOptions<ParentState, State, Internals>
+): SliceOptions<ParentState, State, Internals> => {
 	return {
 		defineInternals: constructOptions?.defineInternals,
 		metaReducers: constructOptions?.metaReducers,
@@ -94,7 +98,7 @@ const extractSliceOptions = <State, Internals>(
 };
 
 export interface ChildSliceConstructOptions<ParentState, State, Internals>
-	extends SliceOptions<State, Internals> {
+	extends SliceOptions<ParentState, State, Internals> {
 	initialState?: State;
 	lazy: boolean;
 	pathSegment: string;
@@ -155,7 +159,7 @@ export const normalizeSliceDirection = <ParentState, State>(
 /**
  * It's pizza time!
  */
-export class Slice<ParentState, State, Internals> extends Observable<State> {
+export class Slice<ParentState, State, Internals = unknown> extends Observable<State> {
 	#sink = new Subscription();
 	#metaReducerConfigurations$: BehaviorSubject<MetaPacketReducer<State>[]>;
 	#metaReducer$: Observable<MetaPacketReducer<State>>;
@@ -164,7 +168,7 @@ export class Slice<ParentState, State, Internals> extends Observable<State> {
 	#initialState: State;
 	#parentCoupling: SliceCoupling<ParentState, State> | undefined;
 	#initialReducers: ReducerConfiguration<State>[];
-	#sliceOptions: SliceOptions<State, Internals> | undefined;
+	#sliceOptions: SliceOptions<ParentState, State, Internals> | undefined;
 	#state$: BehaviorSubject<State>;
 	#pathSegment: string;
 	#absolutePath: string;
@@ -188,11 +192,19 @@ export class Slice<ParentState, State, Internals> extends Observable<State> {
 	#parentListener: Observable<State | undefined> | undefined;
 	#pipeline: Observable<ReduceActionSliceSnapshot<State>>;
 
-	#defineInternals: ((state: Slice<unknown, State, Internals>) => Internals) | undefined;
+	#defineInternals: ((state: Slice<ParentState, State, unknown>) => Internals) | undefined;
 	#internals: Internals;
 
 	get internals(): Internals {
 		return this.#internals;
+	}
+
+	get absolutePath(): string {
+		return this.#absolutePath;
+	}
+
+	get pathSegment(): string {
+		return this.#pathSegment;
 	}
 
 	/**
@@ -389,8 +401,7 @@ export class Slice<ParentState, State, Internals> extends Observable<State> {
 
 		this.#scope.slices.set(this.#absolutePath, this);
 
-		this.#internals =
-			this.#defineInternals?.(this as Slice<unknown, State, Internals>) ?? ({} as Internals);
+		this.#internals = this.#defineInternals?.(this) ?? ({} as Internals);
 		this.#start();
 	}
 
@@ -523,7 +534,7 @@ export class Slice<ParentState, State, Internals> extends Observable<State> {
 	public sliceSelect<ChildState extends State[keyof State], ChildInternals>(
 		selector: Selector<State, ChildState>,
 		merger: Merger<State, ChildState>,
-		sliceOptions?: SliceOptions<ChildState, ChildInternals>
+		sliceOptions?: SliceOptions<State, ChildState, ChildInternals>
 	): Slice<State, NonNullable<ChildState>, ChildInternals> {
 		return this.#slice({
 			...sliceOptions,
@@ -539,7 +550,7 @@ export class Slice<ParentState, State, Internals> extends Observable<State> {
 
 	public slice<ChildStateKey extends keyof State, ChildInternals>(
 		key: ChildStateKey,
-		sliceOptions?: SliceOptions<NonNullable<State[ChildStateKey]>, ChildInternals>
+		sliceOptions?: SliceOptions<State, NonNullable<State[ChildStateKey]>, ChildInternals>
 	): Slice<State, NonNullable<State[ChildStateKey]>, ChildInternals> {
 		const selector: Selector<State, NonNullable<State[ChildStateKey]>> = (state) =>
 			state[key] as NonNullable<State[ChildStateKey]>;
@@ -632,7 +643,7 @@ export class Slice<ParentState, State, Internals> extends Observable<State> {
 	addSlice<ChildState, ChildInternals, AdditionalKey extends string | number | symbol = string>(
 		key: AdditionalKey,
 		initialState: ChildState,
-		sliceOptions?: SliceOptions<ChildState, ChildInternals>
+		sliceOptions?: SliceOptions<State, ChildState, ChildInternals>
 	): Slice<State & Record<AdditionalKey, ChildState>, NonNullable<ChildState>, ChildInternals> {
 		normalizeSliceDirection(key);
 		const selector: Selector<State, ChildState> = (state) =>

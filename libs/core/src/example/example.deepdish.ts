@@ -25,7 +25,9 @@ export interface DeepDishState {
 	boxes: BoxState[];
 }
 
-const deepdishSlice$ = rootSlice$.addSlice('deepdish', { pies: {}, boxes: [] } as DeepDishState);
+const deepdishSlice$ = rootSlice$.addSlice('deepdish', { pies: {}, boxes: [] } as DeepDishState, {
+	defineInternals: (_s) => 1,
+});
 
 const externalPiesActions = {
 	createPie: scope.createAction('external create pie'),
@@ -66,9 +68,9 @@ const pieDicer = piesSlice$.dice({
 
 const firstPie = pieDicer.select('1');
 
-firstPie.slice.internals; // .cheese$.subscribe();
-
-console.log();
+firstPie.slice.internals.cheese$.subscribe((cheese) => console.log('cheese', cheese));
+firstPie.slice.internals.cheese$.set(2);
+console.log('firstPie.slice.internals.cheese$', firstPie.slice.internals.cheese$.absolutePath);
 
 const boxes$ = deepdishSlice$.slice('boxes');
 

@@ -3,7 +3,7 @@ import type { ActionConfig } from '../action/action-config.interface';
 import { ActionPacket, isActionPacket } from '../action/action-packet.interface';
 import { Action, ActionTuple } from '../action/action.class';
 import { TINYSLICE_ACTION_INTERNAL_PREFIX } from '../internal';
-import { RootSlice, Slice, SliceOptions } from './slice.class';
+import { RootSlice, RootSliceOptions, Slice } from './slice.class';
 
 export class Scope {
 	private readonly dispatcherScope = new Subject<ActionPacket<unknown>>();
@@ -26,11 +26,11 @@ export class Scope {
 		return new Action<Payload>(type, config).register(this);
 	}
 
-	public createRootSlice<State, Internals>(
+	public createRootSlice<State, Internals = unknown>(
 		initialState: State,
-		storeOptions?: SliceOptions<State, Internals>
+		rootSliceOptions?: RootSliceOptions<State, Internals>
 	): RootSlice<State, Internals> {
-		return Slice.createRootSlice(this, initialState, storeOptions);
+		return Slice.createRootSlice(this, initialState, rootSliceOptions);
 	}
 
 	public createEffect<Output>(action: Observable<Output | ActionPacket>): void {

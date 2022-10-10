@@ -7,7 +7,7 @@ export interface ColorState {
 
 @Injectable()
 export class ColorStore {
-	slice = this.counterStore.slice.addSlice<ColorState>('color', { color: undefined });
+	slice = this.counterStore.slice.addSlice('color', { color: undefined } as ColorState);
 
 	color$ = this.slice.slice('color');
 
