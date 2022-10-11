@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.3.2](https://github.com/AlexAegis/tinyslice/compare/v0.3.1...v0.3.2) (2022-10-11)
+
+
+### Features
+
+* asapScheduled effects ([f23250d](https://github.com/AlexAegis/tinyslice/commit/f23250d3a5348c5ce103244e92a97e60d85d07bf))
+
 ### [0.3.1](https://github.com/AlexAegis/tinyslice/compare/v0.3.0...v0.3.1) (2022-10-11)
 
 ## [0.3.0](https://github.com/AlexAegis/tinyslice/compare/v0.2.7...v0.3.0) (2022-10-11)
