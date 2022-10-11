@@ -603,6 +603,9 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 		}
 	}
 
+	/**
+	 * @deprecated remove this, too much trouble
+	 */
 	public sliceSelect<ChildState extends State[keyof State], ChildInternals = unknown>(
 		selector: Selector<State, ChildState>,
 		merger: Merger<State, ChildState>,
