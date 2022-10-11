@@ -63,6 +63,7 @@
 		"start": "nx serve",
 		"build": "nx run-many --target build --configuration production",
 		"build:angular": "nx run angular:build:production",
+		"build:svelte": "nx run svelte:build:production",
 		"test": "nx run-many --target test --coverage"
 	},
 	"dependencies": {

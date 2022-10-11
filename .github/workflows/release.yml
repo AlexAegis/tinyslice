@@ -3,6 +3,10 @@ on:
   push:
     branches:
       - master
+
+env:
+  EXAMPLE_APP: 'svelte'
+
 jobs:
   release:
     name: Release
@@ -75,14 +79,25 @@ jobs:
         run: |
           npm config set '//registry.npmjs.org/:_authToken' "${NPM_TOKEN}"
           npm publish ./dist/libs/ngx --access public
-      - name: Build Github Pages example
+      - name: Build Angular Github Pages example
+        if: env.EXAMPLE_APP == 'angular'
         run: |
           npm run build:angular -- --baseHref '/${{ github.event.repository.name }}/'
-      - name: Use index.html as 404.html
-        run: |
           cp ./dist/apps/angular/index.html ./dist/apps/angular/404.html
+      - name: Build Svelte Github Pages example
+        if: env.EXAMPLE_APP == 'svelte'
+        run: |
+          npm run build:svelte -- --baseHref '/${{ github.event.repository.name }}/'
+          cp ./dist/apps/svelte/index.html ./dist/apps/svelte/404.html
       - name: Deploy Angular Example to Github Pages
         uses: peaceiris/actions-gh-pages@v3
+        if: env.EXAMPLE_APP == 'angular'
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./dist/apps/angular
+      - name: Deploy Svelte Example to Github Pages
+        uses: peaceiris/actions-gh-pages@v3
+        if: env.EXAMPLE_APP == 'svelte'
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./dist/apps/svelte
