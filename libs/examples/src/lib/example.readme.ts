@@ -1,13 +1,20 @@
-import { getNextLargestNumber, getObjectKeysAsNumbers } from '../lib/helper';
-import { Scope } from '../lib/store';
+import { Scope } from '@tinyslice/core';
+import { TinySliceDevtoolPlugin } from '@tinyslice/devtools-plugin';
+import { TinySliceHydrationPlugin } from '@tinyslice/hydration-plugin';
 
 const scope = new Scope();
 
 interface RootSlice {
 	count: number;
-	pies: Record<number, PieState>;
 }
-const rootSlice$ = scope.createRootSlice({ count: 1, pies: {} } as RootSlice, {});
+const rootSlice$ = scope.createRootSlice({ count: 1, pies: {} } as RootSlice, {
+	plugins: [
+		new TinySliceDevtoolPlugin({
+			name: 'myExampleApp',
+		}),
+	],
+	useDefaultLogger: true,
+});
 
 const increment = scope.createAction('increment');
 const countSlice$ = rootSlice$.slice('count', {
@@ -19,21 +26,20 @@ increment.next(); // Use custom action to trigger reducer
 countSlice$.set(10); // Use premade actions and reducers
 
 // "Entity" pattern.
-const piesSlice$ = rootSlice$.slice('pies');
 export interface PieState {
 	sauce: number;
 	cheese: number;
 }
 
-const pieDicer = piesSlice$.dice({
-	getAllKeys: getObjectKeysAsNumbers,
-	getNextKey: getNextLargestNumber,
+const pieDicer = rootSlice$.addDicedSlice('pies', {
+	initialState: { cheese: 0, sauce: 0 } as PieState,
 	defineInternals: (slice) => {
 		const cheese$ = slice.slice('cheese');
 		const sauce$ = slice.slice('sauce');
 		return { cheese$, sauce$ };
 	},
-	initialState: { cheese: 0, sauce: 0 } as PieState,
+	// Plugins can be anywhere, save this slice to localstorage and read as initialised!
+	plugins: [new TinySliceHydrationPlugin<PieState>('pies')],
 });
 
 // To get a specific entity slice

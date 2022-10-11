@@ -103,7 +103,7 @@
 		"@nrwl/linter": "14.8.4",
 		"@nrwl/workspace": "14.8.4",
 		"@sveltejs/adapter-node": "next",
-		"@sveltejs/kit": "1.0.0-next.513",
+		"@sveltejs/kit": "1.0.0-next.514",
 		"@sveltejs/vite-plugin-svelte": "^1.0.9",
 		"@testing-library/svelte": "^3.2.2",
 		"@tsconfig/svelte": "^3.0.0",

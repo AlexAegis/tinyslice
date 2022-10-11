@@ -1,4 +1,4 @@
-import { Scope } from '../lib/store';
+import { Scope } from '@tinyslice/core';
 
 const scope = new Scope();
 

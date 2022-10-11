@@ -5,6 +5,7 @@
 		"angular": "apps/angular",
 		"core": "libs/core",
 		"devtools-plugin": "libs/devtools-plugin",
+		"examples": "libs/examples",
 		"hydration-plugin": "libs/hydration-plugin",
 		"ngx": "libs/ngx",
 		"svelte": "apps/svelte"

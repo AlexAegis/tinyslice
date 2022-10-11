@@ -1,5 +1,5 @@
+import { Scope } from '@tinyslice/core';
 import { map, tap } from 'rxjs';
-import { Scope } from '../lib/store';
 
 const actionScope = new Scope();
 

@@ -133,7 +133,7 @@ export class TinySliceModule {
 				{
 					provide: featureToken,
 					useFactory: (rootStore: RootSlice<unknown>) =>
-						rootStore.addSlice<State, string>(key, initialState, { reducers }),
+						rootStore.addSlice<State, string, string>(key, initialState, { reducers }),
 					deps: [ROOT_STORE],
 				},
 				{

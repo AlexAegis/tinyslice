@@ -5,12 +5,12 @@ export const DEFAULT_OPTIONS: HydrationPluginOptions<unknown, unknown> = {
 	trimmer: (state) => state,
 };
 
-export interface HydrationPluginOptions<State, SavedState extends State> {
+export interface HydrationPluginOptions<State, SavedState extends State = State> {
 	trimmer: (state: State) => SavedState;
 	validateRetrieved?: (state: unknown) => state is State;
 }
 
-export class TinySliceHydrationPlugin<State, SavedState extends State>
+export class TinySliceHydrationPlugin<State, SavedState extends State = State>
 	implements TinySlicePlugin<State>
 {
 	private sink = new Subscription();

@@ -20,6 +20,7 @@
 		"paths": {
 			"@tinyslice/core": ["libs/core/src/index.ts"],
 			"@tinyslice/devtools-plugin": ["libs/devtools-plugin/src/index.ts"],
+			"@tinyslice/examples": ["libs/examples/src/index.ts"],
 			"@tinyslice/hydration-plugin": ["libs/hydration-plugin/src/index.ts"],
 			"@tinyslice/ngx": ["libs/ngx/src/index.ts"]
 		}

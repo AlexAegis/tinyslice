@@ -22,8 +22,12 @@ import { Action, ActionConfig } from '../action';
 import {
 	createLoggingMetaReducer,
 	fastArrayComparator,
+	GetNext,
+	getNextKeyStrategy,
+	getObjectKeysAsNumbers,
 	isNonNullable,
 	isNullish,
+	NextKeyStrategy,
 	updateObject,
 } from '../helper';
 import { TINYSLICE_ACTION_DEFAULT_PREFIX } from '../internal';
@@ -45,10 +49,12 @@ export type SliceDetacher = () => void;
 
 export interface DicedSlice<
 	State,
+	ParentInternals,
 	ChildInternals,
 	DiceKey extends string | number | symbol,
 	ChildState
 > {
+	internals: ParentInternals;
 	sliceKeys: () => DiceKey[];
 	sliceKeys$: Observable<DiceKey[]>;
 	latestSlices$: Observable<ChildState[]>;
@@ -70,7 +76,7 @@ export interface DicedSlice<
  * ```
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type DicedSliceChild<D extends DicedSlice<any, any, any, any>> = ReturnType<D['get']>;
+export type DicedSliceChild<D extends DicedSlice<any, any, any, any, any>> = ReturnType<D['get']>;
 
 export interface SliceCoupling<ParentState, State> {
 	parentSlice: Slice<unknown, ParentState, UnknownObject>;
@@ -118,7 +124,19 @@ export interface DiceConstructOptions<State, ChildState, ChildInternals, DiceKey
 	extends SliceOptions<State, ChildState, ChildInternals> {
 	initialState: ChildState;
 	getAllKeys: (state: State) => DiceKey[];
-	getNextKey: (keys: DiceKey[]) => DiceKey;
+	getNextKey: GetNext<DiceKey>;
+}
+
+export interface PremadeDiceConstructOptions<
+	ParentState,
+	State,
+	ChildState,
+	Internals,
+	ChildInternals
+> extends SliceOptions<State, ChildState, ChildInternals> {
+	getNextKeyStrategy?: NextKeyStrategy;
+	dicedSliceOptions?: SliceOptions<ParentState, State, Internals>;
+	initialState: ChildState;
 }
 
 const extractSliceOptions = <ParentState, State, Internals>(
@@ -644,6 +662,69 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 	}
 
 	/**
+	 * Adds non-defined slices to extend this slice
+	 * ? https://github.com/microsoft/TypeScript/issues/42315
+	 * ? key could be restricted to disallow keys of Slice once negated types
+	 * ? are implemented in TypeScript
+	 */
+	public addSlice<
+		ChildState,
+		ChildInternals,
+		AdditionalKey extends string | number | symbol = string
+	>(
+		key: AdditionalKey,
+		initialState: ChildState,
+		sliceOptions?: SliceOptions<State, ChildState, ChildInternals>
+	): Slice<State & Record<AdditionalKey, ChildState>, NonNullable<ChildState>, ChildInternals> {
+		const slicer = normalizeSliceDirection<State, ChildState>(key);
+		return this.#slice({
+			...sliceOptions,
+			initialState,
+			pathSegment: key.toString(),
+			slicer,
+			lazy: true,
+		}) as Slice<
+			State & Record<AdditionalKey, ChildState>,
+			NonNullable<ChildState>,
+			ChildInternals
+		>;
+	}
+
+	/**
+	 * Adds a new lazy slice then dices it with a number type record,
+	 * you can choose between nextKeyStrategies:
+	 * - NEXT_SMALLEST
+	 * - NEXT_LARGEST,
+	 * - CUSTOM
+	 *
+	 * NEXT_LARGEST is the default as thats the simplest.
+	 *
+	 * ! make sure key doesn't exist via generics on State once that can be done in TS
+	 */
+	public addDicedSlice<
+		Key extends ObjectKey,
+		ChildState,
+		DicedInternals,
+		ChildInternals,
+		DiceState extends Record<number, ChildState>
+	>(
+		key: Key extends keyof State ? never : Key,
+		diceConstructOptions: PremadeDiceConstructOptions<
+			State,
+			DiceState,
+			ChildState,
+			DicedInternals,
+			ChildInternals
+		>
+	): DicedSlice<State, DicedInternals, ChildInternals, number, ChildState> {
+		return this.addSlice(key, {} as DiceState, diceConstructOptions.dicedSliceOptions).dice({
+			...diceConstructOptions,
+			getAllKeys: getObjectKeysAsNumbers,
+			getNextKey: getNextKeyStrategy(diceConstructOptions.getNextKeyStrategy),
+		});
+	}
+
+	/**
 	 * This slice type is created on the fly for N subsclices of the same type
 	 * great for complex entities that spawn on the fly and have their own
 	 * state definition.
@@ -658,7 +739,8 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 	 */
 	public dice<ChildState, ChildInternals, DiceKey extends string | number | symbol>(
 		diceConstructOptions: DiceConstructOptions<State, ChildState, ChildInternals, DiceKey>
-	): DicedSlice<State, ChildInternals, DiceKey, ChildState> {
+	): DicedSlice<State, Internals, ChildInternals, DiceKey, ChildState> {
+		const internals = this.internals;
 		const get = (key: DiceKey) =>
 			this.addSlice(
 				key,
@@ -685,6 +767,7 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 			sliceKeys,
 			sliceKeys$,
 			latestSlices$,
+			internals,
 			add,
 			set,
 			remove,
@@ -692,31 +775,6 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 			getNextKey,
 			get,
 		};
-	}
-
-	/**
-	 * ? https://github.com/microsoft/TypeScript/issues/42315
-	 * ? key could be restricted to disallow keys of Slice once negated types
-	 * ? are implemented in TypeScript
-	 */
-	addSlice<ChildState, ChildInternals, AdditionalKey extends string | number | symbol = string>(
-		key: AdditionalKey,
-		initialState: ChildState,
-		sliceOptions?: SliceOptions<State, ChildState, ChildInternals>
-	): Slice<State & Record<AdditionalKey, ChildState>, NonNullable<ChildState>, ChildInternals> {
-		const slicer = normalizeSliceDirection<State, ChildState>(key);
-
-		return this.#slice({
-			...sliceOptions,
-			initialState,
-			pathSegment: key.toString(),
-			slicer,
-			lazy: true,
-		}) as Slice<
-			State & Record<AdditionalKey, ChildState>,
-			NonNullable<ChildState>,
-			ChildInternals
-		>;
 	}
 
 	#registerSlice<ChildState, ChildInternals>(

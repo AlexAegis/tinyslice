@@ -1,5 +1,5 @@
+import { Scope } from '@tinyslice/core';
 import { Observable } from 'rxjs';
-import { Scope } from '../lib/store';
 
 interface RootSlice {
 	foo: number;
