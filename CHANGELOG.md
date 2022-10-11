@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.3.0](https://github.com/AlexAegis/tinyslice/compare/v0.2.7...v0.3.0) (2022-10-11)
+
+
+### Features
+
+* add hydration plugin ([73746b6](https://github.com/AlexAegis/tinyslice/commit/73746b6b0c81c38694595fb09309df983a00664c))
+* added internals, inference works ([61cafea](https://github.com/AlexAegis/tinyslice/commit/61cafea94b174cdc342b09680d80f544e9700e3e))
+* added internals, inferrence isn't working ([f59caf5](https://github.com/AlexAegis/tinyslice/commit/f59caf5cddebff2bed4cd4b66c4673dbf8e73b11))
+* dicing beta ([35edb19](https://github.com/AlexAegis/tinyslice/commit/35edb1994e5c80075416f8b234e792171420a662))
+* options for every slice ([411ece2](https://github.com/AlexAegis/tinyslice/commit/411ece231cfc1963df1d1c3d4fba64fd66f7f5d6))
+
+
+### Bug Fixes
+
+* app test ([3c2318f](https://github.com/AlexAegis/tinyslice/commit/3c2318f42740d9f159f9aed010fa68795f6ce641))
+
 ### [0.2.7](https://github.com/AlexAegis/tinyslice/compare/v0.2.6...v0.2.7) (2022-10-02)
 
 
