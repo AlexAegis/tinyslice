@@ -573,7 +573,6 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 			childSliceConstructOptions.pathSegment.toString()
 		);
 		if (this.#scope.slices.has(path)) {
-			console.log('got slice from cache!!!', path);
 			// ? If this proves to be error prone just throw an error
 			// ? Double define should be disallowed anyway
 			return this.#scope.slices.get(path) as Slice<
@@ -654,8 +653,6 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 		diceConstructOptions: DiceConstructOptions<State, ChildState, ChildInternals, DiceKey>
 	): DicedSlice<State, ChildInternals, DiceKey, ChildState> {
 		const sliceKeys$ = this.pipe(
-			tap((a) => console.log('gtAllKEys', a)),
-
 			map((state) => diceConstructOptions.getAllKeys(state)),
 			distinctUntilChanged()
 		);
