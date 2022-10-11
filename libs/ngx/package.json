@@ -1,6 +1,6 @@
 {
 	"name": "@tinyslice/ngx",
-	"version": "0.3.2",
+	"version": "0.3.3",
 	"description": "Angular wrapper for TinySlice",
 	"license": "MIT",
 	"author": {

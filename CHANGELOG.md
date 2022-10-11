@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.3.3](https://github.com/AlexAegis/tinyslice/compare/v0.3.2...v0.3.3) (2022-10-11)
+
+
+### Features
+
+* add latestSlices listener to a dice ([85a366d](https://github.com/AlexAegis/tinyslice/commit/85a366dad6f5b5474061c174bc2d27653b17d931))
+
 ### [0.3.2](https://github.com/AlexAegis/tinyslice/compare/v0.3.1...v0.3.2) (2022-10-11)
 
 
