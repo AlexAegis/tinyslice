@@ -11,20 +11,22 @@ export interface MessageState {
 	messageHistory: (string | number)[];
 }
 
-export const messageSlice = rootSlice.addSlice<MessageState>(
+export const messageSlice = rootSlice.addSlice(
 	'message',
-	{ lastMessage: undefined, messageHistory: [] },
-	[
-		messageActions.sendMessage.reduce((state, payload) => ({
-			...state,
-			lastMessage: payload ?? undefined,
-			messageHistory: payload ? [...state.messageHistory, payload] : state.messageHistory,
-		})),
-		messageActions.clearMessage.reduce((state) => ({
-			...state,
-			lastMessage: undefined,
-		})),
-	]
+	{ lastMessage: undefined, messageHistory: [] } as MessageState,
+	{
+		reducers: [
+			messageActions.sendMessage.reduce((state, payload) => ({
+				...state,
+				lastMessage: payload ?? undefined,
+				messageHistory: payload ? [...state.messageHistory, payload] : state.messageHistory,
+			})),
+			messageActions.clearMessage.reduce((state) => ({
+				...state,
+				lastMessage: undefined,
+			})),
+		],
+	}
 );
 
 export const messageHistory$ = messageSlice.slice('messageHistory');
@@ -36,5 +38,5 @@ export const secondMessage$ = messageHistory$.sliceSelect<string | number>(
 		merged[1] = second;
 		return merged;
 	},
-	[messageActions.setSecondMessage.reduce((_state, payload) => payload)]
+	{ reducers: [messageActions.setSecondMessage.reduce((_state, payload) => payload)] }
 );

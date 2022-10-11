@@ -12,8 +12,7 @@ export class Scope {
 	private effectSubscriptions = new Subscription();
 	private stores: RootSlice<unknown, unknown>[] = [];
 
-	public slices = new Map<string, unknown>();
-	public sliceInternals = new Map<string, unknown>();
+	public readonly slices = new Map<string, unknown>();
 
 	public readonly internalActionVoid = this.createAction<void>(
 		`${TINYSLICE_ACTION_INTERNAL_PREFIX} void`
@@ -23,7 +22,11 @@ export class Scope {
 		type: string,
 		config?: Partial<ActionConfig>
 	): Action<Payload> {
-		return new Action<Payload>(type, config).register(this);
+		if (this.actionMap.has(type)) {
+			return this.actionMap.get(type) as Action<Payload>;
+		} else {
+			return new Action<Payload>(type, config).register(this);
+		}
 	}
 
 	public createRootSlice<State, Internals = unknown>(

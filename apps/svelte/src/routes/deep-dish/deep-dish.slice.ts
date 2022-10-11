@@ -5,39 +5,48 @@ export interface BoxState {
 }
 
 export interface DeepDishState {
-	dices: Record<string, PieState>;
+	pies: Record<string, PieState>;
 	boxes: BoxState[];
 }
 
-const deepdishSlice$ = rootSlice.addSlice('deepdish', { dices: {}, boxes: [] } as DeepDishState);
-const dices$ = deepdishSlice$.slice('dices');
+export const deepdishSlice$ = rootSlice.addSlice('deepdish', {
+	pies: {},
+	boxes: [],
+} as DeepDishState);
+export const pies$ = deepdishSlice$.slice('pies');
 
 export interface PieState {
 	sauce: number;
 	cheese: number;
 }
 
-const dicer = dices$.dice({
+export const pieDicer = pies$.dice({
 	getAllKeys: (state) => Object.keys(state),
-
+	getNextKey: (keys) =>
+		(keys.map((key) => parseInt(key, 10)).reduce((a, b) => (a > b ? a : b), 0) + 1).toString(),
 	defineInternals: (slice) => {
-		const cheese$ = slice.slice('cheese');
-		const sauce$ = slice.slice('sauce');
-		return { cheese$, sauce$ };
+		const pieActions = {
+			clearCheese: slice.createScopedAction<void>('clear cheese'),
+			clearSauce: slice.createScopedAction<void>('clear sauce'),
+		};
+
+		const cheese$ = slice.slice('cheese', {
+			reducers: [pieActions.clearCheese.reduce(() => 0)],
+		});
+		const sauce$ = slice.slice('sauce', {
+			reducers: [pieActions.clearSauce.reduce(() => 0)],
+		});
+
+		return { cheese$, sauce$, pieActions };
 	},
 	initialState: { cheese: 1, sauce: 2 } as PieState,
 });
-
-const first = dicer.select('1');
-
-first.slice.internals;
-
-console.log();
 
 const boxes$ = deepdishSlice$.slice('boxes');
 
 const boxDicer = boxes$.dice({
 	getAllKeys: (state) => [...state.keys()],
+	getNextKey: (keys) => keys.reduce((a, b) => (a > b ? a : b), 0) + 1,
 	defineInternals: (boxSlice) => {
 		const count$ = boxSlice.slice('count');
 		return { count$ };
@@ -46,4 +55,4 @@ const boxDicer = boxes$.dice({
 });
 
 boxDicer.sliceKeys$;
-boxDicer.select(0);
+boxDicer.get(0);

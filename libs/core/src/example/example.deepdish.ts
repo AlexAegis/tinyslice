@@ -37,7 +37,7 @@ const externalPiesActions = {
 const piesSlice$ = deepdishSlice$.slice('pies', {
 	defineInternals: () => 1,
 	reducers: [
-		externalPiesActions.createPie.reduce((state) => {
+		externalPiesActions.createPie.reduce((state, _s) => {
 			const nextKey = Object.keys(state)
 				.map((key) => parseInt(key, 10))
 				.reduce((a, b) => (a > b ? a : b), 0);
@@ -56,6 +56,8 @@ export type FigureThisOneOut = { cheese$: Observable<number>; sauce$: Observable
 
 const pieDicer = piesSlice$.dice({
 	getAllKeys: (state) => Object.keys(state),
+	getNextKey: (keys) =>
+		(keys.map((key) => parseInt(key, 10)).reduce((a, b) => (a > b ? a : b), 0) + 1).toString(),
 	defineInternals: (slice) => {
 		const cheese$ = slice.slice('cheese');
 		const sauce$ = slice.slice('sauce');
@@ -66,7 +68,7 @@ const pieDicer = piesSlice$.dice({
 
 // pieDicer.sliceKeys$.subscribe((pieKey) => console.log('pieKey', pieKey));
 
-const firstPie = pieDicer.select('1');
+const firstPie = pieDicer.get('1');
 
 firstPie.slice.internals.cheese$.subscribe((cheese) => console.log('cheese', cheese));
 firstPie.slice.internals.cheese$.set(2);
@@ -76,9 +78,10 @@ const boxes$ = deepdishSlice$.slice('boxes');
 
 const boxDicer = boxes$.dice({
 	getAllKeys: (state) => [...state.keys()],
+	getNextKey: (keys) => keys.reduce((a, b) => (a > b ? a : b), 0) + 1,
 	defineInternals: (_boxSlice) => 1,
 	initialState: { count: 0 } as BoxState,
 });
 
 boxDicer.sliceKeys$;
-boxDicer.select(0);
+boxDicer.get(0);

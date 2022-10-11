@@ -37,6 +37,33 @@ export type UnknownObject<T = unknown> = Record<ObjectKey, T>;
 export type ReducerCanceller = () => void;
 export type SliceDetacher = () => void;
 
+export interface DicedSlice<
+	State,
+	ChildInternals,
+	DiceKey extends string | number | symbol,
+	ChildState
+> {
+	sliceKeys: () => DiceKey[];
+	sliceKeys$: Observable<DiceKey[]>;
+	add: (data: ChildState) => void;
+	set: (key: DiceKey, data: ChildState) => void;
+	remove: (key: DiceKey) => void;
+	getNextKey: () => DiceKey;
+	get: (
+		key: DiceKey
+	) => Slice<State & Record<DiceKey, ChildState>, NonNullable<ChildState>, ChildInternals>;
+}
+
+/**
+ * This type can be used to get the Child slice signature of a diced slice
+ * ```ts
+ * const pieDice = pies$.dice({...});
+ * DicedSliceChild<typeof pieDice>; // Slice<>
+ * ```
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type DicedSliceChild<D extends DicedSlice<any, any, any, any>> = ReturnType<D['get']>;
+
 export interface SliceCoupling<ParentState, State> {
 	parentSlice: Slice<unknown, ParentState, UnknownObject>;
 	slicer: SelectSlicer<ParentState, State>;
@@ -83,6 +110,7 @@ export interface DiceConstructOptions<State, ChildState, ChildInternals, DiceKey
 	extends SliceOptions<State, ChildState, ChildInternals> {
 	initialState: ChildState;
 	getAllKeys: (state: State) => DiceKey[];
+	getNextKey: (keys: DiceKey[]) => DiceKey;
 }
 
 const extractSliceOptions = <ParentState, State, Internals>(
@@ -168,12 +196,15 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 	#initialState: State;
 	#parentCoupling: SliceCoupling<ParentState, State> | undefined;
 	#initialReducers: ReducerConfiguration<State>[];
-	#sliceOptions: SliceOptions<ParentState, State, Internals> | undefined;
+	#initialPlugins: TinySlicePlugin<State>[];
+	#initialMetaReducers: MetaPacketReducer<State>[];
 	#state$: BehaviorSubject<State>;
 	#pathSegment: string;
 	#absolutePath: string;
 	setAction: Action<State>;
 	updateAction: Action<Partial<State>>;
+	deleteKeyAction: Action<ObjectKey>;
+	defineKeyAction: Action<{ key: ObjectKey; data: unknown }>;
 	#observableState$: Observable<State>;
 	#reducerConfigurations$: BehaviorSubject<ReducerConfiguration<State>[]>;
 	#autoRegisterReducerActions$: Observable<ReducerConfiguration<State, unknown>[]>;
@@ -220,6 +251,8 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 		this.#initialState = options.initialState;
 		this.#parentCoupling = options.parentCoupling;
 		this.#initialReducers = options.reducers ?? [];
+		this.#initialPlugins = options.plugins ?? [];
+		this.#initialMetaReducers = options.metaReducers ?? [];
 		this.#defineInternals = options.defineInternals;
 
 		this.#absolutePath = Slice.calculateAbsolutePath(this.#parentCoupling, this.#pathSegment);
@@ -231,12 +264,29 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 			`${TINYSLICE_ACTION_DEFAULT_PREFIX} update ${this.#absolutePath}`
 		);
 
+		this.deleteKeyAction = new Action<ObjectKey>(
+			`${TINYSLICE_ACTION_DEFAULT_PREFIX} delete key ${this.#absolutePath}`
+		);
+
+		this.defineKeyAction = new Action<{ key: ObjectKey; data: unknown }>(
+			`${TINYSLICE_ACTION_DEFAULT_PREFIX} define key ${this.#absolutePath}`
+		);
+
 		this.#state$ = new BehaviorSubject<State>(this.#initialState);
 		this.#observableState$ = this.#state$.pipe(distinctUntilChanged());
 
 		this.#reducerConfigurations$ = new BehaviorSubject<ReducerConfiguration<State>[]>([
 			this.setAction.reduce((state, payload) => payload ?? state),
 			this.updateAction.reduce((state, payload) => updateObject(state, payload)),
+			this.deleteKeyAction.reduce((state, payload) => {
+				const nextState = { ...state };
+				delete nextState[payload as keyof State];
+				return nextState;
+			}),
+			this.defineKeyAction.reduce((state, payload) => ({
+				...state,
+				[payload.key]: payload.data,
+			})),
 			...this.#initialReducers,
 		]);
 
@@ -249,8 +299,8 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 		);
 
 		this.#metaReducerConfigurations$ = new BehaviorSubject<MetaPacketReducer<State>[]>([
-			...(this.#sliceOptions?.useDefaultLogger ? [createLoggingMetaReducer<State>()] : []),
-			...(this.#sliceOptions?.metaReducers ?? []),
+			...(options?.useDefaultLogger ? [createLoggingMetaReducer<State>()] : []),
+			...this.#initialMetaReducers,
 		]);
 
 		this.#metaReducer$ = this.#metaReducerConfigurations$.pipe(
@@ -359,9 +409,7 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 			share() // Listened to by child slices
 		) as Observable<ReduceActionSliceSnapshot<State>>;
 
-		this.#plugins$ = new BehaviorSubject<TinySlicePlugin<State>[]>(
-			this.#sliceOptions?.plugins ?? []
-		);
+		this.#plugins$ = new BehaviorSubject<TinySlicePlugin<State>[]>(this.#initialPlugins);
 
 		// Listens to the parent for changes to select itself from
 		// check if the parent could do it instead
@@ -511,6 +559,11 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 		});
 	}
 
+	public createScopedAction<Packet>(name: string): Action<Packet> {
+		const actionName = `${this.#absolutePath} ${name}`;
+		return this.#scope.createAction(actionName);
+	}
+
 	#slice<ChildState, ChildInternals>(
 		childSliceConstructOptions: ChildSliceConstructOptions<State, ChildState, ChildInternals>
 	): Slice<State, NonNullable<ChildState>, ChildInternals> {
@@ -531,7 +584,7 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 		}) as Slice<State, NonNullable<ChildState>, ChildInternals>;
 	}
 
-	public sliceSelect<ChildState extends State[keyof State], ChildInternals>(
+	public sliceSelect<ChildState extends State[keyof State], ChildInternals = unknown>(
 		selector: Selector<State, ChildState>,
 		merger: Merger<State, ChildState>,
 		sliceOptions?: SliceOptions<State, ChildState, ChildInternals>
@@ -599,39 +652,31 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 	 */
 	public dice<ChildState, ChildInternals, DiceKey extends string | number | symbol>(
 		diceConstructOptions: DiceConstructOptions<State, ChildState, ChildInternals, DiceKey>
-	): {
-		sliceKeys$: Observable<DiceKey[]>;
-		select: (key: DiceKey) => {
-			slice: Slice<
-				State & Record<DiceKey, ChildState>,
-				NonNullable<ChildState>,
-				ChildInternals
-			>;
-			remove: () => void;
-		};
-	} {
-		//	const diceSelector: DiceSelector<State, ChildState, DiceKey> = (state, key) => state,
-
+	): DicedSlice<State, ChildInternals, DiceKey, ChildState> {
 		const sliceKeys$ = this.pipe(
 			map((state) => diceConstructOptions.getAllKeys(state)),
 			distinctUntilChanged()
 		);
+
+		const set = (key: DiceKey, data: ChildState) => this.defineKeyAction.next({ key, data });
+		const remove = (key: DiceKey) => this.deleteKeyAction.next(key);
+		const sliceKeys = () => diceConstructOptions.getAllKeys(this.value);
+		const getNextKey = () => diceConstructOptions.getNextKey(sliceKeys());
+		const add = (data: ChildState) => this.defineKeyAction.next({ key: getNextKey(), data });
+
 		return {
+			sliceKeys,
 			sliceKeys$,
-			select: (key: DiceKey) => {
-				const slice = this.addSlice(
+			add,
+			set,
+			remove,
+			getNextKey,
+			get: (key: DiceKey) =>
+				this.addSlice(
 					key,
 					diceConstructOptions.initialState,
 					extractSliceOptions(diceConstructOptions)
-				);
-
-				return {
-					slice,
-					remove: () => {
-						slice.unsubscribe();
-					},
-				};
-			},
+				),
 		};
 	}
 

@@ -14,11 +14,10 @@ export const rootActions = {
 	nextTheme: scope.createAction('[root] next state'),
 };
 
-export const rootSlice = scope.createRootSlice<RootState>(
+export const rootSlice = scope.createRootSlice(
 	{
 		theme: 'g100',
-	},
-	[],
+	} as RootState,
 	{
 		plugins: [
 			new TinySliceDevtoolPlugin({
@@ -29,9 +28,9 @@ export const rootSlice = scope.createRootSlice<RootState>(
 	}
 );
 
-export const theme$ = rootSlice.slice('theme', [
-	rootActions.nextTheme.reduce((state) => (state === 'g100' ? 'white' : 'g100')),
-]);
+export const theme$ = rootSlice.slice('theme', {
+	reducers: [rootActions.nextTheme.reduce((state) => (state === 'g100' ? 'white' : 'g100'))],
+});
 
 scope.createEffect(
 	theme$.pipe(tap((theme) => document.documentElement.setAttribute('theme', theme)))

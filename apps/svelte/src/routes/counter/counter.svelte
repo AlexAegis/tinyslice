@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { Button, Column, Grid, Row } from 'carbon-components-svelte';
+
 	import DeepDish from '../deep-dish/deep-dish.svelte';
 	import { count$, counterActions } from './counter.slice';
 </script>
