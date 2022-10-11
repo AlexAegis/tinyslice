@@ -27,7 +27,7 @@ export const pieDicer = pies$.dice({
 	defineInternals: (slice) => {
 		const pieActions = {
 			clearCheese: slice.createScopedAction<void>('clear cheese'),
-			clearSauce: slice.createScopedAction<void>('clear sauce'),
+			clearSauce: slice.createScopedAction<void>('clear sauce', { throttleTime: 300 }),
 		};
 
 		const cheese$ = slice.slice('cheese', {
@@ -39,7 +39,7 @@ export const pieDicer = pies$.dice({
 
 		return { cheese$, sauce$, pieActions };
 	},
-	initialState: { cheese: 1, sauce: 2 } as PieState,
+	initialState: { cheese: -1, sauce: -1 } as PieState,
 });
 
 const boxes$ = deepdishSlice$.slice('boxes');

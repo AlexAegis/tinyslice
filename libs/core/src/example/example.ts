@@ -1,4 +1,4 @@
-import { map, tap } from 'rxjs/operators';
+import { map, tap } from 'rxjs';
 import { Scope } from '../lib/store';
 
 const scope = new Scope();

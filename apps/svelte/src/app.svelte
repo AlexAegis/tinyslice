@@ -28,18 +28,27 @@
 	let isSideNavOpen = false;
 
 	const routes: RouteDefinition = {
+		'/counter': wrap({
+			asyncComponent: () => import('./routes/counter/counter.svelte'),
+		}),
+		'/deepdish': wrap({
+			asyncComponent: () => import('./routes/deepdish/deepdish.svelte'),
+		}),
+		'/useless': wrap({
+			asyncComponent: () => import('./routes/useless/useless.svelte'),
+		}),
 		'/message': wrap({
 			asyncComponent: () => import('./routes/message/message.svelte'),
 		}),
-		'/counter': wrap({
-			asyncComponent: () => import('./routes/counter/counter.svelte'),
+		'/mousemove': wrap({
+			asyncComponent: () => import('./routes/mousemove/mousemove.svelte'),
 		}),
 		'/': wrap({
 			asyncComponent: () => import('./routes/counter/counter.svelte'),
 		}),
 	};
 
-	let hash = '#/';
+	let hash = location.hash ?? '#/';
 </script>
 
 <Header company="🍕" platformName="{packageJson.name} ({packageJson.version})" bind:isSideNavOpen>
@@ -72,10 +81,31 @@
 		/>
 		<SideNavLink
 			icon={DotMark}
+			text="DeepDish"
+			href="#/deepdish"
+			isSelected={hash === '#/deepdish'}
+			on:click={() => (hash = '#/deepdish')}
+		/>
+		<SideNavLink
+			icon={DotMark}
+			text="Useless"
+			href="#/useless"
+			isSelected={hash === '#/useless'}
+			on:click={() => (hash = '#/useless')}
+		/>
+		<SideNavLink
+			icon={DotMark}
 			text="Messages"
 			href="#/message"
 			isSelected={hash === '#/message'}
 			on:click={() => (hash = '#/message')}
+		/>
+		<SideNavLink
+			icon={DotMark}
+			text="MouseMove"
+			href="#/mousemove"
+			isSelected={hash === '#/mousemove'}
+			on:click={() => (hash = '#/mousemove')}
 		/>
 		<SideNavDivider />
 		<SideNavLink icon={LogoGithub} text="Github" href={packageJson.repository} />

@@ -2,7 +2,7 @@ import { Scope } from '../lib/store';
 
 const scope = new Scope();
 
-scope.dispatcher$.subscribe((a) => console.log('action: ' + JSON.stringify(a)));
+scope.schedulingDispatcher$.subscribe((a) => console.log('action: ' + JSON.stringify(a)));
 export interface RootStore {
 	optional: OptionalInnerSlice | undefined;
 	nonOptional: string;

@@ -10,6 +10,8 @@
 	import { messageActions, messageHistory$, messageSlice } from './message.slice';
 </script>
 
+<h1>Messages</h1>
+
 <Grid>
 	<Row>
 		<Column>

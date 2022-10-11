@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { DicedSliceChild } from '@tinyslice/core';
 	import { Button } from 'carbon-components-svelte';
-	import type { pieDicer } from './deep-dish.slice';
+	import type { pieDicer } from './deepdish.slice';
 
 	export let pieSlice$: DicedSliceChild<typeof pieDicer>;
 
@@ -14,19 +14,22 @@
 	}
 
 	function addCheese() {
-		sauce$.set(cheese$.value + 1);
+		cheese$.set(cheese$.value + 1);
 	}
 </script>
 
 <span>
-	Cheese: {$cheese$}
-	<Button on:click={addCheese}>Add Cheese</Button>
-	<Button on:click={() => pieActions.clearCheese.next()}>Clear Cheese</Button>
-</span>
-<span>
-	Sauce: {$sauce$}
+	<h4>Sauce: {$sauce$}</h4>
+
 	<Button on:click={addSauce}>Add Sauce</Button>
 	<Button on:click={() => pieActions.clearSauce.next()}>Clear Sauce</Button>
+</span>
+
+<span>
+	<h4 title="It's under the sauce">Cheese: {$cheese$}</h4>
+
+	<Button on:click={addCheese}>Add Cheese</Button>
+	<Button on:click={() => pieActions.clearCheese.next()}>Clear Cheese</Button>
 </span>
 
 <style>
@@ -34,5 +37,13 @@
 		display: flex;
 		align-items: center;
 		gap: 1em;
+	}
+
+	span :global(button) {
+		width: 14em;
+	}
+
+	h4 {
+		width: 10em;
 	}
 </style>

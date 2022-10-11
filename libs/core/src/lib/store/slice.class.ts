@@ -17,7 +17,7 @@ import {
 	withLatestFrom,
 	zip,
 } from 'rxjs';
-import { Action } from '../action';
+import { Action, ActionConfig } from '../action';
 import { createLoggingMetaReducer, isNonNullable, isNullish, updateObject } from '../helper';
 import { TINYSLICE_ACTION_DEFAULT_PREFIX } from '../internal';
 import { Merger } from './merger.type';
@@ -325,7 +325,7 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 		);
 
 		this.#pipeline = zip(
-			this.#scope.dispatcher$,
+			this.#scope.schedulingDispatcher$,
 			this.#slices$.pipe(
 				map((sliceRegistrations) => Object.values(sliceRegistrations)),
 				switchMap((sliceRegistrations) => {
@@ -338,7 +338,7 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 							)
 						);
 					} else {
-						return this.#scope.dispatcher$.pipe(map(() => []));
+						return this.#scope.schedulingDispatcher$.pipe(map(() => []));
 					}
 				})
 			)
@@ -560,9 +560,9 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 		});
 	}
 
-	public createScopedAction<Packet>(name: string): Action<Packet> {
+	public createScopedAction<Packet>(name: string, actionOptions?: ActionConfig): Action<Packet> {
 		const actionName = `${this.#absolutePath} ${name}`;
-		return this.#scope.createAction(actionName);
+		return this.#scope.createAction(actionName, actionOptions);
 	}
 
 	#slice<ChildState, ChildInternals>(

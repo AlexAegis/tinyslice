@@ -10,15 +10,15 @@ const successCss = `background: #090; color: ${brightFgColor};`;
 const failCss = `background: #900; color: ${brightFgColor};`;
 
 const isSuccessMessage = (message: string): boolean => message.toLowerCase().includes('success');
-
 const isFailureMessage = (message: string): boolean => message.toLowerCase().includes('fail');
+const isErrorMessage = (message: string): boolean => message.toLowerCase().includes('error');
 
 const isTinySliceMessage = (message: string): boolean => message.includes(TINYSLICE_ACTION_PREFIX);
 
 const getMessageCss = (message: string, isInternal: boolean): string => {
 	if (isSuccessMessage(message)) {
 		return successCss;
-	} else if (isFailureMessage(message)) {
+	} else if (isFailureMessage(message) || isErrorMessage(message)) {
 		return failCss;
 	} else {
 		return isInternal ? defaultCssDim : defaultCss;
@@ -38,7 +38,7 @@ const separateMessage = (message: string): string[] => {
 	return result.filter((a) => !!a);
 };
 
-const colorify = (message: string): string[] => {
+export const colorizeLogString = (message: string): string[] => {
 	const segments = separateMessage(message);
 	const codedSegments: string[] = [];
 	const colorisedSegments: string[] = [];
@@ -61,7 +61,7 @@ const colorify = (message: string): string[] => {
 export const createLoggingMetaReducer =
 	<State>(): MetaPacketReducer<State> =>
 	({ action, prevState, nextState }) => {
-		console.groupCollapsed(...colorify(action.type));
+		console.groupCollapsed(...colorizeLogString(action.type));
 		console.log('prevState', prevState);
 		console.log('payload', action.payload);
 		console.log('nextState', nextState);

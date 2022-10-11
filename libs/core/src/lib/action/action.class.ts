@@ -1,5 +1,14 @@
-import { EMPTY, MonoTypeOperatorFunction, Observable, Subject, Subscription } from 'rxjs';
-import { filter } from 'rxjs/operators';
+import {
+	asyncScheduler,
+	EMPTY,
+	filter,
+	MonoTypeOperatorFunction,
+	Observable,
+	Subject,
+	Subscription,
+	throttleTime,
+} from 'rxjs';
+import { isNonNullable } from '../helper';
 import type { Scope } from '../store';
 import type { ActionReducer, ReducerConfiguration } from '../store/reducer.type';
 import { ActionConfig, DEFAULT_ACTION_CONFIG } from './action-config.interface';
@@ -22,9 +31,15 @@ export class Action<Payload = void> extends Subject<Payload> {
 
 	private scope: Scope | undefined;
 
-	public get listen$(): Observable<ActionPacket<Payload>> {
+	public get listenPackets$(): Observable<ActionPacket<Payload>> {
 		return this.scope?.listen$(this) ?? EMPTY;
 	}
+
+	public get listen$(): Observable<Payload> {
+		return this.#actionPipeline;
+	}
+
+	#actionPipeline: Observable<Payload>;
 
 	/**
 	 * TODO: Make this private, refactor angular solution
@@ -37,6 +52,16 @@ export class Action<Payload = void> extends Subject<Payload> {
 			...DEFAULT_ACTION_CONFIG,
 			...config,
 		};
+
+		this.#actionPipeline = this.pipe();
+		if (isNonNullable(this.config.throttleTime)) {
+			this.#actionPipeline = this.#actionPipeline.pipe(
+				throttleTime(this.config.throttleTime, asyncScheduler, {
+					leading: true,
+					trailing: true,
+				})
+			);
+		}
 	}
 
 	public register(scope: Scope): this {
@@ -61,6 +86,7 @@ export class Action<Payload = void> extends Subject<Payload> {
 	 * The finalize operator will take care of removing it from the actionMap
 	 */
 	public override unsubscribe(): void {
+		super.complete();
 		this.unregister();
 		super.unsubscribe();
 	}

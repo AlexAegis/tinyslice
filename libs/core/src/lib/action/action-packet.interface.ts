@@ -14,7 +14,7 @@ export const isActionPacket = <P>(
 	registeredInActionMap?: Map<string, Action<unknown>>
 ): actionPacket is ActionPacket<P> => {
 	return (
-		(actionPacket as ActionPacket).type !== undefined &&
-		(registeredInActionMap?.has((actionPacket as ActionPacket).type) ?? true)
+		(actionPacket as ActionPacket)?.type !== undefined &&
+		(registeredInActionMap?.has((actionPacket as ActionPacket)?.type) ?? true)
 	);
 };

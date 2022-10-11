@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { Button } from 'carbon-components-svelte';
 	import type { Observable } from 'rxjs';
-	import { pieDicer } from './deep-dish.slice';
+	import { pieDicer } from './deepdish.slice';
 	import Pie from './pie.svelte';
 	let sliceKeys$: Observable<string[]> = pieDicer.sliceKeys$;
 </script>
@@ -14,7 +14,9 @@
 			<li class="row">
 				<h2>{key}</h2>
 				<Pie pieSlice$={pieDicer.get(key)} />
-				<Button kind="danger" on:click={() => pieDicer.remove(key)}>Remove Slice</Button>
+				<Button class="delete" kind="danger" on:click={() => pieDicer.remove(key)}
+					>Remove Slice</Button
+				>
 			</li>
 		{/each}
 	</ul>
@@ -27,7 +29,6 @@
 
 <style>
 	.deepDishExample {
-		margin-top: 2em;
 		display: flex;
 		flex-direction: column;
 		gap: 1em;
@@ -47,8 +48,24 @@
 	}
 
 	.row {
-		display: flex;
+		display: grid;
+		grid-template-rows: 1fr 1fr;
+		grid-template-columns: 4em 3fr 1fr;
 		gap: 1em;
 		align-items: center;
+	}
+
+	.row h2,
+	.row :global(.delete) {
+		grid-row: 1 / -1;
+	}
+
+	.row :global(.delete) {
+		grid-column: -1;
+	}
+
+	.row :global(span) {
+		grid-column: 2;
+		justify-content: space-between;
 	}
 </style>
