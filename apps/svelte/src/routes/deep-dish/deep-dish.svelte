@@ -4,37 +4,40 @@
 	import { pieDicer } from './deep-dish.slice';
 	import Pie from './pie.svelte';
 	let sliceKeys$: Observable<string[]> = pieDicer.sliceKeys$;
-
-	console.log('DEEPDISH');
 </script>
 
 <div class="deepDishExample">
 	<h1>Deep Dish</h1>
+
+	<ul class="rows">
+		{#each $sliceKeys$ as key (key)}
+			<li class="row">
+				<h2>{key}</h2>
+				<Pie pieSlice$={pieDicer.get(key)} {key} />
+				<Button kind="danger" on:click={() => pieDicer.remove(key)}>Remove Slice</Button>
+			</li>
+		{/each}
+	</ul>
+
 	<div class="controls">
 		<Button on:click={() => pieDicer.add({ cheese: 0, sauce: 0 })}>Add Slice</Button>
-	</div>
-
-	<div class="rows">
-		{#each $sliceKeys$ as key}
-			<div class="row">
-				<span> {key} </span>
-				<Pie pieSlice$={pieDicer.get(key)} />
-				<Button kind="danger" on:click={() => pieDicer.remove(key)}>Remove Slice</Button>
-			</div>
-		{/each}
+		<Button on:click={() => pieDicer.create()}>Create Slice</Button>
 	</div>
 </div>
 
 <style>
 	.deepDishExample {
+		margin-top: 2em;
 		display: flex;
 		flex-direction: column;
 		gap: 1em;
+		width: 100%;
 	}
 
 	.controls {
 		display: flex;
 		gap: 1em;
+		flex-direction: row-reverse;
 	}
 
 	.rows {

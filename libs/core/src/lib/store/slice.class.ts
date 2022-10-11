@@ -46,6 +46,7 @@ export interface DicedSlice<
 	sliceKeys: () => DiceKey[];
 	sliceKeys$: Observable<DiceKey[]>;
 	add: (data: ChildState) => void;
+	create: () => void;
 	set: (key: DiceKey, data: ChildState) => void;
 	remove: (key: DiceKey) => void;
 	getNextKey: () => DiceKey;
@@ -567,21 +568,39 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 	#slice<ChildState, ChildInternals>(
 		childSliceConstructOptions: ChildSliceConstructOptions<State, ChildState, ChildInternals>
 	): Slice<State, NonNullable<ChildState>, ChildInternals> {
-		return new Slice<State, ChildState, ChildInternals>({
-			...extractSliceOptions(childSliceConstructOptions),
-			scope: this.#scope,
-			initialState:
-				childSliceConstructOptions.initialState ??
-				((this.#state$.value
-					? childSliceConstructOptions.slicer.selector(this.#state$.value)
-					: undefined) as ChildState),
-			parentCoupling: {
-				parentSlice: this as Slice<unknown, State, UnknownObject>,
-				slicer: childSliceConstructOptions.slicer,
-				lazy: childSliceConstructOptions.lazy ?? false,
-			},
-			pathSegment: childSliceConstructOptions.pathSegment,
-		}) as Slice<State, NonNullable<ChildState>, ChildInternals>;
+		const path = Slice.assembleAbsolutePath(
+			this.#absolutePath,
+			childSliceConstructOptions.pathSegment.toString()
+		);
+		if (this.#scope.slices.has(path)) {
+			console.log('got slice from cache!!!', path);
+			// ? If this proves to be error prone just throw an error
+			// ? Double define should be disallowed anyway
+			return this.#scope.slices.get(path) as Slice<
+				State,
+				NonNullable<ChildState>,
+				ChildInternals
+			>;
+		} else {
+			const initialStateFromParent: ChildState | undefined = this.#state$.value
+				? childSliceConstructOptions.slicer.selector(this.#state$.value)
+				: undefined;
+
+			const initialState: ChildState =
+				initialStateFromParent ?? (childSliceConstructOptions.initialState as ChildState);
+
+			return new Slice<State, ChildState, ChildInternals>({
+				...extractSliceOptions(childSliceConstructOptions),
+				scope: this.#scope,
+				initialState,
+				parentCoupling: {
+					parentSlice: this as Slice<unknown, State, UnknownObject>,
+					slicer: childSliceConstructOptions.slicer,
+					lazy: childSliceConstructOptions.lazy ?? false,
+				},
+				pathSegment: childSliceConstructOptions.pathSegment,
+			}) as Slice<State, NonNullable<ChildState>, ChildInternals>;
+		}
 	}
 
 	public sliceSelect<ChildState extends State[keyof State], ChildInternals = unknown>(
@@ -605,34 +624,12 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 		key: ChildStateKey,
 		sliceOptions?: SliceOptions<State, NonNullable<State[ChildStateKey]>, ChildInternals>
 	): Slice<State, NonNullable<State[ChildStateKey]>, ChildInternals> {
-		const selector: Selector<State, NonNullable<State[ChildStateKey]>> = (state) =>
-			state[key] as NonNullable<State[ChildStateKey]>;
-		const merger: Merger<State, State[ChildStateKey] | undefined> = (state, slice) => {
-			if (isNullish(state)) {
-				return state;
-			}
-			// completely remove the key for cleaner decoupling
-			if (slice === undefined) {
-				const next = {
-					...state,
-				};
-				delete state[key];
-				return next;
-			} else {
-				return {
-					...state,
-					[key]: slice,
-				};
-			}
-		};
+		const slicer = normalizeSliceDirection<State, NonNullable<State[ChildStateKey]>>(key);
 
 		return this.#slice({
 			...sliceOptions,
 			pathSegment: key.toString(),
-			slicer: {
-				selector,
-				merger,
-			},
+			slicer,
 			lazy: false,
 		});
 	}
@@ -654,6 +651,8 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 		diceConstructOptions: DiceConstructOptions<State, ChildState, ChildInternals, DiceKey>
 	): DicedSlice<State, ChildInternals, DiceKey, ChildState> {
 		const sliceKeys$ = this.pipe(
+			tap((a) => console.log('gtAllKEys', a)),
+
 			map((state) => diceConstructOptions.getAllKeys(state)),
 			distinctUntilChanged()
 		);
@@ -663,6 +662,7 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 		const sliceKeys = () => diceConstructOptions.getAllKeys(this.value);
 		const getNextKey = () => diceConstructOptions.getNextKey(sliceKeys());
 		const add = (data: ChildState) => this.defineKeyAction.next({ key: getNextKey(), data });
+		const create = () => this.defineKeyAction.next({ key: getNextKey(), data: undefined });
 
 		return {
 			sliceKeys,
@@ -670,6 +670,7 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 			add,
 			set,
 			remove,
+			create,
 			getNextKey,
 			get: (key: DiceKey) =>
 				this.addSlice(
@@ -690,55 +691,19 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 		initialState: ChildState,
 		sliceOptions?: SliceOptions<State, ChildState, ChildInternals>
 	): Slice<State & Record<AdditionalKey, ChildState>, NonNullable<ChildState>, ChildInternals> {
-		normalizeSliceDirection(key);
-		const selector: Selector<State, ChildState> = (state) =>
-			(state as State & Record<AdditionalKey, ChildState>)[key];
-		const merger: Merger<State, ChildState | undefined> = (state, slice) => {
-			if (isNullish(state)) {
-				return state;
-			}
-			// completely remove the key for cleaner decoupling
-			if (slice === undefined) {
-				return state;
-			} else {
-				return {
-					...state,
-					[key]: slice,
-				};
-			}
-		};
+		const slicer = normalizeSliceDirection<State, ChildState>(key);
 
-		const path = Slice.assembleAbsolutePath(this.#absolutePath, key.toString());
-
-		// Giving it a try, if the state was hydrated this slice could be present
-		initialState =
-			selector(this.#state$.value as State & Record<AdditionalKey, ChildState>) ??
-			initialState;
-
-		if (this.#scope.slices.has(path)) {
-			// ? If this proves to be error prone just throw an error
-			// ? Double define should be disallowed anyway
-			return this.#scope.slices.get(path) as Slice<
-				State & Record<AdditionalKey, ChildState>,
-				NonNullable<ChildState>,
-				ChildInternals
-			>;
-		} else {
-			return this.#slice({
-				...sliceOptions,
-				initialState,
-				pathSegment: key.toString(),
-				slicer: {
-					selector,
-					merger,
-				},
-				lazy: true,
-			}) as Slice<
-				State & Record<AdditionalKey, ChildState>,
-				NonNullable<ChildState>,
-				ChildInternals
-			>;
-		}
+		return this.#slice({
+			...sliceOptions,
+			initialState,
+			pathSegment: key.toString(),
+			slicer,
+			lazy: true,
+		}) as Slice<
+			State & Record<AdditionalKey, ChildState>,
+			NonNullable<ChildState>,
+			ChildInternals
+		>;
 	}
 
 	#registerSlice<ChildState, ChildInternals>(

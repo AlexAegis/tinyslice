@@ -13,13 +13,13 @@ export const deepdishSlice$ = rootSlice.addSlice('deepdish', {
 	pies: {},
 	boxes: [],
 } as DeepDishState);
-export const pies$ = deepdishSlice$.slice('pies');
 
 export interface PieState {
 	sauce: number;
 	cheese: number;
 }
 
+const pies$ = deepdishSlice$.slice('pies');
 export const pieDicer = pies$.dice({
 	getAllKeys: (state) => Object.keys(state),
 	getNextKey: (keys) =>
@@ -43,8 +43,7 @@ export const pieDicer = pies$.dice({
 });
 
 const boxes$ = deepdishSlice$.slice('boxes');
-
-const boxDicer = boxes$.dice({
+export const boxDicer = boxes$.dice({
 	getAllKeys: (state) => [...state.keys()],
 	getNextKey: (keys) => keys.reduce((a, b) => (a > b ? a : b), 0) + 1,
 	defineInternals: (boxSlice) => {
@@ -53,6 +52,3 @@ const boxDicer = boxes$.dice({
 	},
 	initialState: { count: 0 } as BoxState,
 });
-
-boxDicer.sliceKeys$;
-boxDicer.get(0);
