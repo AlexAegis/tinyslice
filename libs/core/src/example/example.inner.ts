@@ -29,18 +29,16 @@ const store = actionScope.createRootSlice<ExampleState>(
 		out: 1,
 		foo: { bar: { zed: 2 } },
 	},
-	[outerAction.reduce((state) => ({ ...state, out: state.out + 1 }))]
+	{ reducers: [outerAction.reduce((state) => ({ ...state, out: state.out + 1 }))] }
 );
 
-const fooSlice = store.slice<'foo'>('foo', [
-	middleAction.reduce((state, payload) => ({ ...state, bar: { zed: payload } })),
-]);
+const fooSlice = store.slice('foo', {
+	reducers: [middleAction.reduce((state, payload) => ({ ...state, bar: { zed: payload } }))],
+});
 
-const barSlice = fooSlice.sliceSelect<{ zed: number }>(
-	(state) => state.bar,
-	(state, bar) => ({ ...state, bar }),
-	[innerAction.reduce((state, payload) => ({ ...state, zed: state.zed + payload }))]
-);
+const barSlice = fooSlice.slice('bar', {
+	reducers: [innerAction.reduce((state, payload) => ({ ...state, zed: state.zed + payload }))],
+});
 
 store.subscribe((state) => console.log('Full State', JSON.stringify(state)));
 fooSlice.subscribe((foo) => console.log('FooSlice', JSON.stringify(foo)));

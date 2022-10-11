@@ -70,9 +70,9 @@ const pieDicer = piesSlice$.dice({
 
 const firstPie = pieDicer.get('1');
 
-firstPie.slice.internals.cheese$.subscribe((cheese) => console.log('cheese', cheese));
-firstPie.slice.internals.cheese$.set(2);
-console.log('firstPie.slice.internals.cheese$', firstPie.slice.internals.cheese$.absolutePath);
+firstPie.internals.cheese$.subscribe((cheese) => console.log('cheese', cheese));
+firstPie.internals.cheese$.set(2);
+console.log('firstPie.slice.internals.cheese$', firstPie.internals.cheese$.absolutePath);
 
 const boxes$ = deepdishSlice$.slice('boxes');
 

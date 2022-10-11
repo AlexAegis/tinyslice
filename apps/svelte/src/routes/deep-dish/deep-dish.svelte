@@ -13,7 +13,7 @@
 		{#each $sliceKeys$ as key (key)}
 			<li class="row">
 				<h2>{key}</h2>
-				<Pie pieSlice$={pieDicer.get(key)} {key} />
+				<Pie pieSlice$={pieDicer.get(key)} />
 				<Button kind="danger" on:click={() => pieDicer.remove(key)}>Remove Slice</Button>
 			</li>
 		{/each}
