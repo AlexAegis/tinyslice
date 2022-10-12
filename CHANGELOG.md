@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.3.4](https://github.com/AlexAegis/tinyslice/compare/v0.3.3...v0.3.4) (2022-10-12)
+
+
+### Features
+
+* pausable effects ([884bf73](https://github.com/AlexAegis/tinyslice/commit/884bf73be8ef9fed1ca21456d0864e03f6abd67d))
+
 ### [0.3.3](https://github.com/AlexAegis/tinyslice/compare/v0.3.2...v0.3.3) (2022-10-11)
 
 
