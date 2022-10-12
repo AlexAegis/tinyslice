@@ -57,25 +57,26 @@ export class Scope {
 	 * Without this scheduling, the effects result could happen before the
 	 * triggering actions reduce and the state would be left as true.
 	 */
-	public createEffect<Output>(action: Observable<Output | ActionPacket>): void {
-		const effectSubscription = scheduled(action, asapScheduler)
-			.pipe(
-				tap((packet) => {
-					if (isActionPacket(packet, this.actionMap)) {
-						const actionDispatcher = this.actionMap.get(packet.type);
-						actionDispatcher?.next(packet.payload);
-					}
-				}),
-				catchError((error, pipeline$) => {
-					console.error(
-						...colorizeLogString(`${TINYSLICE_ACTION_PREFIX} error in effect!\n`),
-						error
-					);
-					return pipeline$;
-				})
-			)
-			.subscribe();
+	public createEffect<Output>(action: Observable<Output | ActionPacket>): Subscription {
+		const source = scheduled(action, asapScheduler).pipe(
+			tap((packet) => {
+				if (isActionPacket(packet, this.actionMap)) {
+					const actionDispatcher = this.actionMap.get(packet.type);
+					actionDispatcher?.next(packet.payload);
+				}
+			}),
+			catchError((error, pipeline$) => {
+				console.error(
+					...colorizeLogString(`${TINYSLICE_ACTION_PREFIX} error in effect!\n`),
+					error
+				);
+				return pipeline$;
+			})
+		);
+
+		const effectSubscription = source.subscribe();
 		this.effectSubscriptions.add(effectSubscription);
+		return effectSubscription;
 	}
 
 	/**

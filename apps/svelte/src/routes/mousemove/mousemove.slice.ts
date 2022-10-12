@@ -1,5 +1,5 @@
 import { fromEvent, map, withLatestFrom } from 'rxjs';
-import { rootSlice, scope } from '../../root.slice';
+import { rootSlice } from '../../root.slice';
 
 export interface MouseMoveState {
 	position: { x: number; y: number };
@@ -25,7 +25,7 @@ export const listenThrottled$ = mouseMoveSlice$.slice('listenThrottled');
 
 export const positionPrint$ = position$.pipe(map(({ x, y }) => `x:${x}, y:${y}`));
 
-scope.createEffect(
+mouseMoveSlice$.createEffect(
 	fromEvent(document, 'mousemove').pipe(
 		map((event) => ({
 			x: (event as MouseEvent).clientX,

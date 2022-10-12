@@ -6,6 +6,7 @@ import {
 	filter,
 	finalize,
 	map,
+	NEVER,
 	Observable,
 	pairwise,
 	share,
@@ -18,7 +19,7 @@ import {
 	withLatestFrom,
 	zip,
 } from 'rxjs';
-import { Action, ActionConfig } from '../action';
+import { Action, ActionConfig, ActionPacket } from '../action';
 import {
 	createLoggingMetaReducer,
 	fastArrayComparator,
@@ -237,6 +238,7 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 	#sliceReducer$: Observable<PacketReducer<State>>;
 	#plugins$: BehaviorSubject<TinySlicePlugin<State>[]>;
 	#autoRegisterPlugins$: Observable<unknown>;
+	#effectsPaused: BehaviorSubject<boolean>;
 
 	#slices$ = new BehaviorSubject<Record<string, SliceRegistration<State, unknown, Internals>>>(
 		{}
@@ -280,6 +282,8 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 		this.#initialPlugins = options.plugins ?? [];
 		this.#initialMetaReducers = options.metaReducers ?? [];
 		this.#defineInternals = options.defineInternals;
+
+		this.#effectsPaused = new BehaviorSubject(false);
 
 		this.#absolutePath = Slice.calculateAbsolutePath(this.#parentCoupling, this.#pathSegment);
 
@@ -493,6 +497,47 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 		this.#sink.add(this.#autoRegisterReducerActions$.subscribe());
 		this.#sink.add(this.#autoRegisterPlugins$.subscribe());
 		this.#sink.add(this.#pipeline.subscribe()); // Slices are hot!
+	}
+
+	public get effectsPaused$(): Observable<boolean> {
+		return this.#effectsPaused.asObservable();
+	}
+
+	/**
+	 * Unpauses this slice and every child slice recursively
+	 */
+	public unpauseEffects(): void {
+		if (this.#effectsPaused.value) {
+			this.#effectsPaused.next(false);
+		}
+		for (const subSlice of Object.values(this.#slices$.value)) {
+			subSlice.slice.unpauseEffects();
+		}
+	}
+
+	/**
+	 * Pauses this slice and every child slice recursively
+	 */
+	public pauseEffects(): void {
+		if (!this.#effectsPaused.value) {
+			this.#effectsPaused.next(true);
+		}
+		for (const subSlice of Object.values(this.#slices$.value)) {
+			subSlice.slice.pauseEffects();
+		}
+	}
+
+	/**
+	 * Effects created here will respond to the pause and unpauseEffects functions.
+	 * These effects will also unsubscribe if the slice unsubscribes
+	 */
+	public createEffect<Output>(packet$: Observable<Output | ActionPacket>): Subscription {
+		const pausablePacket$ = this.effectsPaused$.pipe(
+			switchMap((isPaused) => (isPaused ? NEVER : packet$))
+		);
+		const effectSubscription = this.#scope.createEffect(pausablePacket$);
+		this.#sink.add(effectSubscription);
+		return effectSubscription;
 	}
 
 	public setPlugins(plugins: TinySlicePlugin<State>[]): void {

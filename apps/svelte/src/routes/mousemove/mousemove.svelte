@@ -1,6 +1,10 @@
 <script lang="ts">
 	import { Button } from 'carbon-components-svelte';
-	import { listenThrottled$, positionPrint$ } from './mousemove.slice';
+	import { onDestroy, onMount } from 'svelte';
+	import { listenThrottled$, mouseMoveSlice$, positionPrint$ } from './mousemove.slice';
+
+	onMount(() => mouseMoveSlice$.unpauseEffects());
+	onDestroy(() => mouseMoveSlice$.pauseEffects());
 </script>
 
 <div class="mousemovetest">
