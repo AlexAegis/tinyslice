@@ -55,9 +55,10 @@ export interface DicedSlice<
 	ChildInternals,
 	DiceKey extends string | number | symbol
 > {
-	internals: ParentInternals;
+	dicedSlice: Slice<unknown, State & Record<DiceKey, ChildState>, ParentInternals>;
 	sliceKeys: () => DiceKey[];
 	sliceKeys$: Observable<DiceKey[]>;
+	count$: Observable<number>;
 	latestSlices$: Observable<ChildState[]>;
 	add: (data: ChildState) => void;
 	create: () => void;
@@ -223,6 +224,7 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 	#initialReducers: ReducerConfiguration<State>[];
 	#initialPlugins: TinySlicePlugin<State>[];
 	#initialMetaReducers: MetaPacketReducer<State>[];
+	#defaultMetaReducers: MetaPacketReducer<State>[];
 	#state$: BehaviorSubject<State>;
 	#pathSegment: string;
 	#absolutePath: string;
@@ -231,6 +233,7 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 	deleteKeyAction: Action<ObjectKey>;
 	defineKeyAction: Action<{ key: ObjectKey; data: unknown }>;
 	#observableState$: Observable<State>;
+	#defaultReducerConfigurations: ReducerConfiguration<State>[];
 	#reducerConfigurations$: BehaviorSubject<ReducerConfiguration<State>[]>;
 	#autoRegisterReducerActions$: Observable<ReducerConfiguration<State, unknown>[]>;
 	#sliceReducer$: Observable<PacketReducer<State>>;
@@ -316,7 +319,7 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 		this.#state$ = new BehaviorSubject<State>(this.#initialState);
 		this.#observableState$ = this.#state$.pipe(distinctUntilChanged());
 
-		this.#reducerConfigurations$ = new BehaviorSubject<ReducerConfiguration<State>[]>([
+		this.#defaultReducerConfigurations = [
 			this.setAction.reduce((state, payload) => payload ?? state),
 			this.updateAction.reduce((state, payload) => updateObject(state, payload)),
 			this.deleteKeyAction.reduce((state, payload) => {
@@ -328,19 +331,19 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 				...state,
 				[payload.key]: payload.data,
 			})),
+		];
+
+		this.#defaultMetaReducers = options?.useDefaultLogger
+			? [createLoggingMetaReducer<State>()]
+			: [];
+
+		this.#reducerConfigurations$ = new BehaviorSubject<ReducerConfiguration<State>[]>([
+			...this.#defaultReducerConfigurations,
 			...this.#initialReducers,
 		]);
 
-		this.#autoRegisterReducerActions$ = this.#reducerConfigurations$.pipe(
-			tap((reducerConfigurations) => {
-				for (const reducerConfiguration of reducerConfigurations) {
-					this.#scope.registerAction(reducerConfiguration.action);
-				}
-			})
-		);
-
 		this.#metaReducerConfigurations$ = new BehaviorSubject<MetaPacketReducer<State>[]>([
-			...(options?.useDefaultLogger ? [createLoggingMetaReducer<State>()] : []),
+			...this.#defaultMetaReducers,
 			...this.#initialMetaReducers,
 		]);
 
@@ -348,6 +351,14 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 			map((metaReducerConfigurations) => (snapshot: ReduceActionSliceSnapshot<State>) => {
 				for (const metaReducerConfiguration of metaReducerConfigurations) {
 					metaReducerConfiguration(snapshot);
+				}
+			})
+		);
+
+		this.#autoRegisterReducerActions$ = this.#reducerConfigurations$.pipe(
+			tap((reducerConfigurations) => {
+				for (const reducerConfiguration of reducerConfigurations) {
+					this.#scope.registerAction(reducerConfiguration.action);
 				}
 			})
 		);
@@ -585,7 +596,10 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 	}
 
 	public setMetaReducers(metaReducerConfigurations: MetaPacketReducer<State>[]): void {
-		this.#metaReducerConfigurations$.next(metaReducerConfigurations);
+		this.#metaReducerConfigurations$.next([
+			...this.#defaultMetaReducers,
+			...metaReducerConfigurations,
+		]);
 	}
 
 	public addMetaReducer(...metaReducerConfigurations: MetaPacketReducer<State>[]): void {
@@ -599,8 +613,11 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 		return this.#reducerConfigurations$.value;
 	}
 
+	/**
+	 * This does not disable default redurces.
+	 */
 	public setReducers(reducers: ReducerConfiguration<State>[]): void {
-		this.#reducerConfigurations$.next(reducers);
+		this.#reducerConfigurations$.next([...this.#defaultReducerConfigurations, ...reducers]);
 	}
 
 	public addReducers(reducers: ReducerConfiguration<State>[]): void {
@@ -835,9 +852,8 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 		initialState: ChildState,
 		diceConstructOptions: DiceConstructOptions<State, ChildState, ChildInternals, DiceKey>
 	): DicedSlice<State, ChildState, Internals, ChildInternals, DiceKey> {
-		const internals = this.internals;
-		const get = (key: DiceKey) =>
-			this.addSlice(key, initialState, extractSliceOptions(diceConstructOptions));
+		const sliceOptions = extractSliceOptions(diceConstructOptions);
+		const get = (key: DiceKey) => this.addSlice(key, initialState, sliceOptions);
 		const set = (key: DiceKey, data: ChildState) => this.defineKeyAction.next({ key, data });
 		const remove = (key: DiceKey) => this.deleteKeyAction.next(key);
 		const sliceKeys = () => diceConstructOptions.getAllKeys(this.value);
@@ -853,12 +869,14 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 			map((keys) => keys.map((key) => get(key))),
 			switchMap((slices) => combineLatest(slices))
 		);
+		const count$ = sliceKeys$.pipe(map((keys) => keys.length));
 
 		return {
+			dicedSlice: this as Slice<unknown, State & Record<DiceKey, ChildState>, Internals>,
 			sliceKeys,
 			sliceKeys$,
+			count$,
 			latestSlices$,
-			internals,
 			add,
 			set,
 			remove,
