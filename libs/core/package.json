@@ -1,7 +1,7 @@
 {
 	"name": "@tinyslice/core",
 	"description": "Reactive state management",
-	"version": "0.4.1",
+	"version": "0.4.2",
 	"license": "MIT",
 	"author": {
 		"email": "alexaegis@gmail.com",

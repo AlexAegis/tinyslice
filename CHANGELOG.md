@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.4.2](https://github.com/AlexAegis/tinyslice/compare/v0.4.1...v0.4.2) (2022-10-13)
+
+
+### Features
+
+* dice count observable ([b2099c8](https://github.com/AlexAegis/tinyslice/commit/b2099c89fa9a106f3cd240a4be66ae10f49d6868))
+* some$ and every$ on dices ([1ff6dad](https://github.com/AlexAegis/tinyslice/commit/1ff6dad22bad7c6715f05bd465bc88c22e314625))
+
 ### [0.4.1](https://github.com/AlexAegis/tinyslice/compare/v0.4.0...v0.4.1) (2022-10-13)
 
 

@@ -1,7 +1,7 @@
 {
 	"name": "@tinyslice/hydration-plugin",
 	"description": "Slice hydration for TinySlice",
-	"version": "0.4.1",
+	"version": "0.4.2",
 	"license": "MIT",
 	"author": {
 		"email": "alexaegis@gmail.com",
