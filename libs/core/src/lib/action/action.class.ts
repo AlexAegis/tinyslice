@@ -31,6 +31,8 @@ export class Action<Payload = void> extends Subject<Payload> {
 
 	private scope: Scope | undefined;
 
+	public registrations = new Subscription();
+
 	/**
 	 * This will emit every action of this type, both direct dispatches and
 	 * effect dispatches
@@ -101,7 +103,8 @@ export class Action<Payload = void> extends Subject<Payload> {
 	 */
 	public override complete(): void {
 		this.unregister();
-		super.complete();
+		this.registrations.unsubscribe();
+		this.unsubscribe();
 	}
 
 	/**

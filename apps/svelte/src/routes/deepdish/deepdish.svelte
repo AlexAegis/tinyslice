@@ -3,14 +3,14 @@
 	import type { Observable } from 'rxjs';
 	import { pieDicer } from './deepdish.slice';
 	import Pie from './pie.svelte';
-	let sliceKeys$: Observable<string[]> = pieDicer.sliceKeys$;
+	let keys$: Observable<string[]> = pieDicer.keys$;
 </script>
 
 <div class="deepDishExample">
 	<h1>Deep Dish</h1>
 
 	<ul class="rows">
-		{#each $sliceKeys$ as key (key)}
+		{#each $keys$ as key (key)}
 			<li class="row">
 				<h2>{key}</h2>
 				<Pie pieSlice$={pieDicer.get(key)} />

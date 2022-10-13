@@ -1,5 +1,5 @@
-import { Scope } from '@tinyslice/core';
 import { Observable } from 'rxjs';
+import { Scope } from './scope.class';
 
 interface RootSlice {
 	foo: number;
@@ -54,34 +54,40 @@ export interface PieState {
 
 export type FigureThisOneOut = { cheese$: Observable<number>; sauce$: Observable<number> };
 
-const pieDicer = piesSlice$.dice({
+const pieDicer = piesSlice$.dice({ cheese: 1, sauce: 2 } as PieState, {
 	getAllKeys: (state) => Object.keys(state),
 	getNextKey: (keys) =>
 		(keys.map((key) => parseInt(key, 10)).reduce((a, b) => (a > b ? a : b), 0) + 1).toString(),
 	defineInternals: (slice) => {
+		console.log('pie internals defined');
 		const cheese$ = slice.slice('cheese');
 		const sauce$ = slice.slice('sauce');
 		return { cheese$, sauce$, a: 2 };
 	},
-	initialState: { cheese: 1, sauce: 2 } as PieState,
 });
 
 // pieDicer.sliceKeys$.subscribe((pieKey) => console.log('pieKey', pieKey));
 
 const firstPie = pieDicer.get('1');
+firstPie.subscribe((p) => console.log('reading first pie! might not exist!', p));
 
-firstPie.internals.cheese$.subscribe((cheese) => console.log('cheese', cheese));
+const firstPieCheese = firstPie.slice('cheese');
+firstPieCheese.subscribe((c) => console.log('asgfaerge', c));
+pieDicer.set('2', { cheese: 3, sauce: 5 });
+
+pieDicer.set('1', { cheese: 32, sauce: 53 });
+pieDicer.set('1', { cheese: 323, sauce: 453 });
+
+firstPie.internals?.cheese$?.subscribe((cheese) => console.log('cheese', cheese));
+/*
 firstPie.internals.cheese$.set(2);
 console.log('firstPie.slice.internals.cheese$', firstPie.internals.cheese$.absolutePath);
 
 const boxes$ = deepdishSlice$.slice('boxes');
 
-const boxDicer = boxes$.dice({
+export const boxDicer = boxes$.dice({ count: 0 } as BoxState, {
 	getAllKeys: (state) => [...state.keys()],
 	getNextKey: (keys) => keys.reduce((a, b) => (a > b ? a : b), 0) + 1,
 	defineInternals: (_boxSlice) => 1,
-	initialState: { count: 0 } as BoxState,
 });
-
-boxDicer.sliceKeys$;
-boxDicer.get(0);
+*/

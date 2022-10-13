@@ -23,9 +23,10 @@
 	{/if}
 
 	<p>
-		The point of this demonstration is that an effect setting the same state is always happening
-		after the original reduce, and as fast as it can happen using the asapScheduler of RxJS!
-		Otherwise you'd the button flash it's text. (The template has an if/else!)
+		The point of this demonstration is that an effect setting the same state which is caused it
+		to trigger is always happening after the original reduce, and as fast as it can. The latter
+		is achieved using the asapScheduler of RxJS! Otherwise you'd the button flash it's text.
+		(The template has an if/else!)
 	</p>
 </div>
 

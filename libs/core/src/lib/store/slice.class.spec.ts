@@ -359,6 +359,32 @@ describe('slice', () => {
 			expect(borSliceObserver.error).toHaveBeenCalledTimes(0);
 			expect(borSliceObserver.complete).toHaveBeenCalledTimes(0);
 		});
+
+		it('should complete when the states key gets removed from the parent', () => {
+			fooSlice.set({ bar: 'test' } as FooState); // bor is missing
+			expect(rootObserver.next).toHaveBeenCalledTimes(2);
+			expect(rootObserver.error).toHaveBeenCalledTimes(0);
+			expect(rootObserver.complete).toHaveBeenCalledTimes(0);
+
+			expect(fooSliceObserver.next).toHaveBeenCalledTimes(2);
+			expect(fooSliceObserver.error).toHaveBeenCalledTimes(0);
+			expect(fooSliceObserver.complete).toHaveBeenCalledTimes(0);
+
+			expect(barSliceObserver.next).toHaveBeenCalledTimes(2);
+			expect(barSliceObserver.error).toHaveBeenCalledTimes(0);
+			expect(barSliceObserver.complete).toHaveBeenCalledTimes(0);
+
+			expect(borSliceObserver.next).toHaveBeenCalledTimes(1);
+			expect(borSliceObserver.error).toHaveBeenCalledTimes(0);
+			expect(borSliceObserver.complete).toHaveBeenCalledTimes(1);
+
+			// Associated actions are also closed
+			expect(borSlice.setAction.closed).toBeTruthy();
+			// Parent actions are not closed
+			expect(fooSlice.setAction.closed).toBeFalsy();
+			// The scopes dispatcher is not
+			expect(scope.closed).toBeFalsy();
+		});
 	});
 
 	describe('emission', () => {
@@ -856,7 +882,7 @@ describe('slice', () => {
 			deepOptional: undefined,
 		};
 
-		const rootSliceWithOptionalSlice: RootState = {
+		const definedRootSlice: RootState = {
 			deepOptional: definedOptionalSlice,
 		};
 
@@ -924,7 +950,7 @@ describe('slice', () => {
 			expect(optionalSliceObserver.next).toHaveBeenCalledTimes(1);
 			expect(optionalInnerSliceObserver.next).toHaveBeenCalledTimes(1);
 			optionalSlice.set(definedOptionalSlice);
-			expect(rootObserver.next).toHaveBeenLastCalledWith(rootSliceWithOptionalSlice);
+			expect(rootObserver.next).toHaveBeenLastCalledWith(definedRootSlice);
 			expect(optionalSliceObserver.next).toHaveBeenLastCalledWith(definedOptionalSlice);
 			expect(optionalInnerSliceObserver.next).toHaveBeenLastCalledWith(
 				definedOptionalInnerSlice
@@ -965,6 +991,41 @@ describe('slice', () => {
 			expect(rootObserver.next).toHaveBeenCalledTimes(1);
 			expect(optionalSliceObserver.next).toHaveBeenCalledTimes(1);
 			expect(optionalInnerSliceObserver.next).toHaveBeenCalledTimes(1);
+		});
+
+		it('should be able to be uninitialized by setting it to undefined, then initialize it again', () => {
+			expect(rootObserver.next).toHaveBeenLastCalledWith(initialRootSlice);
+			expect(optionalSliceObserver.next).toHaveBeenLastCalledWith(undefined);
+			expect(optionalInnerSliceObserver.next).toHaveBeenLastCalledWith(undefined);
+			expect(rootObserver.next).toHaveBeenCalledTimes(1);
+			expect(optionalSliceObserver.next).toHaveBeenCalledTimes(1);
+			expect(optionalInnerSliceObserver.next).toHaveBeenCalledTimes(1);
+
+			rootSlice.set(definedRootSlice);
+			expect(rootObserver.next).toHaveBeenLastCalledWith(definedRootSlice);
+			expect(optionalSliceObserver.next).toHaveBeenLastCalledWith(definedOptionalSlice);
+			expect(optionalInnerSliceObserver.next).toHaveBeenLastCalledWith(
+				definedOptionalInnerSlice
+			);
+			expect(rootObserver.next).toHaveBeenCalledTimes(2);
+			expect(optionalSliceObserver.next).toHaveBeenCalledTimes(2);
+			expect(optionalInnerSliceObserver.next).toHaveBeenCalledTimes(2);
+
+			rootSlice.set(initialRootSlice);
+			expect(rootObserver.next).toHaveBeenLastCalledWith(initialRootSlice);
+			expect(optionalSliceObserver.next).toHaveBeenLastCalledWith(undefined);
+			expect(optionalInnerSliceObserver.next).toHaveBeenLastCalledWith(undefined);
+			expect(rootObserver.next).toHaveBeenCalledTimes(3);
+			expect(optionalSliceObserver.next).toHaveBeenCalledTimes(3);
+			expect(optionalInnerSliceObserver.next).toHaveBeenCalledTimes(3);
+
+			rootSlice.set({ deepOptional: { data: 'fefe' } });
+			expect(rootObserver.next).toHaveBeenLastCalledWith({ deepOptional: { data: 'fefe' } });
+			expect(optionalSliceObserver.next).toHaveBeenLastCalledWith({ data: 'fefe' });
+			expect(optionalInnerSliceObserver.next).toHaveBeenLastCalledWith('fefe');
+			expect(rootObserver.next).toHaveBeenCalledTimes(4);
+			expect(optionalSliceObserver.next).toHaveBeenCalledTimes(4);
+			expect(optionalInnerSliceObserver.next).toHaveBeenCalledTimes(4);
 		});
 	});
 });

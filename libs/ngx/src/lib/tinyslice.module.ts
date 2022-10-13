@@ -68,7 +68,6 @@ export class TinySliceModule {
 		}
 	}
 
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	public static forRoot<RootState = unknown>(
 		initialState: RootState,
 		effectServices: Type<unknown>[],
@@ -118,7 +117,6 @@ export class TinySliceModule {
 	/**
 	 * TODO: deal with nested features!
 	 */
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	public static forFeature<State>(
 		key: string,
 		initialState: State,

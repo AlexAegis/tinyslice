@@ -91,22 +91,26 @@ export class Scope {
 		action: Action<Payload>,
 		registerFromAction = false
 	): Subscription | undefined {
-		if (!registerFromAction) {
-			action.register(this);
-		}
-
 		if (this.actionMap.has(action.type)) {
 			return;
 		}
 
 		this.actionMap.set(action.type, action as Action<unknown>);
 
-		return action.listen$
+		const subscription = action.listen$
 			.pipe(
 				map((payload) => action.makePacket(payload)),
-				finalize(() => this.actionMap.delete(action.type))
+				finalize(() => this.actionMap.delete(action.type)),
+				tap((next) => this.schedulingDispatcher.next(next))
 			)
-			.subscribe(this.schedulingDispatcher);
+			.subscribe();
+		action.registrations.add(subscription);
+
+		if (!registerFromAction) {
+			action.register(this);
+		}
+
+		return subscription;
 	}
 
 	public listen$<T extends readonly unknown[]>(
@@ -132,8 +136,13 @@ export class Scope {
 		return this.actionMap.has(type);
 	}
 
+	get closed(): boolean {
+		return this.schedulingDispatcher.closed;
+	}
+
 	public complete(): void {
 		this.actionMap.forEach((action) => action.complete());
+		this.actionMap.clear();
 		this.effectSubscriptions.unsubscribe();
 		this.schedulingDispatcher.complete();
 		this.stores.forEach((store) => store.complete());

@@ -5,6 +5,7 @@ import {
 	distinctUntilChanged,
 	filter,
 	finalize,
+	firstValueFrom,
 	map,
 	NEVER,
 	Observable,
@@ -15,6 +16,7 @@ import {
 	Subscription,
 	switchMap,
 	take,
+	takeWhile,
 	tap,
 	withLatestFrom,
 	zip,
@@ -55,7 +57,7 @@ export interface DicedSlice<
 	ChildInternals,
 	DiceKey extends string | number | symbol
 > {
-	dice: Slice<unknown, State & Record<DiceKey, ChildState>, ParentInternals>;
+	slice: Slice<unknown, State & Record<DiceKey, ChildState>, ParentInternals>;
 	keys: () => DiceKey[];
 	keys$: Observable<DiceKey[]>;
 	count$: Observable<number>;
@@ -67,9 +69,15 @@ export interface DicedSlice<
 	set: (key: DiceKey, data: ChildState) => void;
 	remove: (key: DiceKey) => void;
 	getNextKey: () => DiceKey;
+	has: (key: DiceKey) => boolean;
 	get: (
 		key: DiceKey
 	) => Slice<State & Record<DiceKey, ChildState>, NonNullable<ChildState>, ChildInternals>;
+	selectOnceDefined: (
+		key: DiceKey
+	) => Promise<
+		Slice<State & Record<DiceKey, ChildState>, NonNullable<ChildState>, ChildInternals>
+	>;
 }
 
 /**
@@ -84,6 +92,13 @@ export type DicedSliceChild<D extends DicedSlice<any, any, any, any, any>> = Ret
 
 export interface SliceCoupling<ParentState, State> {
 	parentSlice: Slice<unknown, ParentState, UnknownObject>;
+	rawParentState: Observable<ParentState>;
+	/**
+	 * Used to check the lifetime of the slice, once the key itself is removed
+	 * from the parent object, the subslice is completed.
+	 * Most subslices are attached via a key, only custom select baseds are not.
+	 */
+	key?: string;
 	slicer: SelectSlicer<ParentState, State>;
 	lazy: boolean;
 }
@@ -159,6 +174,7 @@ export interface ChildSliceConstructOptions<ParentState, State, Internals>
 	lazy: boolean;
 	pathSegment: string;
 	slicer: SelectSlicer<ParentState, State>;
+	key: string | undefined;
 }
 
 export type SelectSlicer<ParentState, State> = {
@@ -184,24 +200,35 @@ export const normalizeSliceDirection = <ParentState, State>(
 		return sliceDirection;
 	} else {
 		const key = sliceDirection;
-		const selector: Selector<ParentState, State> = (state) =>
-			state[key as keyof ParentState] as State;
+		const selector: Selector<ParentState, State> = (state) => {
+			if (state && typeof state === 'object') {
+				return state[key as keyof ParentState] as State;
+			} else {
+				return undefined as State;
+			}
+		};
 		const merger: Merger<ParentState, State | undefined> = (state, slice) => {
 			if (isNullish(state)) {
 				return state;
 			}
 			// completely remove the key for cleaner decoupling
 			if (slice === undefined) {
-				const next = {
-					...state,
-				};
-				delete state[key as keyof ParentState];
-				return next;
-			} else {
+				if (state && typeof state === 'object') {
+					const next = {
+						...state,
+					};
+					delete state[key as keyof ParentState];
+					return next;
+				} else {
+					return state;
+				}
+			} else if (typeof state === 'object') {
 				return {
 					...state,
 					[key]: slice,
 				};
+			} else {
+				return state;
 			}
 		};
 
@@ -252,15 +279,16 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 	// Listens to the parent for changes to select itself from
 	// check if the parent could do it instead
 	#parentListener: Observable<State | undefined> | undefined;
-	#schedule: Observable<
-		[
-			ActionPacket<unknown>,
-			{
-				snapshot: ReduceActionSliceSnapshot<unknown>;
-				sliceRegistration: SliceRegistration<State, unknown, Internals>;
-			}[]
-		]
-	>;
+
+	#schedule: Observable<{
+		action: ActionPacket<unknown>;
+		sliceChanges:
+			| {
+					snapshot: ReduceActionSliceSnapshot<unknown>;
+					sliceRegistration: SliceRegistration<State, unknown, Internals>;
+			  }[]
+			| undefined;
+	}>;
 	#inactivePipeline: Observable<ReduceActionSliceSnapshot<State>>;
 	#activePipeline: Observable<ReduceActionSliceSnapshot<State>>;
 
@@ -303,19 +331,15 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 
 		this.#absolutePath = Slice.calculateAbsolutePath(this.#parentCoupling, this.#pathSegment);
 
-		this.setAction = this.createAction<State>(
-			`${TINYSLICE_DEFAULT_PREFIX} set ${this.#absolutePath}`
-		);
-		this.updateAction = this.createAction<Partial<State>>(
-			`${TINYSLICE_DEFAULT_PREFIX} update ${this.#absolutePath}`
-		);
+		this.setAction = this.createAction<State>(`${TINYSLICE_DEFAULT_PREFIX} set`);
+		this.updateAction = this.createAction<Partial<State>>(`${TINYSLICE_DEFAULT_PREFIX} update`);
 
 		this.deleteKeyAction = this.createAction<ObjectKey>(
-			`${TINYSLICE_DEFAULT_PREFIX} delete key ${this.#absolutePath}`
+			`${TINYSLICE_DEFAULT_PREFIX} delete key`
 		);
 
 		this.defineKeyAction = this.createAction<{ key: ObjectKey; data: unknown }>(
-			`${TINYSLICE_DEFAULT_PREFIX} define key ${this.#absolutePath}`
+			`${TINYSLICE_DEFAULT_PREFIX} define key`
 		);
 
 		this.#state$ = new BehaviorSubject<State>(this.#initialState);
@@ -325,14 +349,24 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 			this.setAction.reduce((state, payload) => payload ?? state),
 			this.updateAction.reduce((state, payload) => updateObject(state, payload)),
 			this.deleteKeyAction.reduce((state, payload) => {
-				const nextState = { ...state };
-				delete nextState[payload as keyof State];
-				return nextState;
+				if (typeof state === 'object') {
+					const nextState = { ...state };
+					delete (nextState as State)?.[payload as keyof State];
+					return nextState;
+				} else {
+					return state;
+				}
 			}),
-			this.defineKeyAction.reduce((state, payload) => ({
-				...state,
-				[payload.key]: payload.data,
-			})),
+			this.defineKeyAction.reduce((state, payload) => {
+				if (typeof state === 'object') {
+					return {
+						...state,
+						[payload.key]: payload.data,
+					};
+				} else {
+					return state;
+				}
+			}),
 		];
 
 		this.#defaultMetaReducers = options?.useDefaultLogger
@@ -377,31 +411,35 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 			})
 		);
 
-		this.#schedule = zip(
-			this.#scope.schedulingDispatcher$,
-			this.#slices$.pipe(
-				map((sliceRegistrations) => Object.values(sliceRegistrations)),
-				switchMap((sliceRegistrations) => {
-					if (sliceRegistrations.length) {
-						return zip(
-							sliceRegistrations.map((sliceRegistration) =>
-								sliceRegistration.slice.#pipeline.pipe(
-									map((snapshot) => ({ snapshot, sliceRegistration }))
-								)
-							)
-						);
-					} else {
-						return this.#scope.schedulingDispatcher$.pipe(map(() => []));
-					}
-				})
-			)
+		const zipSubSlices = (
+			sliceRegistrations: Record<string, SliceRegistration<State, unknown, Internals>>,
+			fallback: Observable<unknown>
+		) => {
+			const subSlicePipelines = Object.values(sliceRegistrations).map((sliceRegistration) =>
+				sliceRegistration.slice.#pipeline.pipe(
+					map((snapshot) => ({ snapshot, sliceRegistration }))
+				)
+			);
+			if (subSlicePipelines.length) {
+				return zip(subSlicePipelines);
+			} else {
+				return fallback.pipe(map(() => []));
+			}
+		};
+
+		const subSliceEmissions = this.#slices$.pipe(
+			switchMap((sl) => zipSubSlices(sl, this.#scope.schedulingDispatcher$))
+		);
+
+		this.#schedule = zip(this.#scope.schedulingDispatcher$, subSliceEmissions).pipe(
+			map(([action, sliceChanges]) => ({ action, sliceChanges }))
 		);
 
 		this.#activePipeline = this.#schedule.pipe(
 			withLatestFrom(this.#state$, this.#sliceReducer$),
 			map(
 				([
-					[action, sliceChanges],
+					{ action, sliceChanges },
 					prevState,
 					reducer,
 				]): ReduceActionSliceSnapshot<State> => {
@@ -413,19 +451,21 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 						};
 					}
 
-					const withSliceChanges: State = sliceChanges
-						.filter(
-							(sliceChange) =>
-								sliceChange.snapshot.prevState !== sliceChange.snapshot.nextState
-						)
-						.reduce(
-							(prevState, sliceChange) =>
-								sliceChange.sliceRegistration.slicer.merger(
-									prevState,
+					const withSliceChanges: State =
+						sliceChanges
+							?.filter(
+								(sliceChange) =>
+									sliceChange.snapshot.prevState !==
 									sliceChange.snapshot.nextState
-								),
-							prevState
-						);
+							)
+							.reduce(
+								(prevState, sliceChange) =>
+									sliceChange.sliceRegistration.slicer.merger(
+										prevState,
+										sliceChange.snapshot.nextState
+									),
+								prevState
+							) ?? prevState;
 
 					const nextState = reducer(withSliceChanges, action);
 
@@ -475,8 +515,8 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 		);
 
 		this.#pipeline = this.#paused$.pipe(
+			distinctUntilChanged(),
 			switchMap((paused) => (paused ? this.#inactivePipeline : this.#activePipeline)),
-			finalize(() => this.complete()),
 			share() // Listened to by child slices
 		);
 
@@ -484,21 +524,17 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 
 		// Listens to the parent for changes to select itself from
 		// check if the parent could do it instead
-		this.#parentListener = this.#parentCoupling?.parentSlice.pipe(
-			finalize(() => this.complete()),
+		this.#parentListener = this.#parentCoupling?.rawParentState.pipe(
 			skip(1),
-			map((parentState) => {
-				const slice = this.#parentCoupling?.slicer.selector(parentState);
-
-				if (this.#parentCoupling?.lazy && !isNonNullable(slice)) {
-					return this.#initialState;
-				} else {
-					return slice;
-				}
-			}),
-
+			finalize(() => this.complete()),
+			takeWhile((parentState) =>
+				this.#parentCoupling?.key && parentState && typeof parentState === 'object'
+					? Object.hasOwn(parentState, this.#parentCoupling.key)
+					: true
+			),
+			map((parentState) => this.#parentCoupling?.slicer.selector(parentState)),
 			distinctUntilChanged(),
-			tap((parentSlice) => this.#state$.next(parentSlice as State))
+			tap((stateFromParent) => this.#state$.next(stateFromParent as State))
 		);
 
 		this.#autoRegisterPlugins$ = this.#plugins$.pipe(
@@ -728,8 +764,10 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 				initialState,
 				parentCoupling: {
 					parentSlice: this as Slice<unknown, State, UnknownObject>,
+					rawParentState: this.#observableState$,
 					slicer: childSliceConstructOptions.slicer,
 					lazy: childSliceConstructOptions.lazy ?? false,
+					key: childSliceConstructOptions.key,
 				},
 				pathSegment: childSliceConstructOptions.pathSegment,
 			}) as Slice<State, NonNullable<ChildState>, ChildInternals>;
@@ -752,6 +790,7 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 				selector,
 				merger,
 			},
+			key: undefined,
 			pathSegment: selector.toString(),
 		});
 	}
@@ -767,6 +806,7 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 			pathSegment: key.toString(),
 			slicer,
 			lazy: false,
+			key: key as string,
 		});
 	}
 
@@ -791,6 +831,7 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 			initialState,
 			pathSegment: key.toString(),
 			slicer,
+			key: key as string,
 			lazy: true,
 		}) as Slice<
 			State & Record<AdditionalKey, ChildState>,
@@ -856,6 +897,10 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 	): DicedSlice<State, ChildState, Internals, ChildInternals, DiceKey> {
 		const sliceOptions = extractSliceOptions(diceConstructOptions);
 		const get = (key: DiceKey) => this.addSlice(key, initialState, sliceOptions);
+		const has = (key: DiceKey) =>
+			this.#state$.value && typeof this.#state$.value === 'object'
+				? Object.keys(this.#state$.value).includes(key as string)
+				: false;
 		const set = (key: DiceKey, data: ChildState) => this.defineKeyAction.next({ key, data });
 		const remove = (key: DiceKey) => this.deleteKeyAction.next(key);
 		const keys = () => diceConstructOptions.getAllKeys(this.value);
@@ -877,8 +922,33 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 		const every$ = (predicate: (item: ChildState) => boolean) =>
 			items$.pipe(map((items) => items.every(predicate)));
 
+		const selectOnceDefined = (key: DiceKey) =>
+			firstValueFrom(
+				keys$.pipe(
+					filter((keys) => keys.includes(key)),
+					map(
+						() =>
+							this.slice(
+								key as unknown as keyof State,
+								sliceOptions as unknown as SliceOptions<
+									State,
+									NonNullable<State[keyof State]>,
+									ChildInternals
+								>
+							) as unknown as Slice<
+								State & Record<DiceKey, ChildState>,
+								NonNullable<ChildState>,
+								ChildInternals
+							>
+					)
+				)
+			);
+
 		return {
-			dice: this as Slice<unknown, State & Record<DiceKey, ChildState>, Internals>,
+			slice: this as Slice<unknown, State & Record<DiceKey, ChildState>, Internals>,
+			selectOnceDefined,
+			has,
+			get,
 			keys,
 			keys$,
 			count$,
@@ -890,13 +960,12 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 			remove,
 			create,
 			getNextKey,
-			get,
 		};
 	}
 
 	#registerSlice<ChildState, ChildInternals>(
 		sliceRegistration: SliceRegistration<State, ChildState, ChildInternals>
-	): SliceDetacher {
+	): void {
 		this.#slices$.next({
 			...this.#slices$.value,
 			[sliceRegistration.slice.#pathSegment]: sliceRegistration as SliceRegistration<
@@ -906,23 +975,26 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 			>,
 		});
 
-		if (sliceRegistration.lazyInitialState) {
+		// If the lazily added subslice is not already merged, merge it back
+		if (
+			sliceRegistration.lazyInitialState &&
+			sliceRegistration.lazyInitialState !== sliceRegistration.slicer.selector(this.value)
+		) {
 			this.setAction.next(
 				sliceRegistration.slicer.merger(this.value, sliceRegistration.lazyInitialState)
 			);
 		}
-
-		return () => this.#unregisterSlice(sliceRegistration.slice.#pathSegment);
 	}
 
-	#unregisterSlice(pathSegment: string): void {
+	/**
+	 *
+	 * @param pathSegment single segment, not the entire absolutePath
+	 */
+	unregisterSlice(pathSegment: string): void {
 		const nextSlicesSet = {
 			...this.#slices$.value,
 		};
-		const sliceToBeDeleted = nextSlicesSet[pathSegment];
-		sliceToBeDeleted.slice.complete();
 		delete nextSlicesSet[pathSegment];
-		// delete nextSlicesSet[`${this.#path}.${pathSegment}`];
 		this.#slices$.next(nextSlicesSet);
 	}
 
@@ -930,13 +1002,15 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 	 * Tears down itself and anything below
 	 */
 	public complete(): void {
-		console.log('COMPLETE');
 		this.#paused$.complete();
 		this.#state$.complete();
 		this.#slices$.complete();
 		this.#plugins$.complete();
 		this.#metaReducerConfigurations$.complete();
 		this.#reducerConfigurations$.complete();
+
+		this.#parentCoupling?.parentSlice?.unregisterSlice(this.pathSegment);
+
 		this.#scopedActions.forEach((scopedAction) => {
 			scopedAction.complete();
 		});

@@ -19,12 +19,9 @@ export interface PieState {
 	cheese: number;
 }
 
-const asd = deepdishSlice$.createAction<void>('asd');
-
-const pies$ = deepdishSlice$.slice('pies', { reducers: [asd.reduce((state, _a) => state)] });
+const pies$ = deepdishSlice$.slice('pies');
 
 export const pieDicer = pies$.dice({ cheese: -1, sauce: -1 } as PieState, {
-	reducers: [asd.reduce((state) => state)],
 	getAllKeys: (state) => Object.keys(state),
 	getNextKey: (keys) =>
 		(keys.map((key) => parseInt(key, 10)).reduce((a, b) => (a > b ? a : b), 0) + 1).toString(),
