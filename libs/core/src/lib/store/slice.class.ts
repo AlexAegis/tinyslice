@@ -580,12 +580,12 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 		this.#plugins$.next([...this.#plugins$.value, ...plugins]);
 	}
 
-	public setMetaReducers(metaReducerConfigurations: MetaPacketReducer<State>[]): void {
-		this.#metaReducerConfigurations$.next(metaReducerConfigurations);
-	}
-
 	public getMetaReducers(): MetaPacketReducer<State>[] {
 		return this.#metaReducerConfigurations$.value;
+	}
+
+	public setMetaReducers(metaReducerConfigurations: MetaPacketReducer<State>[]): void {
+		this.#metaReducerConfigurations$.next(metaReducerConfigurations);
 	}
 
 	public addMetaReducer(...metaReducerConfigurations: MetaPacketReducer<State>[]): void {
@@ -593,6 +593,18 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 			...this.#metaReducerConfigurations$.value,
 			...metaReducerConfigurations,
 		]);
+	}
+
+	public getReducers(): ReducerConfiguration<State>[] {
+		return this.#reducerConfigurations$.value;
+	}
+
+	public setReducers(reducers: ReducerConfiguration<State>[]): void {
+		this.#reducerConfigurations$.next(reducers);
+	}
+
+	public addReducers(reducers: ReducerConfiguration<State>[]): void {
+		this.#reducerConfigurations$.next([...this.#reducerConfigurations$.value, ...reducers]);
 	}
 
 	static assembleAbsolutePath(parentAbsolutePath: string, segment: string): string {
