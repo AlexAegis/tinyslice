@@ -55,11 +55,13 @@ export interface DicedSlice<
 	ChildInternals,
 	DiceKey extends string | number | symbol
 > {
-	dicedSlice: Slice<unknown, State & Record<DiceKey, ChildState>, ParentInternals>;
-	sliceKeys: () => DiceKey[];
-	sliceKeys$: Observable<DiceKey[]>;
+	dice: Slice<unknown, State & Record<DiceKey, ChildState>, ParentInternals>;
+	keys: () => DiceKey[];
+	keys$: Observable<DiceKey[]>;
 	count$: Observable<number>;
-	latestSlices$: Observable<ChildState[]>;
+	items$: Observable<ChildState[]>;
+	some$: (predicate: (item: ChildState) => boolean) => Observable<boolean>;
+	every$: (predicate: (item: ChildState) => boolean) => Observable<boolean>;
 	add: (data: ChildState) => void;
 	create: () => void;
 	set: (key: DiceKey, data: ChildState) => void;
@@ -856,27 +858,33 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 		const get = (key: DiceKey) => this.addSlice(key, initialState, sliceOptions);
 		const set = (key: DiceKey, data: ChildState) => this.defineKeyAction.next({ key, data });
 		const remove = (key: DiceKey) => this.deleteKeyAction.next(key);
-		const sliceKeys = () => diceConstructOptions.getAllKeys(this.value);
-		const getNextKey = () => diceConstructOptions.getNextKey(sliceKeys());
+		const keys = () => diceConstructOptions.getAllKeys(this.value);
+		const getNextKey = () => diceConstructOptions.getNextKey(keys());
 		const add = (data: ChildState) => this.defineKeyAction.next({ key: getNextKey(), data });
 		const create = () => this.defineKeyAction.next({ key: getNextKey(), data: undefined });
 
-		const sliceKeys$ = this.pipe(
+		const keys$ = this.pipe(
 			map((state) => diceConstructOptions.getAllKeys(state)),
 			distinctUntilChanged(fastArrayComparator)
 		);
-		const latestSlices$ = sliceKeys$.pipe(
+		const items$ = keys$.pipe(
 			map((keys) => keys.map((key) => get(key))),
 			switchMap((slices) => combineLatest(slices))
 		);
-		const count$ = sliceKeys$.pipe(map((keys) => keys.length));
+		const count$ = keys$.pipe(map((keys) => keys.length));
+		const some$ = (predicate: (item: ChildState) => boolean) =>
+			items$.pipe(map((items) => items.some(predicate)));
+		const every$ = (predicate: (item: ChildState) => boolean) =>
+			items$.pipe(map((items) => items.every(predicate)));
 
 		return {
-			dicedSlice: this as Slice<unknown, State & Record<DiceKey, ChildState>, Internals>,
-			sliceKeys,
-			sliceKeys$,
+			dice: this as Slice<unknown, State & Record<DiceKey, ChildState>, Internals>,
+			keys,
+			keys$,
 			count$,
-			latestSlices$,
+			items$,
+			some$,
+			every$,
 			add,
 			set,
 			remove,
