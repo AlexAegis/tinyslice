@@ -1,4 +1,4 @@
-import { Observer, Subscription } from 'rxjs';
+import { finalize, map, Observer, Subject, Subscription, tap } from 'rxjs';
 import { Action } from '../action';
 import { Scope } from './scope.class';
 import { RootSlice, Slice } from './slice.class';
@@ -8,6 +8,10 @@ const createMockObserver = <T>(): Observer<T> => ({
 	complete: jest.fn(),
 	error: jest.fn(),
 });
+
+function timeout(ms: number): Promise<unknown> {
+	return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 describe('slice', () => {
 	let sink!: Subscription;
@@ -28,6 +32,222 @@ describe('slice', () => {
 
 	afterEach(() => jest.clearAllMocks());
 	afterEach(() => sink.unsubscribe());
+
+	describe('effects', () => {
+		interface RootState {
+			foo: FooState;
+		}
+
+		interface FooState {
+			bar: number;
+			bor: string;
+		}
+
+		let rootSlice!: RootSlice<RootState>;
+		let fooSlice!: Slice<RootState, FooState>;
+		let barSlice!: Slice<FooState, number>;
+		let borSlice!: Slice<FooState, string>;
+
+		const initialRootSlice: RootState = {
+			[FOO_SLICE_NAME]: {
+				[BAR_SLICE_NAME]: 0,
+				[BOR_SLICE_NAME]: YON_SLICE_NAME,
+			},
+		};
+
+		const rootObserver: Observer<RootState> = createMockObserver();
+		const fooSliceObserver: Observer<FooState> = createMockObserver();
+		const barSliceObserver: Observer<number> = createMockObserver();
+		const borSliceObserver: Observer<string> = createMockObserver();
+
+		const rootPauseObserver: Observer<boolean> = createMockObserver();
+		const fooSlicePauseObserver: Observer<boolean> = createMockObserver();
+		const barSlicePauseObserver: Observer<boolean> = createMockObserver();
+		const borSlicePauseObserver: Observer<boolean> = createMockObserver();
+
+		let effectSource: Subject<number>;
+
+		const rootScopeEffectObserver: Observer<number> = createMockObserver();
+		const fooScopeEffectObserver: Observer<number> = createMockObserver();
+		const barScopeEffectObserver: Observer<number> = createMockObserver();
+		const borScopeEffectObserver: Observer<number> = createMockObserver();
+
+		const rootReducerSpy = jest.fn((state, _action) => state);
+		const fooReducerSpy = jest.fn((state, _action) => state);
+		const barReducerSpy = jest.fn((state, _action) => state);
+		const borReducerSpy = jest.fn((state, _action) => state);
+
+		let testAction: Action<number>;
+		let auxillaryTestAction: Action<number>;
+		const barAuxillaryReducerSpy = jest.fn((_state, action) => action);
+
+		beforeEach(() => {
+			effectSource = new Subject<number>();
+			testAction = scope.createAction<number>('test');
+			auxillaryTestAction = scope.createAction<number>('auxillary');
+
+			rootSlice = scope.createRootSlice(initialRootSlice, {
+				reducers: [testAction.reduce(rootReducerSpy)],
+			});
+			fooSlice = rootSlice.slice(FOO_SLICE_NAME, {
+				reducers: [testAction.reduce(fooReducerSpy)],
+			});
+			barSlice = fooSlice.slice(BAR_SLICE_NAME, {
+				reducers: [
+					testAction.reduce(barReducerSpy),
+					auxillaryTestAction.reduce(barAuxillaryReducerSpy),
+				],
+			});
+			borSlice = fooSlice.slice(BOR_SLICE_NAME, {
+				reducers: [testAction.reduce(borReducerSpy)],
+			});
+
+			sink.add(rootSlice.subscribe(rootObserver));
+			sink.add(fooSlice.subscribe(fooSliceObserver));
+			sink.add(barSlice.subscribe(barSliceObserver));
+			sink.add(borSlice.subscribe(borSliceObserver));
+
+			sink.add(rootSlice.paused$.subscribe(rootPauseObserver));
+			sink.add(fooSlice.paused$.subscribe(fooSlicePauseObserver));
+			sink.add(barSlice.paused$.subscribe(barSlicePauseObserver));
+			sink.add(borSlice.paused$.subscribe(borSlicePauseObserver));
+
+			scope.createEffect(
+				auxillaryTestAction.pipe(
+					map((payload) => auxillaryTestAction.makePacket(payload + 1))
+				)
+			);
+
+			rootSlice.createEffect(
+				effectSource.pipe(
+					tap(rootScopeEffectObserver.next),
+					finalize(rootScopeEffectObserver.complete),
+					map((n) => testAction.makePacket(n))
+				)
+			);
+
+			fooSlice.createEffect(
+				effectSource.pipe(
+					tap(fooScopeEffectObserver.next),
+					finalize(fooScopeEffectObserver.complete),
+					map((n) => testAction.makePacket(n))
+				)
+			);
+
+			barSlice.createEffect(
+				effectSource.pipe(
+					tap(barScopeEffectObserver.next),
+					finalize(barScopeEffectObserver.complete),
+					map((n) => testAction.makePacket(n))
+				)
+			);
+
+			borSlice.createEffect(
+				effectSource.pipe(
+					tap(borScopeEffectObserver.next),
+					finalize(borScopeEffectObserver.complete),
+					map((n) => testAction.makePacket(n))
+				)
+			);
+		});
+
+		it('should make sure packets returned always reduce after source actions are reduced', async () => {
+			expect(barSliceObserver.next).toHaveBeenNthCalledWith(1, 0);
+			auxillaryTestAction.next(1);
+			expect(barSliceObserver.next).toHaveBeenNthCalledWith(2, 1);
+			await timeout(0);
+			expect(barSliceObserver.next).toHaveBeenNthCalledWith(3, 2);
+		});
+
+		describe('pausing', () => {
+			it('should pause all child slices, but not parents', () => {
+				fooSlice.pause();
+
+				expect(rootPauseObserver.next).toHaveBeenCalledTimes(1);
+				expect(fooSlicePauseObserver.next).toHaveBeenCalledTimes(2);
+				expect(barSlicePauseObserver.next).toHaveBeenCalledTimes(2);
+				expect(borSlicePauseObserver.next).toHaveBeenCalledTimes(2);
+
+				expect(rootPauseObserver.next).toHaveBeenLastCalledWith(false);
+				expect(fooSlicePauseObserver.next).toHaveBeenLastCalledWith(true);
+				expect(barSlicePauseObserver.next).toHaveBeenLastCalledWith(true);
+				expect(borSlicePauseObserver.next).toHaveBeenLastCalledWith(true);
+
+				barSlice.unpause();
+
+				expect(rootPauseObserver.next).toHaveBeenCalledTimes(1);
+				expect(fooSlicePauseObserver.next).toHaveBeenCalledTimes(2);
+				expect(barSlicePauseObserver.next).toHaveBeenCalledTimes(3);
+				expect(borSlicePauseObserver.next).toHaveBeenCalledTimes(2);
+
+				expect(rootPauseObserver.next).toHaveBeenLastCalledWith(false);
+				expect(fooSlicePauseObserver.next).toHaveBeenLastCalledWith(true);
+				expect(barSlicePauseObserver.next).toHaveBeenLastCalledWith(false);
+				expect(borSlicePauseObserver.next).toHaveBeenLastCalledWith(true);
+
+				rootSlice.unpause();
+
+				expect(rootPauseObserver.next).toHaveBeenCalledTimes(1);
+				expect(fooSlicePauseObserver.next).toHaveBeenCalledTimes(3);
+				expect(barSlicePauseObserver.next).toHaveBeenCalledTimes(3);
+				expect(borSlicePauseObserver.next).toHaveBeenCalledTimes(3);
+
+				expect(rootPauseObserver.next).toHaveBeenLastCalledWith(false);
+				expect(fooSlicePauseObserver.next).toHaveBeenLastCalledWith(false);
+				expect(barSlicePauseObserver.next).toHaveBeenLastCalledWith(false);
+				expect(borSlicePauseObserver.next).toHaveBeenLastCalledWith(false);
+			});
+
+			it('should unsubscribe from scoped effects and resubscribe on unpause', () => {
+				effectSource.next(0);
+
+				expect(rootScopeEffectObserver.next).toHaveBeenCalledTimes(1);
+				expect(fooScopeEffectObserver.next).toHaveBeenCalledTimes(1);
+				expect(barScopeEffectObserver.next).toHaveBeenCalledTimes(1);
+				expect(borScopeEffectObserver.next).toHaveBeenCalledTimes(1);
+				expect(rootScopeEffectObserver.next).toHaveBeenLastCalledWith(0);
+				expect(fooScopeEffectObserver.next).toHaveBeenLastCalledWith(0);
+				expect(barScopeEffectObserver.next).toHaveBeenLastCalledWith(0);
+				expect(borScopeEffectObserver.next).toHaveBeenLastCalledWith(0);
+				expect(rootScopeEffectObserver.complete).toHaveBeenCalledTimes(0);
+				expect(fooScopeEffectObserver.complete).toHaveBeenCalledTimes(0);
+				expect(barScopeEffectObserver.complete).toHaveBeenCalledTimes(0);
+				expect(borScopeEffectObserver.complete).toHaveBeenCalledTimes(0);
+
+				fooSlice.pause();
+				effectSource.next(1);
+
+				expect(rootScopeEffectObserver.next).toHaveBeenCalledTimes(2);
+				expect(fooScopeEffectObserver.next).toHaveBeenCalledTimes(1);
+				expect(barScopeEffectObserver.next).toHaveBeenCalledTimes(1);
+				expect(borScopeEffectObserver.next).toHaveBeenCalledTimes(1);
+				expect(rootScopeEffectObserver.next).toHaveBeenLastCalledWith(1);
+				expect(fooScopeEffectObserver.next).toHaveBeenLastCalledWith(0);
+				expect(barScopeEffectObserver.next).toHaveBeenLastCalledWith(0);
+				expect(borScopeEffectObserver.next).toHaveBeenLastCalledWith(0);
+				expect(rootScopeEffectObserver.complete).toHaveBeenCalledTimes(0);
+				expect(fooScopeEffectObserver.complete).toHaveBeenCalledTimes(1);
+				expect(barScopeEffectObserver.complete).toHaveBeenCalledTimes(1);
+				expect(borScopeEffectObserver.complete).toHaveBeenCalledTimes(1);
+
+				barSlice.unpause();
+				effectSource.next(2);
+
+				expect(rootScopeEffectObserver.next).toHaveBeenCalledTimes(3);
+				expect(fooScopeEffectObserver.next).toHaveBeenCalledTimes(1);
+				expect(barScopeEffectObserver.next).toHaveBeenCalledTimes(2);
+				expect(borScopeEffectObserver.next).toHaveBeenCalledTimes(1);
+				expect(rootScopeEffectObserver.next).toHaveBeenLastCalledWith(2);
+				expect(fooScopeEffectObserver.next).toHaveBeenLastCalledWith(0);
+				expect(barScopeEffectObserver.next).toHaveBeenLastCalledWith(2);
+				expect(borScopeEffectObserver.next).toHaveBeenLastCalledWith(0);
+				expect(rootScopeEffectObserver.complete).toHaveBeenCalledTimes(0);
+				expect(fooScopeEffectObserver.complete).toHaveBeenCalledTimes(1);
+				expect(barScopeEffectObserver.complete).toHaveBeenCalledTimes(1);
+				expect(borScopeEffectObserver.complete).toHaveBeenCalledTimes(1);
+			});
+		});
+	});
 
 	describe('unsubscribe', () => {
 		interface RootState {
@@ -57,7 +277,7 @@ describe('slice', () => {
 		const borSliceObserver: Observer<string> = createMockObserver();
 
 		beforeEach(() => {
-			rootSlice = scope.createRootSlice<RootState>(initialRootSlice);
+			rootSlice = scope.createRootSlice(initialRootSlice);
 
 			fooSlice = rootSlice.slice(FOO_SLICE_NAME);
 			barSlice = fooSlice.slice(BAR_SLICE_NAME);
@@ -69,8 +289,22 @@ describe('slice', () => {
 			sink.add(borSlice.subscribe(borSliceObserver));
 		});
 
+		it('should unsubscribe scoped effects', () => {
+			const action = scope.createAction('test');
+			const effectSubscription = borSlice.createEffect(action);
+			borSlice.complete();
+			expect(effectSubscription.closed).toBeTruthy();
+		});
+
+		it('should complete scoped actions', () => {
+			const action = borSlice.createAction('test');
+			const actionCompleteSpy = jest.spyOn(action, 'complete');
+			borSlice.complete();
+			expect(actionCompleteSpy).toBeCalled();
+		});
+
 		it('should complete all subscribers if the root store is shut down', () => {
-			rootSlice.unsubscribe();
+			rootSlice.complete();
 			expect(rootObserver.next).toHaveBeenCalledTimes(1);
 			expect(rootObserver.error).toHaveBeenCalledTimes(0);
 			expect(rootObserver.complete).toHaveBeenCalledTimes(1);
@@ -89,7 +323,7 @@ describe('slice', () => {
 		});
 
 		it('should complete all child slices if the slice is unsubscribed but not the parent', () => {
-			fooSlice.unsubscribe();
+			fooSlice.complete();
 			expect(rootObserver.next).toHaveBeenCalledTimes(1);
 			expect(rootObserver.error).toHaveBeenCalledTimes(0);
 			expect(rootObserver.complete).toHaveBeenCalledTimes(0);
@@ -108,7 +342,7 @@ describe('slice', () => {
 		});
 
 		it('should complete the leaf slices if the slice is unsubscribed but not the parents', () => {
-			barSlice.unsubscribe();
+			barSlice.complete();
 			expect(rootObserver.next).toHaveBeenCalledTimes(1);
 			expect(rootObserver.error).toHaveBeenCalledTimes(0);
 			expect(rootObserver.complete).toHaveBeenCalledTimes(0);
@@ -158,7 +392,7 @@ describe('slice', () => {
 		const borSliceObserver: Observer<string> = createMockObserver();
 
 		beforeEach(() => {
-			rootSlice = scope.createRootSlice<RootState>(initialRootSlice);
+			rootSlice = scope.createRootSlice(initialRootSlice);
 
 			fooSlice = rootSlice.slice(FOO_SLICE_NAME);
 			barSlice = fooSlice.slice(BAR_SLICE_NAME);
@@ -325,6 +559,20 @@ describe('slice', () => {
 			expect(reducerSpy).toHaveBeenNthCalledWith<[string, string]>(4, FOO_SLICE_NAME, 'b');
 			expect(reducerSpy).toHaveBeenNthCalledWith<[string, string]>(5, ROOT_SLICE_NAME, 'a');
 		});
+
+		describe('pausing', () => {
+			it('should not execute any reducers in paused slices', async () => {
+				testAction.next();
+				expect(reducerSpy).toHaveBeenCalledTimes(5);
+				fooSlice.pause();
+				testAction.next();
+				expect(reducerSpy).toHaveBeenCalledTimes(6);
+				fooSlice.unpause();
+				testAction.next();
+				await timeout(1);
+				expect(reducerSpy).toHaveBeenCalledTimes(11);
+			});
+		});
 	});
 
 	describe('error', () => {
@@ -366,7 +614,7 @@ describe('slice', () => {
 			expect(rootObserver.complete).toHaveBeenCalledTimes(0);
 
 			expect(consoleErrorSpy).toHaveBeenCalledTimes(1);
-			expect(consoleErrorSpy).toHaveBeenCalledWith(testError);
+			expect(consoleErrorSpy).toHaveBeenCalledWith(expect.anything(), testError);
 		});
 	});
 
@@ -416,7 +664,7 @@ describe('slice', () => {
 		const unchangingSliceObserver: Observer<string> = createMockObserver();
 
 		beforeEach(() => {
-			rootSlice = scope.createRootSlice<RootState>(initialRootSlice);
+			rootSlice = scope.createRootSlice(initialRootSlice);
 
 			fooSlice = rootSlice.slice(FOO_SLICE_NAME);
 			barSlice = fooSlice.slice(BAR_SLICE_NAME);
@@ -564,7 +812,7 @@ describe('slice', () => {
 		const shallowOptionalSliceObserver: Observer<string> = createMockObserver();
 
 		beforeEach(() => {
-			rootSlice = scope.createRootSlice<ShallowRootState>(initialRootSlice);
+			rootSlice = scope.createRootSlice(initialRootSlice);
 			shallowOptionalSlice = rootSlice.slice(FOO_SLICE_NAME);
 			sink.add(rootSlice.subscribe(rootObserver));
 			sink.add(shallowOptionalSlice.subscribe(shallowOptionalSliceObserver));

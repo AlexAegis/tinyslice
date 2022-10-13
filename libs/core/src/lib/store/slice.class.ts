@@ -31,7 +31,7 @@ import {
 	NextKeyStrategy,
 	updateObject,
 } from '../helper';
-import { TINYSLICE_ACTION_DEFAULT_PREFIX } from '../internal';
+import { TINYSLICE_DEFAULT_PREFIX, TINYSLICE_PREFIX } from '../internal';
 import { Merger } from './merger.type';
 import {
 	MetaPacketReducer,
@@ -50,10 +50,10 @@ export type SliceDetacher = () => void;
 
 export interface DicedSlice<
 	State,
+	ChildState,
 	ParentInternals,
 	ChildInternals,
-	DiceKey extends string | number | symbol,
-	ChildState
+	DiceKey extends string | number | symbol
 > {
 	internals: ParentInternals;
 	sliceKeys: () => DiceKey[];
@@ -123,7 +123,6 @@ export interface SliceConstructOptions<ParentState, State, Internals>
 
 export interface DiceConstructOptions<State, ChildState, ChildInternals, DiceKey>
 	extends SliceOptions<State, ChildState, ChildInternals> {
-	initialState: ChildState;
 	getAllKeys: (state: State) => DiceKey[];
 	getNextKey: GetNext<DiceKey>;
 }
@@ -137,7 +136,6 @@ export interface PremadeDiceConstructOptions<
 > extends SliceOptions<State, ChildState, ChildInternals> {
 	getNextKeyStrategy?: NextKeyStrategy;
 	dicedSliceOptions?: SliceOptions<ParentState, State, Internals>;
-	initialState: ChildState;
 }
 
 const extractSliceOptions = <ParentState, State, Internals>(
@@ -238,7 +236,7 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 	#sliceReducer$: Observable<PacketReducer<State>>;
 	#plugins$: BehaviorSubject<TinySlicePlugin<State>[]>;
 	#autoRegisterPlugins$: Observable<unknown>;
-	#effectsPaused: BehaviorSubject<boolean>;
+	#paused$: BehaviorSubject<boolean>;
 
 	#slices$ = new BehaviorSubject<Record<string, SliceRegistration<State, unknown, Internals>>>(
 		{}
@@ -249,10 +247,23 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 	// Listens to the parent for changes to select itself from
 	// check if the parent could do it instead
 	#parentListener: Observable<State | undefined> | undefined;
+	#schedule: Observable<
+		[
+			ActionPacket<unknown>,
+			{
+				snapshot: ReduceActionSliceSnapshot<unknown>;
+				sliceRegistration: SliceRegistration<State, unknown, Internals>;
+			}[]
+		]
+	>;
+	#inactivePipeline: Observable<ReduceActionSliceSnapshot<State>>;
+	#activePipeline: Observable<ReduceActionSliceSnapshot<State>>;
+
 	#pipeline: Observable<ReduceActionSliceSnapshot<State>>;
 
 	#defineInternals: ((state: Slice<ParentState, State, unknown>) => Internals) | undefined;
 	#internals: Internals;
+	#scopedActions: Action<unknown>[] = [];
 
 	get internals(): Internals {
 		return this.#internals;
@@ -283,23 +294,23 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 		this.#initialMetaReducers = options.metaReducers ?? [];
 		this.#defineInternals = options.defineInternals;
 
-		this.#effectsPaused = new BehaviorSubject(false);
+		this.#paused$ = new BehaviorSubject(false);
 
 		this.#absolutePath = Slice.calculateAbsolutePath(this.#parentCoupling, this.#pathSegment);
 
-		this.setAction = new Action<State>(
-			`${TINYSLICE_ACTION_DEFAULT_PREFIX} set ${this.#absolutePath}`
+		this.setAction = this.createAction<State>(
+			`${TINYSLICE_DEFAULT_PREFIX} set ${this.#absolutePath}`
 		);
-		this.updateAction = new Action<Partial<State>>(
-			`${TINYSLICE_ACTION_DEFAULT_PREFIX} update ${this.#absolutePath}`
-		);
-
-		this.deleteKeyAction = new Action<ObjectKey>(
-			`${TINYSLICE_ACTION_DEFAULT_PREFIX} delete key ${this.#absolutePath}`
+		this.updateAction = this.createAction<Partial<State>>(
+			`${TINYSLICE_DEFAULT_PREFIX} update ${this.#absolutePath}`
 		);
 
-		this.defineKeyAction = new Action<{ key: ObjectKey; data: unknown }>(
-			`${TINYSLICE_ACTION_DEFAULT_PREFIX} define key ${this.#absolutePath}`
+		this.deleteKeyAction = this.createAction<ObjectKey>(
+			`${TINYSLICE_DEFAULT_PREFIX} delete key ${this.#absolutePath}`
+		);
+
+		this.defineKeyAction = this.createAction<{ key: ObjectKey; data: unknown }>(
+			`${TINYSLICE_DEFAULT_PREFIX} define key ${this.#absolutePath}`
 		);
 
 		this.#state$ = new BehaviorSubject<State>(this.#initialState);
@@ -353,7 +364,7 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 			})
 		);
 
-		this.#pipeline = zip(
+		this.#schedule = zip(
 			this.#scope.schedulingDispatcher$,
 			this.#slices$.pipe(
 				map((sliceRegistrations) => Object.values(sliceRegistrations)),
@@ -371,7 +382,9 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 					}
 				})
 			)
-		).pipe(
+		);
+
+		this.#activePipeline = this.#schedule.pipe(
 			withLatestFrom(this.#state$, this.#sliceReducer$),
 			map(
 				([
@@ -424,7 +437,7 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 			}),
 			map(([snapshot, _metaReducer]) => snapshot),
 			catchError((error, pipeline$) => {
-				console.error(error);
+				console.error(`${TINYSLICE_PREFIX} slice pipeline error \n`, error);
 				return this.#plugins$.pipe(
 					take(1),
 					tap((plugins) => {
@@ -434,17 +447,32 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 					}),
 					switchMap(() => pipeline$)
 				);
-			}),
-			finalize(() => this.unsubscribe()),
-			share() // Listened to by child slices
+			})
 		) as Observable<ReduceActionSliceSnapshot<State>>;
+
+		this.#inactivePipeline = this.#scope.schedulingDispatcher$.pipe(
+			withLatestFrom(this.#state$),
+			map(([, state]) => {
+				return {
+					action: { type: 'paused', payload: undefined },
+					prevState: state,
+					nextState: undefined,
+				} as ReduceActionSliceSnapshot<State>;
+			})
+		);
+
+		this.#pipeline = this.#paused$.pipe(
+			switchMap((paused) => (paused ? this.#inactivePipeline : this.#activePipeline)),
+			finalize(() => this.complete()),
+			share() // Listened to by child slices
+		);
 
 		this.#plugins$ = new BehaviorSubject<TinySlicePlugin<State>[]>(this.#initialPlugins);
 
 		// Listens to the parent for changes to select itself from
 		// check if the parent could do it instead
 		this.#parentListener = this.#parentCoupling?.parentSlice.pipe(
-			finalize(() => this.unsubscribe()),
+			finalize(() => this.complete()),
 			skip(1),
 			map((parentState) => {
 				const slice = this.#parentCoupling?.slicer.selector(parentState);
@@ -499,31 +527,31 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 		this.#sink.add(this.#pipeline.subscribe()); // Slices are hot!
 	}
 
-	public get effectsPaused$(): Observable<boolean> {
-		return this.#effectsPaused.asObservable();
+	public get paused$(): Observable<boolean> {
+		return this.#paused$.asObservable();
 	}
 
 	/**
 	 * Unpauses this slice and every child slice recursively
 	 */
-	public unpauseEffects(): void {
-		if (this.#effectsPaused.value) {
-			this.#effectsPaused.next(false);
+	public unpause(): void {
+		if (this.#paused$.value) {
+			this.#paused$.next(false);
 		}
 		for (const subSlice of Object.values(this.#slices$.value)) {
-			subSlice.slice.unpauseEffects();
+			subSlice.slice.unpause();
 		}
 	}
 
 	/**
 	 * Pauses this slice and every child slice recursively
 	 */
-	public pauseEffects(): void {
-		if (!this.#effectsPaused.value) {
-			this.#effectsPaused.next(true);
+	public pause(): void {
+		if (!this.#paused$.value) {
+			this.#paused$.next(true);
 		}
 		for (const subSlice of Object.values(this.#slices$.value)) {
-			subSlice.slice.pauseEffects();
+			subSlice.slice.pause();
 		}
 	}
 
@@ -532,7 +560,7 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 	 * These effects will also unsubscribe if the slice unsubscribes
 	 */
 	public createEffect<Output>(packet$: Observable<Output | ActionPacket>): Subscription {
-		const pausablePacket$ = this.effectsPaused$.pipe(
+		const pausablePacket$ = this.paused$.pipe(
 			switchMap((isPaused) => (isPaused ? NEVER : packet$))
 		);
 		const effectSubscription = this.#scope.createEffect(pausablePacket$);
@@ -630,9 +658,14 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 		});
 	}
 
-	public createScopedAction<Packet>(name: string, actionOptions?: ActionConfig): Action<Packet> {
+	public createAction<Packet>(name: string, actionOptions?: ActionConfig): Action<Packet> {
 		const actionName = `${this.#absolutePath} ${name}`;
-		return this.#scope.createAction(actionName, actionOptions);
+		const action = this.#scope.createAction<Packet>(actionName, {
+			...actionOptions,
+			pauseWhile: this.paused$,
+		});
+		this.#scopedActions.push(action as Action<unknown>);
+		return action;
 	}
 
 	#slice<ChildState, ChildInternals>(
@@ -754,6 +787,7 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 		DiceState extends Record<number, ChildState>
 	>(
 		key: Key extends keyof State ? never : Key,
+		initialState: ChildState,
 		diceConstructOptions: PremadeDiceConstructOptions<
 			State,
 			DiceState,
@@ -761,12 +795,15 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 			DicedInternals,
 			ChildInternals
 		>
-	): DicedSlice<State, DicedInternals, ChildInternals, number, ChildState> {
-		return this.addSlice(key, {} as DiceState, diceConstructOptions.dicedSliceOptions).dice({
-			...diceConstructOptions,
-			getAllKeys: getObjectKeysAsNumbers,
-			getNextKey: getNextKeyStrategy(diceConstructOptions.getNextKeyStrategy),
-		});
+	): DicedSlice<State, ChildState, DicedInternals, ChildInternals, number> {
+		return this.addSlice(key, {} as DiceState, diceConstructOptions.dicedSliceOptions).dice(
+			initialState,
+			{
+				...diceConstructOptions,
+				getAllKeys: getObjectKeysAsNumbers,
+				getNextKey: getNextKeyStrategy(diceConstructOptions.getNextKeyStrategy),
+			}
+		);
 	}
 
 	/**
@@ -783,15 +820,12 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 	 * Nomenclature: Slicing means to take a single piece of state, dicing is multiple
 	 */
 	public dice<ChildState, ChildInternals, DiceKey extends string | number | symbol>(
+		initialState: ChildState,
 		diceConstructOptions: DiceConstructOptions<State, ChildState, ChildInternals, DiceKey>
-	): DicedSlice<State, Internals, ChildInternals, DiceKey, ChildState> {
+	): DicedSlice<State, ChildState, Internals, ChildInternals, DiceKey> {
 		const internals = this.internals;
 		const get = (key: DiceKey) =>
-			this.addSlice(
-				key,
-				diceConstructOptions.initialState,
-				extractSliceOptions(diceConstructOptions)
-			);
+			this.addSlice(key, initialState, extractSliceOptions(diceConstructOptions));
 		const set = (key: DiceKey, data: ChildState) => this.defineKeyAction.next({ key, data });
 		const remove = (key: DiceKey) => this.deleteKeyAction.next(key);
 		const sliceKeys = () => diceConstructOptions.getAllKeys(this.value);
@@ -848,29 +882,28 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 			...this.#slices$.value,
 		};
 		const sliceToBeDeleted = nextSlicesSet[pathSegment];
-		sliceToBeDeleted.slice.unsubscribe();
+		sliceToBeDeleted.slice.complete();
 		delete nextSlicesSet[pathSegment];
 		// delete nextSlicesSet[`${this.#path}.${pathSegment}`];
 		this.#slices$.next(nextSlicesSet);
 	}
 
-	public addReducers(...reducerConfiguration: ReducerConfiguration<State>[]): void {
-		const nextReducers = [...this.#reducerConfigurations$.value];
-		nextReducers.push(...reducerConfiguration);
-		this.#reducerConfigurations$.next(nextReducers);
-	}
-
 	/**
 	 * Tears down itself and anything below
 	 */
-	public unsubscribe(): void {
+	public complete(): void {
+		console.log('COMPLETE');
+		this.#paused$.complete();
 		this.#state$.complete();
 		this.#slices$.complete();
 		this.#plugins$.complete();
 		this.#metaReducerConfigurations$.complete();
 		this.#reducerConfigurations$.complete();
-		this.#sink.unsubscribe();
+		this.#scopedActions.forEach((scopedAction) => {
+			scopedAction.complete();
+		});
 		this.#scope.slices.delete(this.#absolutePath);
+		this.#sink.unsubscribe();
 	}
 
 	public asObservable(): Observable<State> {

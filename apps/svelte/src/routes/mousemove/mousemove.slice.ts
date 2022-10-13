@@ -12,7 +12,7 @@ export const mouseMoveSlice$ = rootSlice.addSlice('mousemove', {
 } as MouseMoveState);
 
 export const mouseMoveActions = {
-	move: mouseMoveSlice$.createScopedAction<{ x: number; y: number }>('move', {
+	move: mouseMoveSlice$.createAction<{ x: number; y: number }>('move', {
 		throttleTime: 100,
 	}),
 };

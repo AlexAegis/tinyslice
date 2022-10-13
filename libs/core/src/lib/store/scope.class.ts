@@ -13,7 +13,7 @@ import type { ActionConfig } from '../action/action-config.interface';
 import { ActionPacket, isActionPacket } from '../action/action-packet.interface';
 import { Action, ActionTuple } from '../action/action.class';
 import { colorizeLogString } from '../helper';
-import { TINYSLICE_ACTION_PREFIX } from '../internal';
+import { TINYSLICE_PREFIX } from '../internal';
 import { RootSlice, RootSliceOptions, Slice } from './slice.class';
 
 /**
@@ -61,13 +61,14 @@ export class Scope {
 		const source = scheduled(action, asapScheduler).pipe(
 			tap((packet) => {
 				if (isActionPacket(packet, this.actionMap)) {
-					const actionDispatcher = this.actionMap.get(packet.type);
-					actionDispatcher?.next(packet.payload);
+					// Passing it directly to the dispatcher as-is instead of
+					// going through the Action itself to avoid infinite loops.
+					this.schedulingDispatcher.next(packet);
 				}
 			}),
 			catchError((error, pipeline$) => {
 				console.error(
-					...colorizeLogString(`${TINYSLICE_ACTION_PREFIX} error in effect!\n`),
+					...colorizeLogString(`${TINYSLICE_PREFIX} error in effect!\n`),
 					error
 				);
 				return pipeline$;
@@ -86,7 +87,14 @@ export class Scope {
 		this.stores.push(store);
 	}
 
-	public registerAction<Payload>(action: Action<Payload>): Subscription | undefined {
+	public registerAction<Payload>(
+		action: Action<Payload>,
+		registerFromAction = false
+	): Subscription | undefined {
+		if (!registerFromAction) {
+			action.register(this);
+		}
+
 		if (this.actionMap.has(action.type)) {
 			return;
 		}
@@ -124,12 +132,11 @@ export class Scope {
 		return this.actionMap.has(type);
 	}
 
-	public unsubscribe(): void {
-		this.actionMap.forEach((action) => action.unsubscribe());
+	public complete(): void {
+		this.actionMap.forEach((action) => action.complete());
 		this.effectSubscriptions.unsubscribe();
-		this.effectSubscriptions = new Subscription();
 		this.schedulingDispatcher.complete();
-		this.stores.forEach((store) => store.unsubscribe());
+		this.stores.forEach((store) => store.complete());
 		this.stores = [];
 	}
 }

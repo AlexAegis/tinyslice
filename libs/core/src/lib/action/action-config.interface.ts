@@ -1,3 +1,5 @@
+import { Observable } from 'rxjs';
+
 export interface ActionConfig {
 	/**
 	 * Defining this adds a throttleTime operator to the actions dispatcher
@@ -12,6 +14,7 @@ export interface ActionConfig {
 	 * ```
 	 */
 	throttleTime?: number;
+	pauseWhile?: Observable<boolean>;
 }
 
 export const DEFAULT_ACTION_CONFIG: ActionConfig = {

@@ -1,4 +1,5 @@
 import { fakeAsync, flush, TestBed, tick, waitForAsync } from '@angular/core/testing';
+import { ActionPacket } from '@tinyslice/core';
 import { Observable, Observer, Subscription } from 'rxjs';
 import { RootStoreModule } from '../../../../core/root-store.module';
 import { CounterModule } from '../../counter.module';
@@ -23,8 +24,8 @@ describe('RequestStore', () => {
 
 	let loadingObserver: Observer<boolean>;
 	let request: Observer<string>;
-	let requestSuccess: Observer<string>;
-	let requestFailure: Observer<string>;
+	let requestSuccess: Observer<ActionPacket<string>>;
+	let requestFailure: Observer<ActionPacket<string>>;
 
 	let randomSpy: jest.SpyInstance;
 	let sink: Subscription;
@@ -52,8 +53,8 @@ describe('RequestStore', () => {
 
 		loadingObserver = mockSubscribe(service.loading$, sink);
 		request = mockSubscribe(service.request, sink);
-		requestSuccess = mockSubscribe(service.requestSuccess, sink);
-		requestFailure = mockSubscribe(service.requestFailure, sink);
+		requestSuccess = mockSubscribe(service.requestSuccess.listenPackets$, sink);
+		requestFailure = mockSubscribe(service.requestFailure.listenPackets$, sink);
 		randomSpy = jest.spyOn(global.Math, 'random');
 	}));
 

@@ -1,3 +1,3 @@
-export const TINYSLICE_ACTION_PREFIX = '[TinySlice]';
-export const TINYSLICE_ACTION_INTERNAL_PREFIX = `${TINYSLICE_ACTION_PREFIX} [Internal]`;
-export const TINYSLICE_ACTION_DEFAULT_PREFIX = `${TINYSLICE_ACTION_PREFIX} [Default]`;
+export const TINYSLICE_PREFIX = '[TinySlice]';
+export const TINYSLICE_INTERNAL_PREFIX = `${TINYSLICE_PREFIX} [Internal]`;
+export const TINYSLICE_DEFAULT_PREFIX = `${TINYSLICE_PREFIX} [Default]`;

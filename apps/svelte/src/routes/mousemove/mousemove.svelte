@@ -3,8 +3,11 @@
 	import { onDestroy, onMount } from 'svelte';
 	import { listenThrottled$, mouseMoveSlice$, positionPrint$ } from './mousemove.slice';
 
-	onMount(() => mouseMoveSlice$.unpauseEffects());
-	onDestroy(() => mouseMoveSlice$.pauseEffects());
+	const paused$ = mouseMoveSlice$.paused$;
+	$: paused = $paused$;
+
+	onMount(() => mouseMoveSlice$.unpause());
+	onDestroy(() => mouseMoveSlice$.pause());
 </script>
 
 <div class="mousemovetest">
@@ -15,6 +18,15 @@
 
 	<Button on:click={() => listenThrottled$.set(!listenThrottled$.value)}>
 		Toggle Throttled Listener
+	</Button>
+
+	<Button on:click={() => (paused ? mouseMoveSlice$.unpause() : mouseMoveSlice$.pause())}>
+		{#if paused}
+			Unpause
+		{:else}
+			Pause
+		{/if}
+		Slice
 	</Button>
 	<span>Using throttled listener? {$listenThrottled$}</span>
 </div>

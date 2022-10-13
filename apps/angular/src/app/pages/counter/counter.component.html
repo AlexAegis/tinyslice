@@ -12,6 +12,17 @@ Here's a familiar example of a counter:
 	<h2>
 		<span>{{ counterStore.count$ | async }}</span>
 	</h2>
+
+	<button
+		*ngIf="counterStore.slice.paused$ | async; else pause"
+		nz-button
+		(click)="counterStore.slice.unpause()"
+	>
+		Unpause
+	</button>
+	<ng-template #pause>
+		<button nz-button (click)="counterStore.slice.pause()">Pause</button>
+	</ng-template>
 </div>
 
 <nz-tabset>

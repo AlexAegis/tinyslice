@@ -9,3 +9,14 @@
 	[(ngModel)]="colorStore.color$.value"
 />
 <span>{{ colorStore.color$ | async }}</span>
+
+<button
+	*ngIf="colorStore.slice.paused$ | async; else pause"
+	nz-button
+	(click)="colorStore.slice.unpause()"
+>
+	Unpause
+</button>
+<ng-template #pause>
+	<button nz-button (click)="colorStore.slice.pause()">Pause</button>
+</ng-template>

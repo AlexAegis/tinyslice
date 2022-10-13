@@ -1,4 +1,4 @@
-import { TINYSLICE_ACTION_PREFIX } from '../internal/consts';
+import { TINYSLICE_PREFIX } from '../internal/consts';
 import type { MetaPacketReducer } from '../store/reducer.type';
 
 const brightFgColor = '#ffe36a';
@@ -13,7 +13,7 @@ const isSuccessMessage = (message: string): boolean => message.toLowerCase().inc
 const isFailureMessage = (message: string): boolean => message.toLowerCase().includes('fail');
 const isErrorMessage = (message: string): boolean => message.toLowerCase().includes('error');
 
-const isTinySliceMessage = (message: string): boolean => message.includes(TINYSLICE_ACTION_PREFIX);
+const isTinySliceMessage = (message: string): boolean => message.includes(TINYSLICE_PREFIX);
 
 const getMessageCss = (message: string, isInternal: boolean): string => {
 	if (isSuccessMessage(message)) {
@@ -62,8 +62,8 @@ export const createLoggingMetaReducer =
 	<State>(): MetaPacketReducer<State> =>
 	({ action, prevState, nextState }) => {
 		console.groupCollapsed(...colorizeLogString(action.type));
-		console.log('prevState', prevState);
-		console.log('payload', action.payload);
-		console.log('nextState', nextState);
+		console.info('prevState', prevState);
+		console.info('payload', action.payload);
+		console.info('nextState', nextState);
 		console.groupEnd();
 	};

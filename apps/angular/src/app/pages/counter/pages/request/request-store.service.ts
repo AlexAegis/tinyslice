@@ -1,6 +1,5 @@
 import { Injectable } from '@angular/core';
-import { Action } from '@tinyslice/core';
-import { Scope } from '@tinyslice/ngx';
+import { Action, Scope } from '@tinyslice/ngx';
 import { catchError, delay, map, of, switchMap } from 'rxjs';
 import { CounterStore } from '../../counter-store.module';
 
@@ -26,6 +25,10 @@ export class RequestStore {
 	request = new Action<string>('request');
 	requestSuccess = new Action<string>('requestSuccess');
 	requestFailure = new Action<string>('requestFailure');
+
+	// request = this.counterStore.slice.createAction<string>('request');
+	// requestSuccess = this.counterStore.slice.createAction<string>('requestSuccess');
+	// requestFailure = this.counterStore.slice.createAction<string>('requestFailure');
 
 	slice = this.counterStore.slice.addSlice(
 		'request',
