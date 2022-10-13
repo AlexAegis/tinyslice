@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.4.1](https://github.com/AlexAegis/tinyslice/compare/v0.4.0...v0.4.1) (2022-10-13)
+
+
+### Features
+
+* added addReducer functions ([9c7c1c1](https://github.com/AlexAegis/tinyslice/commit/9c7c1c1b43f640afd6368a0e9877e660773ca9dc))
+
 ## [0.4.0](https://github.com/AlexAegis/tinyslice/compare/v0.3.4...v0.4.0) (2022-10-13)
 
 
