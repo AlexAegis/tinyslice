@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.4.0](https://github.com/AlexAegis/tinyslice/compare/v0.3.4...v0.4.0) (2022-10-13)
+
+
+### Features
+
+* scoped actions, use complete instead of unsubscribe ([319ab42](https://github.com/AlexAegis/tinyslice/commit/319ab42aaacebb95ba4dadcbf23c37e92502fd25))
+
 ### [0.3.4](https://github.com/AlexAegis/tinyslice/compare/v0.3.3...v0.3.4) (2022-10-12)
 
 
