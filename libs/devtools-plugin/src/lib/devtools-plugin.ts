@@ -11,8 +11,19 @@ export const DEFAULT_DEVTOOLS_OPTIONS: Partial<ReduxDevtoolsExtensionConfig> = {
 	name: 'TinySlice',
 };
 
+const jsonUndefinedReplacer = <T>(_key: string, value: T) =>
+	typeof value === 'undefined' ? null : value;
+
+const normalizeUndefined = <T>(obj: T): T => {
+	const stringified = JSON.stringify(obj, jsonUndefinedReplacer);
+	return JSON.parse(stringified) as T;
+};
+
 /**
  * Skipping is not implemented
+ *
+ * Note that the devtools does not show keys defined as undefined so they are
+ * normalized to null
  */
 export class TinySliceDevtoolPlugin<State = unknown> implements TinySlicePlugin<State> {
 	private extension?: ReduxDevtoolsExtension<State>;
@@ -41,7 +52,7 @@ export class TinySliceDevtoolPlugin<State = unknown> implements TinySlicePlugin<
 
 	register = (hooks: TinySlicePluginHooks<State>): void => {
 		this.hooks = hooks;
-		this.initialState = JSON.stringify(hooks.initialState);
+		this.initialState = JSON.stringify(normalizeUndefined(hooks.initialState));
 	};
 
 	onError = (error: unknown): void => {
@@ -57,10 +68,10 @@ export class TinySliceDevtoolPlugin<State = unknown> implements TinySlicePlugin<
 			this.hooks.state$
 				.pipe(
 					tap(({ action, nextState }) => {
-						this.lastState = nextState;
+						this.lastState = normalizeUndefined(nextState);
 						this.actions[this.actionId] = action;
 						this.actionId += 1;
-						connection.send(action, nextState);
+						connection.send(action, this.lastState);
 					})
 				)
 				.subscribe()

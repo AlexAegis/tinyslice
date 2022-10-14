@@ -584,6 +584,12 @@ describe('slice', () => {
 			expect(reducerSpy).toHaveBeenNthCalledWith<[string, string]>(3, FOO_SLICE_NAME, 'a');
 			expect(reducerSpy).toHaveBeenNthCalledWith<[string, string]>(4, FOO_SLICE_NAME, 'b');
 			expect(reducerSpy).toHaveBeenNthCalledWith<[string, string]>(5, ROOT_SLICE_NAME, 'a');
+			testAction.next();
+			expect(reducerSpy).toHaveBeenNthCalledWith<[string, string]>(6, BAR_SLICE_NAME, 'b');
+			expect(reducerSpy).toHaveBeenNthCalledWith<[string, string]>(7, BAR_SLICE_NAME, 'a');
+			expect(reducerSpy).toHaveBeenNthCalledWith<[string, string]>(8, FOO_SLICE_NAME, 'a');
+			expect(reducerSpy).toHaveBeenNthCalledWith<[string, string]>(9, FOO_SLICE_NAME, 'b');
+			expect(reducerSpy).toHaveBeenNthCalledWith<[string, string]>(10, ROOT_SLICE_NAME, 'a');
 		});
 
 		describe('pausing', () => {
@@ -595,7 +601,7 @@ describe('slice', () => {
 				expect(reducerSpy).toHaveBeenCalledTimes(6);
 				fooSlice.unpause();
 				testAction.next();
-				await timeout(1);
+				await timeout(0);
 				expect(reducerSpy).toHaveBeenCalledTimes(11);
 			});
 		});
@@ -1014,10 +1020,12 @@ describe('slice', () => {
 			rootSlice.set(initialRootSlice);
 			expect(rootObserver.next).toHaveBeenLastCalledWith(initialRootSlice);
 			expect(optionalSliceObserver.next).toHaveBeenLastCalledWith(undefined);
-			expect(optionalInnerSliceObserver.next).toHaveBeenLastCalledWith(undefined);
+			expect(optionalInnerSliceObserver.next).toHaveBeenLastCalledWith(
+				definedOptionalInnerSlice
+			); // does not emit again
 			expect(rootObserver.next).toHaveBeenCalledTimes(3);
 			expect(optionalSliceObserver.next).toHaveBeenCalledTimes(3);
-			expect(optionalInnerSliceObserver.next).toHaveBeenCalledTimes(3);
+			expect(optionalInnerSliceObserver.next).toHaveBeenCalledTimes(2);
 
 			rootSlice.set({ deepOptional: { data: 'fefe' } });
 			expect(rootObserver.next).toHaveBeenLastCalledWith({ deepOptional: { data: 'fefe' } });
@@ -1025,7 +1033,7 @@ describe('slice', () => {
 			expect(optionalInnerSliceObserver.next).toHaveBeenLastCalledWith('fefe');
 			expect(rootObserver.next).toHaveBeenCalledTimes(4);
 			expect(optionalSliceObserver.next).toHaveBeenCalledTimes(4);
-			expect(optionalInnerSliceObserver.next).toHaveBeenCalledTimes(4);
+			expect(optionalInnerSliceObserver.next).toHaveBeenCalledTimes(3);
 		});
 	});
 });

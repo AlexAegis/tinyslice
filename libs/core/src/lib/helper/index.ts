@@ -1,5 +1,6 @@
 export * from './comparator.function';
 export * from './entity-slice-reducer.function';
+export * from './has-key.function';
 export * from './if-latest-from.function';
 export * from './keyer.function';
 export * from './logging-meta-reducer.function';
