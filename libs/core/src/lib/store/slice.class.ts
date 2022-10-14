@@ -9,6 +9,7 @@ import {
 	map,
 	NEVER,
 	Observable,
+	of,
 	pairwise,
 	share,
 	skip,
@@ -914,7 +915,7 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 		);
 		const items$ = keys$.pipe(
 			map((keys) => keys.map((key) => get(key))),
-			switchMap((slices) => combineLatest(slices))
+			switchMap((slices) => (slices.length ? combineLatest(slices) : of([])))
 		);
 		const count$ = keys$.pipe(map((keys) => keys.length));
 		const some$ = (predicate: (item: ChildState) => boolean) =>
