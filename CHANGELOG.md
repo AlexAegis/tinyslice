@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.4.4](https://github.com/AlexAegis/tinyslice/compare/v0.4.3...v0.4.4) (2022-10-14)
+
+
+### Features
+
+* fix items$ ([124b848](https://github.com/AlexAegis/tinyslice/commit/124b848fe4706e80eee03af61e6cda5520210154))
+
 ### [0.4.3](https://github.com/AlexAegis/tinyslice/compare/v0.4.2...v0.4.3) (2022-10-13)
 
 ### [0.4.2](https://github.com/AlexAegis/tinyslice/compare/v0.4.1...v0.4.2) (2022-10-13)
