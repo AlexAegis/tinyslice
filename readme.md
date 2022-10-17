@@ -27,7 +27,6 @@ const rootSlice$ = scope.createRootSlice({ count: 1, pies: {} } as RootSlice, {
       name: 'myExampleApp',
     }),
   ],
-  useDefaultLogger: true,
 });
 
 const increment = scope.createAction('increment');
@@ -46,16 +45,19 @@ export interface PieState {
 }
 
 // This creates 2 layes at once, the first one is a Record<number, PieState>
-const pieDicer = rootSlice$.addDicedSlice('pies', {
-  initialState: { cheese: 0, sauce: 0 } as PieState,
-  defineInternals: (slice) => {
-    const cheese$ = slice.slice('cheese');
-    const sauce$ = slice.slice('sauce');
-    return { cheese$, sauce$ };
-  },
-  // Plugins can be anywhere, save this slice to localstorage and read as initialised!
-  plugins: [new TinySliceHydrationPlugin<PieState>('pies')],
-});
+const pieDicer = rootSlice$.addDicedSlice(
+  'pies',
+  { cheese: 0, sauce: 0 } as PieState,
+  {
+    defineInternals: (slice) => {
+      const cheese$ = slice.slice('cheese');
+      const sauce$ = slice.slice('sauce');
+      return { cheese$, sauce$ };
+    },
+    // Plugins can be anywhere, save this slice to localstorage and read as initialised!
+    plugins: [new TinySliceHydrationPlugin<PieState>('pies')],
+  }
+);
 
 // To get a specific entity slice
 const firstPie = pieDicer.get(1);

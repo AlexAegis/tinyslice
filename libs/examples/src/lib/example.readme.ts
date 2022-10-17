@@ -7,13 +7,13 @@ const scope = new Scope();
 interface RootSlice {
 	count: number;
 }
+
 const rootSlice$ = scope.createRootSlice({ count: 1, pies: {} } as RootSlice, {
 	plugins: [
 		new TinySliceDevtoolPlugin({
 			name: 'myExampleApp',
 		}),
 	],
-	useDefaultLogger: true,
 });
 
 const increment = scope.createAction('increment');
@@ -31,8 +31,7 @@ export interface PieState {
 	cheese: number;
 }
 
-const pieDicer = rootSlice$.addDicedSlice('pies', {
-	initialState: { cheese: 0, sauce: 0 } as PieState,
+const pieDicer = rootSlice$.addDicedSlice('pies', { cheese: 0, sauce: 0 } as PieState, {
 	defineInternals: (slice) => {
 		const cheese$ = slice.slice('cheese');
 		const sauce$ = slice.slice('sauce');
