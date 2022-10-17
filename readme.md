@@ -8,7 +8,7 @@
 Reactive state management
 
 Check out the example projects in this repository and my
-[Minesweeper clone](https://github.com/AlexAegis/svelte-minesweeper) build
+[Minesweeper clone](https://github.com/AlexAegis/minesweeper) build
 using this.
 
 ```ts
