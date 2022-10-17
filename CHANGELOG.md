@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.5.1](https://github.com/AlexAegis/tinyslice/compare/v0.5.0...v0.5.1) (2022-10-17)
+
+
+### Features
+
+* ignore patterns for the logger plugin ([7d80c62](https://github.com/AlexAegis/tinyslice/commit/7d80c6285dfdd3201cb8cff18441a599ea7a5654))
+* migrations ([d410c33](https://github.com/AlexAegis/tinyslice/commit/d410c33530f58cf5ec7f39fa46e9a2d9549ab873))
+
 ## [0.5.0](https://github.com/AlexAegis/tinyslice/compare/v0.4.5...v0.5.0) (2022-10-17)
 
 
