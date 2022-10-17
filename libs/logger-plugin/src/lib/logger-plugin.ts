@@ -66,40 +66,82 @@ export const colorizeLogString = (message: string): string[] => {
 	return ['🍕 ' + codedSegments.join(''), ...colorisedSegments];
 };
 
+export const DEFAULT_OPTIONS: LoggerPluginOptions = {
+	ignorePaths: [],
+	ignoreActions: [],
+};
+
+export interface LoggerPluginOptions {
+	ignorePaths: (RegExp | string)[];
+	ignoreActions: (RegExp | string)[];
+}
+
 export class TinySliceLoggerPlugin<State> implements TinySlicePlugin<State> {
-	#options: TinySlicePluginSliceOptions = {
+	private options: LoggerPluginOptions;
+
+	#pluginOptions: TinySlicePluginSliceOptions = {
 		passToChildren: true,
 	};
 
+	constructor(options?: Partial<LoggerPluginOptions>) {
+		this.options = {
+			...DEFAULT_OPTIONS,
+			...options,
+		};
+	}
+
+	private isIgnored(path: string, actionPacket: ActionPacket<unknown>): boolean {
+		return (
+			this.options.ignorePaths.some((pathIgnore) =>
+				typeof pathIgnore === 'string'
+					? path.startsWith(pathIgnore) || actionPacket.type.startsWith(pathIgnore)
+					: pathIgnore.test(path)
+			) ||
+			this.options.ignoreActions.some((actionIgnore) =>
+				typeof actionIgnore === 'string'
+					? actionIgnore === actionPacket.type
+					: actionIgnore.test(actionPacket.type)
+			)
+		);
+	}
+
 	sliceOptions(): TinySlicePluginSliceOptions {
-		return this.#options;
+		return this.#pluginOptions;
 	}
 
-	preRootReduce(_absolutePath: string, _state: unknown, action: ActionPacket<unknown>): void {
-		console.groupCollapsed(...colorizeLogString(action.type));
+	preRootReduce(absolutePath: string, _state: unknown, action: ActionPacket<unknown>): void {
+		if (!this.isIgnored(absolutePath, action)) {
+			console.groupCollapsed(...colorizeLogString(action.type));
+		}
 	}
 
-	preReduce(absolutePath: string, _state: unknown, _action: ActionPacket<unknown>): void {
-		console.time(`${absolutePath} reduce took`);
+	preReduce(absolutePath: string, _state: unknown, action: ActionPacket<unknown>): void {
+		if (!this.isIgnored(absolutePath, action)) {
+			console.time(`${absolutePath} reduce took`);
+		}
 	}
 
 	postReduce(absolutePath: string, snapshot: ReduceActionSliceSnapshot<unknown>): void {
-		const changed = snapshot.prevState !== snapshot.nextState;
-		const logCss = changed ? normalCss : hiddenCss;
-		if (changed) {
-			console.group(`%c${absolutePath}`, logCss);
-		} else {
-			console.groupCollapsed(`%c${absolutePath}`, logCss);
+		if (!this.isIgnored(absolutePath, snapshot.action)) {
+			const changed = snapshot.prevState !== snapshot.nextState;
+			const logCss = changed ? normalCss : hiddenCss;
+			if (changed) {
+				console.group(`%c${absolutePath}`, logCss);
+			} else {
+				console.groupCollapsed(`%c${absolutePath}`, logCss);
+			}
+			console.info('%cprevState', logCss, snapshot.prevState);
+			console.info('%cpayload', logCss, snapshot.action.payload);
+			console.info('%cnextState', logCss, snapshot.nextState);
+			console.timeEnd(`${absolutePath} reduce took`);
+			console.groupEnd();
 		}
-		console.info('%cprevState', logCss, snapshot.prevState);
-		console.info('%cpayload', logCss, snapshot.action.payload);
-		console.info('%cnextState', logCss, snapshot.nextState);
-		console.timeEnd(`${absolutePath} reduce took`);
-		console.groupEnd();
 	}
 
-	postRootReduce(_absolutePath: string, _snapshot: ReduceActionSliceSnapshot<unknown>): void {
-		console.groupEnd();
+	postRootReduce(absolutePath: string, snapshot: ReduceActionSliceSnapshot<unknown>): void {
+		if (!this.isIgnored(absolutePath, snapshot.action)) {
+			console.groupEnd();
+		}
 	}
 
 	start(): void {

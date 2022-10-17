@@ -22,7 +22,9 @@ export const rootSlice = scope.createRootSlice(
 	} as RootState,
 	{
 		plugins: [
-			new TinySliceLoggerPlugin(),
+			new TinySliceLoggerPlugin({
+				ignorePaths: ['root.theme'],
+			}),
 			new TinySliceHydrationPlugin('cache'),
 			new TinySliceDevtoolPlugin({
 				name: 'Svelte TinySlice',
