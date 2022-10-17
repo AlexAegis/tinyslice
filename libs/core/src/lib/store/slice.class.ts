@@ -12,6 +12,7 @@ import {
 	of,
 	pairwise,
 	share,
+	shareReplay,
 	skip,
 	startWith,
 	Subscription,
@@ -261,6 +262,7 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 	#defaultReducerConfigurations: ReducerConfiguration<State>[];
 	#reducerConfigurations$: BehaviorSubject<ReducerConfiguration<State>[]>;
 	#autoRegisterReducerActions$: Observable<ReducerConfiguration<State, unknown>[]>;
+	#downStreamReducers$: Observable<string[]>;
 	#sliceReducer$: Observable<{ reducer: PacketReducer<State>; reducingActions: string[] }>;
 	#plugins$: BehaviorSubject<TinySlicePlugin<State>[]>;
 	#autoRegisterPlugins$: Observable<unknown>;
@@ -404,6 +406,24 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 			})
 		);
 
+		// ! this one looks correct too
+		this.#downStreamReducers$ = combineLatest([
+			this.#sliceReducer$,
+			this.#slices$.pipe(map((slices) => Object.values(slices))),
+		]).pipe(
+			switchMap(([sliceReducer, slices]) => {
+				if (slices.length) {
+					return combineLatest(slices.map((next) => next.slice.#sliceReducer$)).pipe(
+						map((subSliceReducer) => [sliceReducer, ...subSliceReducer])
+					);
+				} else {
+					return of([sliceReducer]);
+				}
+			}),
+			map((a) => a.flatMap((er) => er.reducingActions)),
+			shareReplay(1)
+		);
+
 		const zipSubSlices = (
 			sliceRegistrations: Record<string, SliceRegistration<State, unknown, Internals>>,
 			fallback: Observable<unknown>
@@ -424,12 +444,29 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 			switchMap((sl) => zipSubSlices(sl, this.#scope.schedulingDispatcher$))
 		);
 
+		const schedulingDispatcher$ = this.#scope.schedulingDispatcher$.pipe(shareReplay(1));
+
+		// ! This one looks correct
+		const isThereAnyWork$ = schedulingDispatcher$.pipe(
+			withLatestFrom(this.#downStreamReducers$),
+			map(([action, downStreamReducers]) => ({
+				action,
+				isThereAnyWork: downStreamReducers.includes(action.type),
+			})),
+			distinctUntilChanged(),
+			tap((a) => console.log('isThereAnyWork', a)),
+			tap((action) => action.isThereAnyWork && this.executeMetaPreReducers(action.action)),
+			share()
+		);
+
+		// TODO: skip and just emit dispatcher if the action is not in the reducerPath
 		this.#schedule = zip(
-			this.#scope.schedulingDispatcher$.pipe(
-				tap((action) => this.executeMetaPreReducers(action))
-			),
+			schedulingDispatcher$, // isThereAnyWork$.pipe(map(({ action }) => action)),
 			subSliceEmissions
-		).pipe(map(([action, sliceChanges]) => ({ action, sliceChanges })));
+		).pipe(
+			map(([action, sliceChanges]) => ({ action, sliceChanges }))
+			// shareReplay(1)
+		);
 
 		this.#activePipeline = this.#schedule.pipe(
 			withLatestFrom(this.#state$, this.#sliceReducer$),
@@ -463,6 +500,7 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 								prevState
 							) ?? prevState;
 
+					console.log('ACTIVE PIPELINE!!!!!!!!!!!!!!!', action.type, this.#absolutePath);
 					return {
 						action,
 						prevState,
@@ -491,9 +529,10 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 			})
 		) as Observable<ReduceActionSliceSnapshot<State>>;
 
-		this.#inactivePipeline = this.#scope.schedulingDispatcher$.pipe(
+		this.#inactivePipeline = schedulingDispatcher$.pipe(
 			withLatestFrom(this.#state$),
 			map(([, state]) => {
+				console.log('INACTIVE PIPELINE!!!!!!', this.#absolutePath);
 				return {
 					action: { type: 'paused', payload: undefined },
 					prevState: state,
@@ -502,10 +541,18 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 			})
 		);
 
-		this.#pipeline = this.#pause$.pipe(
-			switchMap((paused) => (paused ? this.#inactivePipeline : this.#activePipeline)),
+		const pausedOrNoWork$ = combineLatest([isThereAnyWork$, this.#pause$]).pipe(
+			map(([isThereAnyWork, pause]) => pause || !isThereAnyWork.isThereAnyWork),
+			tap((a) => console.log('pausedOrNoWork', a))
+		);
+
+		this.#pipeline = pausedOrNoWork$.pipe(
+			switchMap((pausedOrNoWork) =>
+				pausedOrNoWork ? this.#inactivePipeline : this.#activePipeline
+			),
 			tap((snapshot) => this.executeMetaPostReducers(snapshot)),
-			share() // Listened to by child slices
+			tap(() => console.log('PIPELINE EXIT', this.absolutePath)), // ! I don't want to see inactive or nonreducing  slies here
+			share()
 		);
 
 		this.#plugins$ = new BehaviorSubject<TinySlicePlugin<State>[]>(this.#initialPlugins);
@@ -513,6 +560,7 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 		// Listens to the parent for changes to select itself from
 		this.#parentListener = this.#parentCoupling?.rawParentState.pipe(
 			skip(1),
+			tap((a) => console.log('parentListener', a)),
 			finalize(() => this.complete()),
 			takeWhile((parentState) =>
 				this.#parentCoupling?.droppable

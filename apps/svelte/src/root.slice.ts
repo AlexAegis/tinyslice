@@ -24,6 +24,7 @@ export const rootSlice = scope.createRootSlice(
 		plugins: [
 			new TinySliceLoggerPlugin({
 				ignorePaths: ['root.theme'],
+				disableGrouping: false,
 			}),
 			new TinySliceHydrationPlugin('cache'),
 			new TinySliceDevtoolPlugin({

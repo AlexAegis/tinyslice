@@ -69,11 +69,13 @@ export const colorizeLogString = (message: string): string[] => {
 export const DEFAULT_OPTIONS: LoggerPluginOptions = {
 	ignorePaths: [],
 	ignoreActions: [],
+	disableGrouping: false,
 };
 
 export interface LoggerPluginOptions {
 	ignorePaths: (RegExp | string)[];
 	ignoreActions: (RegExp | string)[];
+	disableGrouping: boolean;
 }
 
 export class TinySliceLoggerPlugin<State> implements TinySlicePlugin<State> {
@@ -111,7 +113,11 @@ export class TinySliceLoggerPlugin<State> implements TinySlicePlugin<State> {
 
 	preRootReduce(absolutePath: string, _state: unknown, action: ActionPacket<unknown>): void {
 		if (!this.isIgnored(absolutePath, action)) {
-			console.groupCollapsed(...colorizeLogString(action.type));
+			if (this.options.disableGrouping) {
+				console.log(...colorizeLogString(action.type));
+			} else {
+				console.groupCollapsed(...colorizeLogString(action.type));
+			}
 		}
 	}
 
@@ -125,22 +131,31 @@ export class TinySliceLoggerPlugin<State> implements TinySlicePlugin<State> {
 		if (!this.isIgnored(absolutePath, snapshot.action)) {
 			const changed = snapshot.prevState !== snapshot.nextState;
 			const logCss = changed ? normalCss : hiddenCss;
-			if (changed) {
-				console.group(`%c${absolutePath}`, logCss);
+			if (this.options.disableGrouping) {
+				console.log(`%c${absolutePath}`, logCss);
 			} else {
-				console.groupCollapsed(`%c${absolutePath}`, logCss);
+				if (changed) {
+					console.group(`%c${absolutePath}`, logCss);
+				} else {
+					console.groupCollapsed(`%c${absolutePath}`, logCss);
+				}
 			}
+
 			console.info('%cprevState', logCss, snapshot.prevState);
 			console.info('%cpayload', logCss, snapshot.action.payload);
 			console.info('%cnextState', logCss, snapshot.nextState);
 			console.timeEnd(`${absolutePath} reduce took`);
-			console.groupEnd();
+			if (!this.options.disableGrouping) {
+				console.groupEnd();
+			}
 		}
 	}
 
 	postRootReduce(absolutePath: string, snapshot: ReduceActionSliceSnapshot<unknown>): void {
 		if (!this.isIgnored(absolutePath, snapshot.action)) {
-			console.groupEnd();
+			if (!this.options.disableGrouping) {
+				console.groupEnd();
+			}
 		}
 	}
 
