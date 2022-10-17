@@ -10,6 +10,12 @@ export interface HydrationPluginOptions<State, SavedState extends State = State>
 	validateRetrieved?: (state: unknown) => state is State;
 }
 
+/**
+ * TODO: Add plugin order constraints. Reason: hydration HAS to happen before ReduxDevtoolsPlugin OR add a REHYDRATE action when setting the latter seems simpler, OR BOTH because then the rehydrate action can be missed
+ * TODO: the logger plugin should be the first
+ * TODO: if the constrained plugin is also present in the plugins array and not meeting the constraint, put it where it does
+ * TODO: do it until
+ */
 export class TinySliceHydrationPlugin<State, SavedState extends State = State>
 	implements TinySlicePlugin<State>
 {

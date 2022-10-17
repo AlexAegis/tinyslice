@@ -103,6 +103,7 @@ export interface SliceCoupling<ParentState, State> {
 	key: string | undefined;
 	slicer: SelectSlicer<ParentState, State>;
 	lazy: boolean;
+	droppable: boolean;
 }
 
 export interface SliceRegistration<ParentState, State, Internals> {
@@ -175,6 +176,12 @@ export interface ChildSliceConstructOptions<ParentState, State, Internals>
 	extends SliceOptions<ParentState, State, Internals> {
 	initialState?: State;
 	lazy: boolean;
+	/**
+	 * Marks if a slice should be dropped when its key is dropped from its
+	 * parent. It's generally only safe to do with dynamic slices (dices)
+	 * that are only accessed through lazy slice accessors
+	 */
+	droppable: boolean;
 	pathSegment: string;
 	slicer: SelectSlicer<ParentState, State>;
 	key: string | undefined;
@@ -523,10 +530,27 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 		this.#plugins$ = new BehaviorSubject<TinySlicePlugin<State>[]>(this.#initialPlugins);
 
 		// Listens to the parent for changes to select itself from
-		// check if the parent could do it instead
 		this.#parentListener = this.#parentCoupling?.rawParentState.pipe(
 			skip(1),
 			finalize(() => this.complete()),
+			// TODO: revisit completeability, maybe only for production? Or let the dev plugin disable it, it only breaks replayability as turning time back unsubscribes leaves
+			// TODO: when replaying, disable from here (maybe as the dropSliceWithKey optimization option)
+			//// ifLatestFrom(this.#nullishParentPause$, (nullishParentPause) => !nullishParentPause),
+			tap((a) =>
+				console.log(
+					'PARENT LIST',
+					this.absolutePath,
+					'amithere',
+					hasKey(a, this.#parentCoupling?.key)
+				)
+			),
+			// only diced should be dropped, only they can redefine themselves
+			takeWhile((parentState) =>
+				this.#parentCoupling?.droppable
+					? hasKey(parentState, this.#parentCoupling?.key)
+					: true
+			),
+			// TODO: to here, aka all unsubscribe logic
 			tap((parentState) => {
 				if (isNullish(parentState) && !this.#nullishParentPause$.value) {
 					this.#nullishParentPause$.next(true);
@@ -534,9 +558,7 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 					this.#nullishParentPause$.next(false);
 				}
 			}),
-			// ifLatestFrom(this.#nullishParentPause$, (nullishParentPause) => !nullishParentPause),
 			filter((parentState) => isNonNullable(parentState)),
-			takeWhile((parentState) => hasKey(parentState, this.#parentCoupling?.key)),
 			map((parentState) => this.#parentCoupling?.slicer.selector(parentState)),
 			distinctUntilChanged(),
 			tap((stateFromParent) => this.#state$.next(stateFromParent as State))
@@ -772,6 +794,7 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 					rawParentState: this.#observableState$,
 					slicer: childSliceConstructOptions.slicer,
 					lazy: childSliceConstructOptions.lazy ?? false,
+					droppable: childSliceConstructOptions.droppable ?? false,
 					key: childSliceConstructOptions.key,
 				},
 				pathSegment: childSliceConstructOptions.pathSegment,
@@ -791,6 +814,7 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 			...sliceOptions,
 			initialState: undefined,
 			lazy: true,
+			droppable: false,
 			slicer: {
 				selector,
 				merger,
@@ -805,18 +829,18 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 		sliceOptions?: SliceOptions<State, NonNullable<State[ChildStateKey]>, ChildInternals>
 	): Slice<State, NonNullable<State[ChildStateKey]>, ChildInternals> {
 		const slicer = normalizeSliceDirection<State, NonNullable<State[ChildStateKey]>>(key);
-
 		return this.#slice({
 			...sliceOptions,
 			pathSegment: key.toString(),
 			slicer,
 			lazy: false,
+			droppable: false,
 			key: key as string,
 		});
 	}
 
 	/**
-	 * Adds non-defined slices to extend this slice
+	 * Adds non-defined "lazy" slices to extend this slice
 	 * ? https://github.com/microsoft/TypeScript/issues/42315
 	 * ? key could be restricted to disallow keys of Slice once negated types
 	 * ? are implemented in TypeScript
@@ -838,6 +862,7 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 			slicer,
 			key: key as string,
 			lazy: true,
+			droppable: false,
 		}) as Slice<
 			State & Record<AdditionalKey, ChildState>,
 			NonNullable<ChildState>,
@@ -901,7 +926,19 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 		diceConstructOptions: DiceConstructOptions<State, ChildState, ChildInternals, DiceKey>
 	): DicedSlice<State, ChildState, Internals, ChildInternals, DiceKey> {
 		const sliceOptions = extractSliceOptions(diceConstructOptions);
-		const get = (key: DiceKey) => this.addSlice(key, initialState, sliceOptions);
+		const get = (key: DiceKey) => {
+			const slicer = normalizeSliceDirection<State, ChildState>(key);
+			return this.#slice({
+				...sliceOptions,
+				initialState,
+				pathSegment: key.toString(),
+				slicer,
+				key: key as string,
+				lazy: true,
+				droppable: true,
+			});
+		};
+
 		const has = (key: DiceKey) =>
 			this.#state$.value && typeof this.#state$.value === 'object'
 				? Object.keys(this.#state$.value).includes(key as string)

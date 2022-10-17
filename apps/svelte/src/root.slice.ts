@@ -1,5 +1,6 @@
 import { Scope } from '@tinyslice/core';
 import { TinySliceDevtoolPlugin } from '@tinyslice/devtools-plugin';
+import { TinySliceHydrationPlugin } from '@tinyslice/hydration-plugin';
 import { tap } from 'rxjs';
 
 type CarbonTheme = 'white' | 'g10' | 'g80' | 'g90' | 'g100';
@@ -20,6 +21,7 @@ export const rootSlice = scope.createRootSlice(
 	} as RootState,
 	{
 		plugins: [
+			new TinySliceHydrationPlugin('cache'),
 			new TinySliceDevtoolPlugin({
 				name: 'Svelte TinySlice',
 			}),
