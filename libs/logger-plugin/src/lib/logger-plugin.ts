@@ -1,5 +1,11 @@
-import { TINYSLICE_PREFIX } from '../internal/consts';
-import type { MetaReducer } from '../store/reducer.type';
+import type { ReduceActionSliceSnapshot } from '@tinyslice/core';
+import {
+	ActionPacket,
+	TinySlicePlugin,
+	TinySlicePluginHooks,
+	TinySlicePluginSliceOptions,
+	TINYSLICE_PREFIX,
+} from '@tinyslice/core';
 
 const brightFgColor = '#ffe36a';
 const dimFgColor = '#f9c33c';
@@ -60,33 +66,51 @@ export const colorizeLogString = (message: string): string[] => {
 	return ['🍕 ' + codedSegments.join(''), ...colorisedSegments];
 };
 
-/**
- * When measuring times, do it with a closed console so rendering of the logs
- * won't be accounted
- */
-export const createLoggingMetaReducer = (): MetaReducer => ({
-	preRootReduce: (_absolutePath, _state, action) => {
+export class TinySliceLoggerPlugin<State> implements TinySlicePlugin<State> {
+	#options: TinySlicePluginSliceOptions = {
+		passToChildren: true,
+	};
+
+	sliceOptions(): TinySlicePluginSliceOptions {
+		return this.#options;
+	}
+
+	preRootReduce(_absolutePath: string, _state: unknown, action: ActionPacket<unknown>): void {
 		console.groupCollapsed(...colorizeLogString(action.type));
-	},
-	preReduce: (absolutePath) => {
+	}
+
+	preReduce(absolutePath: string, _state: unknown, _action: ActionPacket<unknown>): void {
 		console.time(`${absolutePath} reduce took`);
-	},
-	postReduce: (absolutePath, { action, prevState, nextState }) => {
-		const changed = prevState !== nextState;
+	}
+
+	postReduce(absolutePath: string, snapshot: ReduceActionSliceSnapshot<unknown>): void {
+		const changed = snapshot.prevState !== snapshot.nextState;
 		const logCss = changed ? normalCss : hiddenCss;
 		if (changed) {
 			console.group(`%c${absolutePath}`, logCss);
 		} else {
 			console.groupCollapsed(`%c${absolutePath}`, logCss);
 		}
-
-		console.info('%cprevState', logCss, prevState);
-		console.info('%cpayload', logCss, action.payload);
-		console.info('%cnextState', logCss, nextState);
+		console.info('%cprevState', logCss, snapshot.prevState);
+		console.info('%cpayload', logCss, snapshot.action.payload);
+		console.info('%cnextState', logCss, snapshot.nextState);
 		console.timeEnd(`${absolutePath} reduce took`);
 		console.groupEnd();
-	},
-	postRootReduce: () => {
+	}
+
+	postRootReduce(_absolutePath: string, _snapshot: ReduceActionSliceSnapshot<unknown>): void {
 		console.groupEnd();
-	},
-});
+	}
+
+	start(): void {
+		return undefined;
+	}
+
+	stop(): void {
+		return undefined;
+	}
+
+	register(_hooks: TinySlicePluginHooks<State>): void {
+		return undefined;
+	}
+}

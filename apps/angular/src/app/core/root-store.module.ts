@@ -1,13 +1,7 @@
 import { DOCUMENT } from '@angular/common';
 import { Inject, Injectable, NgModule } from '@angular/core';
-import {
-	Action,
-	createLoggingMetaReducer,
-	RootSlice,
-	Scope,
-	TinySliceModule,
-} from '@tinyslice/ngx';
-import { filter, map, of, switchMap, take, tap } from 'rxjs';
+import { Action, RootSlice, Scope, TinySliceModule } from '@tinyslice/ngx';
+import { filter, take, tap } from 'rxjs';
 import packageJson from '../../../../../package.json';
 
 const PACKAGE_NAME_AND_VERSION = `${packageJson?.displayName ?? 'app'} (${
@@ -32,28 +26,23 @@ export class RootStore {
 			this.debug$.pipe(
 				filter((debug) => debug),
 				take(1),
-				switchMap((debug) => {
+				tap((debug) => {
 					if (debug) {
-						return import('@tinyslice/devtools-plugin');
-					} else {
-						return of();
+						store.loadAndAddPlugins(
+							() =>
+								import('@tinyslice/devtools-plugin').then(
+									(plugin) =>
+										new plugin.TinySliceDevtoolPlugin<RootState>({
+											name: PACKAGE_NAME_AND_VERSION,
+										})
+								),
+							() =>
+								import('@tinyslice/logger-plugin').then(
+									(plugin) => new plugin.TinySliceLoggerPlugin<RootState>()
+								)
+						);
 					}
-				}),
-				map(
-					(pluginBundle) =>
-						new pluginBundle.TinySliceDevtoolPlugin<RootState>({
-							name: PACKAGE_NAME_AND_VERSION,
-						})
-				),
-				tap((plugin) => store.addPlugin(plugin))
-			)
-		);
-
-		this.scope.createEffect(
-			this.debug$.pipe(
-				filter((debug) => debug),
-				take(1),
-				tap(() => store.addMetaReducer(createLoggingMetaReducer<RootState>()))
+				})
 			)
 		);
 	}
@@ -82,7 +71,7 @@ export class RootStoreEffects {
 			RootStore,
 			{
 				plugins: [],
-				useDefaultLogger: false,
+
 				reducers: [
 					RootStore.setTitle.reduce((state, payload) => ({
 						...state,

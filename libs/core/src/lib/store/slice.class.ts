@@ -24,7 +24,6 @@ import {
 } from 'rxjs';
 import { Action, ActionConfig, ActionPacket } from '../action';
 import {
-	createLoggingMetaReducer,
 	fastArrayComparator,
 	GetNext,
 	getNextKeyStrategy,
@@ -33,9 +32,11 @@ import {
 	isNonNullable,
 	isNullish,
 	NextKeyStrategy,
+	TINYSLICE_DEFAULT_PREFIX,
+	TINYSLICE_PREFIX,
 	updateObject,
 } from '../helper';
-import { TINYSLICE_DEFAULT_PREFIX, TINYSLICE_PREFIX } from '../internal';
+import { TinySlicePlugin } from '../plugins';
 import { Merger } from './merger.type';
 import {
 	MetaReducer,
@@ -46,7 +47,6 @@ import {
 import { Scope } from './scope.class';
 import { Selector } from './selector.type';
 import { StrictRuntimeChecks } from './strict-runtime-checks.interface';
-import { TinySlicePlugin } from './tinyslice-plugin.interface';
 
 export type ObjectKey = string | number | symbol;
 export type UnknownObject<T = unknown> = Record<ObjectKey, T>;
@@ -57,7 +57,7 @@ export interface DicedSlice<
 	ChildState,
 	ParentInternals,
 	ChildInternals,
-	DiceKey extends string | number | symbol
+	DiceKey extends ObjectKey
 > {
 	slice: Slice<unknown, State & Record<DiceKey, ChildState>, ParentInternals>;
 	keys: () => DiceKey[];
@@ -100,7 +100,7 @@ export interface SliceCoupling<ParentState, State> {
 	 * from the parent object, the subslice is completed.
 	 * Most subslices are attached via a key, only custom select baseds are not.
 	 */
-	key: string | undefined;
+	key: ObjectKey | undefined;
 	slicer: SelectSlicer<ParentState, State>;
 	lazy: boolean;
 	droppable: boolean;
@@ -109,7 +109,7 @@ export interface SliceCoupling<ParentState, State> {
 export interface SliceRegistration<ParentState, State, Internals> {
 	slice: Slice<ParentState, State, Internals>;
 	slicer: SelectSlicer<ParentState, State>;
-	key: string | undefined;
+	key: ObjectKey | undefined;
 	lazyInitialState: State | undefined;
 }
 
@@ -122,11 +122,6 @@ export interface SliceOptions<ParentState, State, Internals> {
 	 * ? type inference to work
 	 */
 	defineInternals?: (slice: Slice<ParentState, State, unknown>) => Internals;
-	/**
-	 * When measuring times, do it with a closed console so rendering of the
-	 * logs won't be accounted for.
-	 */
-	useDefaultLogger?: boolean;
 }
 
 export interface RootSliceOptions<State, Internals> extends SliceOptions<never, State, Internals> {
@@ -172,7 +167,6 @@ const extractSliceOptions = <ParentState, State, Internals>(
 		metaReducers: constructOptions?.metaReducers,
 		plugins: constructOptions?.plugins,
 		reducers: constructOptions?.reducers,
-		useDefaultLogger: constructOptions?.useDefaultLogger,
 	};
 };
 
@@ -188,7 +182,7 @@ export interface ChildSliceConstructOptions<ParentState, State, Internals>
 	droppable: boolean;
 	pathSegment: string;
 	slicer: SelectSlicer<ParentState, State>;
-	key: string | undefined;
+	key: ObjectKey | undefined;
 }
 
 export type SelectSlicer<ParentState, State> = {
@@ -249,8 +243,6 @@ export const normalizeSliceDirection = <ParentState, State>(
  */
 export class Slice<ParentState, State, Internals = unknown> extends Observable<State> {
 	#sink = new Subscription();
-	#metaReducerConfigurations$: BehaviorSubject<MetaReducer[]>;
-	// #metaReducer$: Observable<MetaPacketReducer<State>>;
 
 	#options: SliceConstructOptions<ParentState, State, Internals>;
 	#scope: Scope;
@@ -258,8 +250,6 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 	#parentCoupling: SliceCoupling<ParentState, State> | undefined;
 	#initialReducers: ReducerConfiguration<State>[];
 	#initialPlugins: TinySlicePlugin<State>[];
-	#initialMetaReducers: MetaReducer[];
-	#defaultMetaReducers: MetaReducer[];
 	#state$: BehaviorSubject<State>;
 	#pathSegment: string;
 	#absolutePath: string;
@@ -333,7 +323,6 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 		this.#parentCoupling = options.parentCoupling;
 		this.#initialReducers = options.reducers ?? [];
 		this.#initialPlugins = options.plugins ?? [];
-		this.#initialMetaReducers = options.metaReducers ?? [];
 		this.#defineInternals = options.defineInternals;
 
 		this.#nullishParentPause$ = new BehaviorSubject(false);
@@ -382,18 +371,9 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 			}),
 		];
 
-		this.#defaultMetaReducers = options?.useDefaultLogger
-			? [createLoggingMetaReducer<State>()]
-			: [];
-
 		this.#reducerConfigurations$ = new BehaviorSubject<ReducerConfiguration<State>[]>([
 			...this.#defaultReducerConfigurations,
 			...this.#initialReducers,
-		]);
-
-		this.#metaReducerConfigurations$ = new BehaviorSubject<MetaReducer[]>([
-			...this.#defaultMetaReducers,
-			...this.#initialMetaReducers,
 		]);
 
 		this.#autoRegisterReducerActions$ = this.#reducerConfigurations$.pipe(
@@ -592,21 +572,30 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 	}
 
 	private executeMetaPreReducers(action: ActionPacket<unknown>) {
-		for (const meta of this.#metaReducerConfigurations$.value) {
+		for (const plugin of this.#plugins$.value) {
 			if (!this.#options.parentCoupling) {
-				meta.preRootReduce(this.#absolutePath, this.#state$.value, action);
+				plugin.preRootReduce?.(this.#absolutePath, this.#state$.value, action);
 			}
-			meta.preReduce(this.#absolutePath, this.#state$.value, action);
+			plugin.preReduce?.(this.#absolutePath, this.#state$.value, action);
 		}
 	}
 
 	private executeMetaPostReducers<State>(snapshot: ReduceActionSliceSnapshot<State>) {
-		for (const meta of this.#metaReducerConfigurations$.value) {
-			meta.postReduce(this.#absolutePath, snapshot);
+		for (const plugin of this.#plugins$.value) {
+			plugin.postReduce?.(this.#absolutePath, snapshot);
 			if (!this.#options.parentCoupling) {
-				meta.postRootReduce(this.#absolutePath, snapshot);
+				plugin.postRootReduce?.(this.#absolutePath, snapshot);
 			}
 		}
+	}
+
+	public loadAndAddPlugins(
+		...pluginImports: (() => Promise<TinySlicePlugin<State>>)[]
+	): Promise<TinySlicePlugin<State>[]> {
+		return Promise.all(pluginImports.map((pluginImport) => pluginImport())).then((plugins) => {
+			this.addPlugin(...plugins);
+			return plugins;
+		});
 	}
 
 	public get paused$(): Observable<boolean> {
@@ -660,24 +649,6 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 
 	public addPlugin(...plugins: TinySlicePlugin<State>[]): void {
 		this.#plugins$.next([...this.#plugins$.value, ...plugins]);
-	}
-
-	public getMetaReducers(): MetaReducer[] {
-		return this.#metaReducerConfigurations$.value;
-	}
-
-	public setMetaReducers(metaReducerConfigurations: MetaReducer[]): void {
-		this.#metaReducerConfigurations$.next([
-			...this.#defaultMetaReducers,
-			...metaReducerConfigurations,
-		]);
-	}
-
-	public addMetaReducer(...metaReducerConfigurations: MetaReducer[]): void {
-		this.#metaReducerConfigurations$.next([
-			...this.#metaReducerConfigurations$.value,
-			...metaReducerConfigurations,
-		]);
 	}
 
 	public getReducers(): ReducerConfiguration<State>[] {
@@ -793,8 +764,12 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 
 			return new Slice<State, ChildState, ChildInternals>({
 				...extractSliceOptions(childSliceConstructOptions),
-				metaReducers: this.#metaReducerConfigurations$.value,
-				// useDefaultLogger: this.#options.useDefaultLogger,
+				plugins: [
+					...(this.#plugins$.value as unknown as TinySlicePlugin<ChildState>[]).filter(
+						(plugin) => plugin.sliceOptions?.()?.passToChildren ?? false
+					),
+					...(childSliceConstructOptions.plugins ?? []),
+				],
 				scope: this.#scope,
 				initialState,
 				parentCoupling: {
@@ -853,11 +828,7 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 	 * ? key could be restricted to disallow keys of Slice once negated types
 	 * ? are implemented in TypeScript
 	 */
-	public addSlice<
-		ChildState,
-		ChildInternals,
-		AdditionalKey extends string | number | symbol = string
-	>(
+	public addSlice<ChildState, ChildInternals, AdditionalKey extends ObjectKey = string>(
 		key: AdditionalKey,
 		initialState: ChildState,
 		sliceOptions?: SliceOptions<State, ChildState, ChildInternals>
@@ -929,11 +900,12 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 	 *
 	 * Nomenclature: Slicing means to take a single piece of state, dicing is multiple
 	 */
-	public dice<ChildState, ChildInternals, DiceKey extends string | number | symbol>(
+	public dice<ChildState, ChildInternals, DiceKey extends ObjectKey>(
 		initialState: ChildState,
 		diceConstructOptions: DiceConstructOptions<State, ChildState, ChildInternals, DiceKey>
 	): DicedSlice<State, ChildState, Internals, ChildInternals, DiceKey> {
 		const sliceOptions = extractSliceOptions(diceConstructOptions);
+
 		const get = (key: DiceKey) => {
 			const slicer = normalizeSliceDirection<State, ChildState>(key);
 			return this.#slice({
@@ -941,10 +913,14 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 				initialState,
 				pathSegment: key.toString(),
 				slicer,
-				key: key as string,
+				key,
 				lazy: true,
 				droppable: true,
-			});
+			}) as Slice<
+				State & Record<DiceKey, ChildState>,
+				NonNullable<ChildState>,
+				ChildInternals
+			>;
 		};
 
 		const has = (key: DiceKey) =>
@@ -1059,7 +1035,6 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 		this.#state$.complete();
 		this.#slices$.complete();
 		this.#plugins$.complete();
-		this.#metaReducerConfigurations$.complete();
 		this.#reducerConfigurations$.complete();
 
 		this.#parentCoupling?.parentSlice?.unregisterSlice(this.pathSegment);

@@ -1,6 +1,6 @@
 {
-	"name": "@tinyslice/hydration-plugin",
-	"description": "Slice hydration for TinySlice",
+	"name": "@tinyslice/logger-plugin",
+	"description": "Logger plugin for TinySlice",
 	"version": "0.4.5",
 	"license": "MIT",
 	"author": {
@@ -8,7 +8,7 @@
 		"name": "AlexAegis",
 		"url": "https://www.github.com/AlexAegis"
 	},
-	"homepage": "https://www.github.com/AlexAegis/tinyslice/tree/master/libs/hydration-plugin#readme",
+	"homepage": "https://www.github.com/AlexAegis/tinyslice/tree/master/libs/logger-plugin#readme",
 	"repository": "github:AlexAegis/tinyslice",
 	"bugs": {
 		"url": "https://www.github.com/AlexAegis/tinyslice/issues"
@@ -17,7 +17,7 @@
 		"tinyslice",
 		"state-management",
 		"redux",
-		"hydration",
+		"logging",
 		"cqrs",
 		"actions",
 		"effects",

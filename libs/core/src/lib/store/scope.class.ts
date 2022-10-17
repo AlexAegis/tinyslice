@@ -12,8 +12,7 @@ import {
 import type { ActionConfig } from '../action/action-config.interface';
 import { ActionPacket, isActionPacket } from '../action/action-packet.interface';
 import { Action, ActionTuple } from '../action/action.class';
-import { colorizeLogString } from '../helper';
-import { TINYSLICE_PREFIX } from '../internal';
+import { TINYSLICE_PREFIX } from '../helper';
 import { RootSlice, RootSliceOptions, Slice } from './slice.class';
 
 /**
@@ -68,7 +67,8 @@ export class Scope {
 			}),
 			catchError((error, pipeline$) => {
 				console.error(
-					...colorizeLogString(`${TINYSLICE_PREFIX} error in effect!\n`),
+					`%c${TINYSLICE_PREFIX} error in effect!\n`,
+					'background: #222, color: #e00;',
 					error
 				);
 				return pipeline$;

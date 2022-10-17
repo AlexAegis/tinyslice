@@ -1,11 +1,11 @@
-# devtools-plugin
+# Devtools Plugin
 
-This library was generated with [Nx](https://nx.dev).
+This plugin integrates the [Redux Devtools extension](https://chrome.google.com/webstore/detail/redux-devtools/lmhkpmbekcpmknklioeibfkpmmfibljd?hl=en)
 
-## Building
+## Features supported
 
-Run `nx build devtools-plugin` to build the library.
-
-## Running unit tests
-
-Run `nx test devtools-plugin` to execute the unit tests via [Jest](https://jestjs.io).
+- Export
+- Import
+- Jump (Time-travel)
+- Commit
+- Rollback

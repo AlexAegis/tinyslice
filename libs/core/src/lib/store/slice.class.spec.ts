@@ -360,7 +360,7 @@ describe('slice', () => {
 			expect(borSliceObserver.complete).toHaveBeenCalledTimes(0);
 		});
 
-		it('should complete when the states key gets removed from the parent', () => {
+		it('should not complete when the states key gets removed from the parent (unless it is droppable)', () => {
 			fooSlice.set({ bar: 'test' } as FooState); // bor is missing
 			expect(rootObserver.next).toHaveBeenCalledTimes(2);
 			expect(rootObserver.error).toHaveBeenCalledTimes(0);
@@ -374,12 +374,13 @@ describe('slice', () => {
 			expect(barSliceObserver.error).toHaveBeenCalledTimes(0);
 			expect(barSliceObserver.complete).toHaveBeenCalledTimes(0);
 
-			expect(borSliceObserver.next).toHaveBeenCalledTimes(1);
+			expect(borSliceObserver.next).toHaveBeenCalledTimes(2);
+			expect(borSliceObserver.next).toHaveBeenLastCalledWith(undefined);
 			expect(borSliceObserver.error).toHaveBeenCalledTimes(0);
-			expect(borSliceObserver.complete).toHaveBeenCalledTimes(1);
+			expect(borSliceObserver.complete).toHaveBeenCalledTimes(0);
 
-			// Associated actions are also closed
-			expect(borSlice.setAction.closed).toBeTruthy();
+			// Associated actions are also not closed
+			expect(borSlice.setAction.closed).toBeFalsy();
 			// Parent actions are not closed
 			expect(fooSlice.setAction.closed).toBeFalsy();
 			// The scopes dispatcher is not

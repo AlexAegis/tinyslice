@@ -36,12 +36,15 @@ jobs:
           echo "IS_ON_NPM_DEVTOOLS_PLUGIN=$IS_ON_NPM_DEVTOOLS_PLUGIN" >> $GITHUB_ENV
           IS_ON_NPM_HYDRATION_PLUGIN=$(if [ ! -z "$(npm view @tinyslice/hydration-plugin@$VERSION 2> /dev/null)" ]; then echo 'true'; else echo 'false'; fi)
           echo "IS_ON_NPM_HYDRATION_PLUGIN=$IS_ON_NPM_HYDRATION_PLUGIN" >> $GITHUB_ENV
+          IS_ON_NPM_LOGGER_PLUGIN=$(if [ ! -z "$(npm view @tinyslice/logger-plugin@$VERSION 2> /dev/null)" ]; then echo 'true'; else echo 'false'; fi)
+          echo "IS_ON_NPM_LOGGER_PLUGIN=$IS_ON_NPM_LOGGER_PLUGIN" >> $GITHUB_ENV
           IS_ON_NPM_NGX=$(if [ ! -z "$(npm view @tinyslice/ngx@$VERSION 2> /dev/null)" ]; then echo 'true'; else echo 'false'; fi)
           echo "IS_ON_NPM_NGX=$IS_ON_NPM_NGX" >> $GITHUB_ENV
-          echo "$VERSION"
-          echo "@tinyslice/core is on npm: $IS_ON_NPM_CORE"
-          echo "@tinyslice/devtools-plugin is on npm: $IS_ON_NPM_CORE"
-          echo "@tinyslice/ngx is on npm: $IS_ON_NPM_CORE"
+          echo "was @tinyslice/core@$VERSION already on npm: $IS_ON_NPM_CORE"
+          echo "was @tinyslice/devtools-plugin@$VERSION already on npm: $IS_ON_NPM_DEVTOOLS_PLUGIN"
+          echo "was @tinyslice/hydration-plugin@$VERSION already on npm: $IS_ON_NPM_HYDRATION_PLUGIN"
+          echo "was @tinyslice/logger-plugin@$VERSION already on npm: $IS_ON_NPM_LOGGER_PLUGIN"
+          echo "was @tinyslice/ngx@$VERSION already on npm: $IS_ON_NPM_NGX"
       - name: Install dependencies
         run: npm install
       - name: Build all except apps
@@ -71,6 +74,14 @@ jobs:
         run: |
           npm config set '//registry.npmjs.org/:_authToken' "${NPM_TOKEN}"
           npm publish ./dist/libs/hydration-plugin --access public
+      - name: Release @tinyslice/logger-plugin on NPM
+        if: env.IS_ON_NPM_LOGGER_PLUGIN != 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          npm config set '//registry.npmjs.org/:_authToken' "${NPM_TOKEN}"
+          npm publish ./dist/libs/logger-plugin --access public
       - name: Release @tinyslice/ngx on NPM
         if: env.IS_ON_NPM_NGX != 'true'
         env:
