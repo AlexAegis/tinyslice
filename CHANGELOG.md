@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.5.0](https://github.com/AlexAegis/tinyslice/compare/v0.4.5...v0.5.0) (2022-10-17)
+
+
+### Features
+
+* better metaReducers, better default logger ([6feea21](https://github.com/AlexAegis/tinyslice/commit/6feea213b89546b4b89711d75f2ac65d0c90e2af))
+* drop only droppable ([5094524](https://github.com/AlexAegis/tinyslice/commit/5094524b85052ec2164521d98d125aed66238dc3))
+* reworked metareducers into plugins, introduced the logger plugin ([ca40221](https://github.com/AlexAegis/tinyslice/commit/ca402211c4167e7abacea7b04d5be40f05ddcb89))
+* simpler devtools state import ([1fe24c7](https://github.com/AlexAegis/tinyslice/commit/1fe24c7124c755e7d86893dd007dfbee124c3846))
+
 ### [0.4.5](https://github.com/AlexAegis/tinyslice/compare/v0.4.4...v0.4.5) (2022-10-14)
 
 
