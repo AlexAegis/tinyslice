@@ -1,13 +1,45 @@
-import { TinySlicePlugin, TinySlicePluginHooks } from '@tinyslice/core';
+import {
+	isNonNullable,
+	TinySlicePlugin,
+	TinySlicePluginHooks,
+	TINYSLICE_PREFIX,
+} from '@tinyslice/core';
 import { Observable, Subscription, tap } from 'rxjs';
 
 export const DEFAULT_OPTIONS: HydrationPluginOptions<unknown, unknown> = {
 	trimmer: (state) => state,
+	migrations: [],
+	getter: (key) => {
+		const persistedState = localStorage.getItem(key);
+		if (persistedState) {
+			return JSON.parse(persistedState);
+		} else {
+			return undefined;
+		}
+	},
+	setter: (key, state) => {
+		const serializedState = JSON.stringify(state);
+		localStorage.setItem(key, serializedState);
+	},
+	remover: (key) => localStorage.removeItem(key),
 };
+
+export interface Migration<OldState, NewState> {
+	fromKey: string;
+	toKey: string;
+	migrate: (oldState: OldState, existingNewState: NewState | undefined) => NewState;
+	getter?: (key: string) => OldState | undefined | null;
+	setter?: (key: string, state: NewState) => void;
+	remover?: (key: string) => void;
+}
 
 export interface HydrationPluginOptions<State, SavedState extends State = State> {
 	trimmer: (state: State) => SavedState;
 	validateRetrieved?: (state: unknown) => state is State;
+	migrations: Migration<unknown, unknown>[];
+	getter: (key: string) => State | undefined | null;
+	setter: (key: string, state: State) => void;
+	remover: (key: string) => void;
 }
 
 /**
@@ -34,21 +66,56 @@ export class TinySliceHydrationPlugin<State, SavedState extends State = State>
 			...(DEFAULT_OPTIONS as HydrationPluginOptions<State, SavedState>),
 			...options,
 		};
+		this.tryMigrations();
 	}
 
-	retrieve(): State | undefined {
-		const persistedState = localStorage.getItem(this.localStorageKey);
-		if (persistedState) {
-			return JSON.parse(persistedState);
-		} else {
-			return undefined;
+	private runMigrations(): boolean {
+		let migrated = false;
+		for (const migration of this.options.migrations) {
+			const getter = migration.getter ?? this.options.getter;
+			const stateToBeMigrated = getter(migration.fromKey);
+
+			if (isNonNullable(stateToBeMigrated)) {
+				console.group(
+					`${TINYSLICE_PREFIX} Running migration from ${migration.fromKey} to ${migration.toKey}`
+				);
+				console.log('Migrating', stateToBeMigrated);
+				try {
+					const stateToBeMigratedTo = getter(migration.toKey);
+					if (stateToBeMigratedTo) {
+						console.log('Merging...', stateToBeMigratedTo);
+					}
+					const migratedState = migration.migrate(stateToBeMigrated, stateToBeMigratedTo);
+					const setter = migration.setter ?? this.options.setter;
+					setter(migration.toKey, migratedState as State);
+					const remover = migration.remover ?? this.options.remover;
+					remover(migration.fromKey);
+					migrated = true;
+					console.log('Migration finished!', migratedState);
+				} catch (error) {
+					console.error('Migration error!', error);
+				}
+
+				console.groupEnd();
+			}
 		}
+		return migrated;
+	}
+
+	private tryMigrations(): void {
+		let migrated = true;
+		while (migrated) {
+			migrated = this.runMigrations();
+		}
+	}
+
+	retrieve(): State | undefined | null {
+		return this.options.getter(this.localStorageKey);
 	}
 
 	persist(snapshot: State): void {
 		const trimmedState = this.options.trimmer(snapshot);
-		const serializedState = JSON.stringify(trimmedState);
-		localStorage.setItem(this.localStorageKey, serializedState);
+		this.options.setter(this.localStorageKey, trimmedState);
 	}
 
 	register = (hooks: TinySlicePluginHooks<State>): void => {
