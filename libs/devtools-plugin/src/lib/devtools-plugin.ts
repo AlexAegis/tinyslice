@@ -103,17 +103,17 @@ export class TinySliceDevtoolPlugin<State = unknown> implements TinySlicePlugin<
 					connection.init(initialState);
 				} else if (message.payload?.type === 'IMPORT_STATE') {
 					const computedStates = message.payload.nextLiftedState.computedStates;
-					Object.values(message.payload.nextLiftedState.actionsById).forEach(
-						(action, index) => {
-							const state = computedStates[index];
-							if (action.action.type === '@@INIT') {
-								connection.init(state.state);
-							} else {
-								connection.send(action.action.type, state.state);
-							}
-							this.hooks.stateInjector(state.state);
+					const actions = [...Object.values(message.payload.nextLiftedState.actionsById)];
+					const lastState = computedStates[actions.length - 1].state;
+					actions.forEach((action, index) => {
+						const state = computedStates[index];
+						if (action.action.type === '@@INIT') {
+							connection.init(state.state);
+						} else {
+							connection.send(action.action, state.state);
 						}
-					);
+					});
+					this.hooks.stateInjector(lastState);
 				} else if (message.payload?.type === 'TOGGLE_ACTION') {
 					if (this.actionsTurnedOff.has(message.payload.id)) {
 						this.actionsTurnedOff.delete(message.payload.id);
