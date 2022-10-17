@@ -34,7 +34,7 @@
 		},
 		"test": {
 			"executor": "@nrwl/jest:jest",
-			"outputs": ["coverage/libs/logger-plugin"],
+			"outputs": ["{workspaceRoot}/coverage/libs/logger-plugin"],
 			"options": {
 				"jestConfig": "libs/logger-plugin/jest.config.ts",
 				"passWithNoTests": true

@@ -34,7 +34,7 @@
 		},
 		"test": {
 			"executor": "@nrwl/jest:jest",
-			"outputs": ["coverage/libs/hydration-plugin"],
+			"outputs": ["{workspaceRoot}/coverage/libs/hydration-plugin"],
 			"options": {
 				"jestConfig": "libs/hydration-plugin/jest.config.ts",
 				"passWithNoTests": true

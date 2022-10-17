@@ -34,7 +34,7 @@
 		},
 		"test": {
 			"executor": "@nrwl/jest:jest",
-			"outputs": ["coverage/libs/devtools-plugin"],
+			"outputs": ["{workspaceRoot}/coverage/libs/devtools-plugin"],
 			"options": {
 				"jestConfig": "libs/devtools-plugin/jest.config.ts",
 				"passWithNoTests": true

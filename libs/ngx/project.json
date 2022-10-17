@@ -6,7 +6,7 @@
 	"targets": {
 		"build": {
 			"executor": "@nrwl/angular:package",
-			"outputs": ["dist/libs/ngx"],
+			"outputs": ["{workspaceRoot}/dist/libs/ngx"],
 			"options": {
 				"project": "libs/ngx/ng-package.json"
 			},
@@ -22,7 +22,7 @@
 		},
 		"test": {
 			"executor": "@nrwl/jest:jest",
-			"outputs": ["coverage/libs/ngx"],
+			"outputs": ["{workspaceRoot}/coverage/libs/ngx"],
 			"options": {
 				"jestConfig": "libs/ngx/jest.config.ts",
 				"passWithNoTests": true
