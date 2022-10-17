@@ -38,7 +38,7 @@ import {
 import { TINYSLICE_DEFAULT_PREFIX, TINYSLICE_PREFIX } from '../internal';
 import { Merger } from './merger.type';
 import {
-	MetaPacketReducer,
+	MetaReducer,
 	PacketReducer,
 	ReduceActionSliceSnapshot,
 	ReducerConfiguration,
@@ -116,12 +116,16 @@ export interface SliceRegistration<ParentState, State, Internals> {
 export interface SliceOptions<ParentState, State, Internals> {
 	reducers?: ReducerConfiguration<State>[];
 	plugins?: TinySlicePlugin<State>[];
-	metaReducers?: MetaPacketReducer<State>[];
+	metaReducers?: MetaReducer[];
 	/**
 	 * ? Setting the passed slices Internal generic to unknown is crucial for
 	 * ? type inference to work
 	 */
 	defineInternals?: (slice: Slice<ParentState, State, unknown>) => Internals;
+	/**
+	 * When measuring times, do it with a closed console so rendering of the
+	 * logs won't be accounted for.
+	 */
 	useDefaultLogger?: boolean;
 }
 
@@ -245,16 +249,17 @@ export const normalizeSliceDirection = <ParentState, State>(
  */
 export class Slice<ParentState, State, Internals = unknown> extends Observable<State> {
 	#sink = new Subscription();
-	#metaReducerConfigurations$: BehaviorSubject<MetaPacketReducer<State>[]>;
-	#metaReducer$: Observable<MetaPacketReducer<State>>;
+	#metaReducerConfigurations$: BehaviorSubject<MetaReducer[]>;
+	// #metaReducer$: Observable<MetaPacketReducer<State>>;
 
+	#options: SliceConstructOptions<ParentState, State, Internals>;
 	#scope: Scope;
 	#initialState: State;
 	#parentCoupling: SliceCoupling<ParentState, State> | undefined;
 	#initialReducers: ReducerConfiguration<State>[];
 	#initialPlugins: TinySlicePlugin<State>[];
-	#initialMetaReducers: MetaPacketReducer<State>[];
-	#defaultMetaReducers: MetaPacketReducer<State>[];
+	#initialMetaReducers: MetaReducer[];
+	#defaultMetaReducers: MetaReducer[];
 	#state$: BehaviorSubject<State>;
 	#pathSegment: string;
 	#absolutePath: string;
@@ -266,7 +271,7 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 	#defaultReducerConfigurations: ReducerConfiguration<State>[];
 	#reducerConfigurations$: BehaviorSubject<ReducerConfiguration<State>[]>;
 	#autoRegisterReducerActions$: Observable<ReducerConfiguration<State, unknown>[]>;
-	#sliceReducer$: Observable<PacketReducer<State>>;
+	#sliceReducer$: Observable<{ reducer: PacketReducer<State>; reducingActions: string[] }>;
 	#plugins$: BehaviorSubject<TinySlicePlugin<State>[]>;
 	#autoRegisterPlugins$: Observable<unknown>;
 	#nullishParentPause$: BehaviorSubject<boolean>;
@@ -321,6 +326,7 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 	 */
 	private constructor(options: SliceConstructOptions<ParentState, State, Internals>) {
 		super();
+		this.#options = options;
 		this.#scope = options.scope;
 		this.#pathSegment = options.pathSegment;
 		this.#initialState = options.initialState;
@@ -385,18 +391,10 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 			...this.#initialReducers,
 		]);
 
-		this.#metaReducerConfigurations$ = new BehaviorSubject<MetaPacketReducer<State>[]>([
+		this.#metaReducerConfigurations$ = new BehaviorSubject<MetaReducer[]>([
 			...this.#defaultMetaReducers,
 			...this.#initialMetaReducers,
 		]);
-
-		this.#metaReducer$ = this.#metaReducerConfigurations$.pipe(
-			map((metaReducerConfigurations) => (snapshot: ReduceActionSliceSnapshot<State>) => {
-				for (const metaReducerConfiguration of metaReducerConfigurations) {
-					metaReducerConfiguration(snapshot);
-				}
-			})
-		);
 
 		this.#autoRegisterReducerActions$ = this.#reducerConfigurations$.pipe(
 			tap((reducerConfigurations) => {
@@ -407,14 +405,22 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 		);
 
 		this.#sliceReducer$ = this.#reducerConfigurations$.pipe(
-			map((reducerConfigurations) => (state, action) => {
-				let nextState = state;
-				if (action) {
-					nextState = reducerConfigurations
-						.filter((rc) => rc.action.type === action.type)
-						.reduce((acc, { packetReducer }) => packetReducer(acc, action), state);
-				}
-				return nextState;
+			map((reducerConfigurations) => {
+				return {
+					reducer: (state, action) => {
+						let nextState = state;
+						if (action) {
+							nextState = reducerConfigurations
+								.filter((rc) => rc.action.type === action.type)
+								.reduce(
+									(acc, { packetReducer }) => packetReducer(acc, action),
+									state
+								);
+						}
+						return nextState;
+					},
+					reducingActions: [...new Set(reducerConfigurations.map((r) => r.action.type))],
+				};
 			})
 		);
 
@@ -438,9 +444,12 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 			switchMap((sl) => zipSubSlices(sl, this.#scope.schedulingDispatcher$))
 		);
 
-		this.#schedule = zip(this.#scope.schedulingDispatcher$, subSliceEmissions).pipe(
-			map(([action, sliceChanges]) => ({ action, sliceChanges }))
-		);
+		this.#schedule = zip(
+			this.#scope.schedulingDispatcher$.pipe(
+				tap((action) => this.executeMetaPreReducers(action))
+			),
+			subSliceEmissions
+		).pipe(map(([action, sliceChanges]) => ({ action, sliceChanges })));
 
 		this.#activePipeline = this.#schedule.pipe(
 			withLatestFrom(this.#state$, this.#sliceReducer$),
@@ -448,7 +457,7 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 				([
 					{ action, sliceChanges },
 					prevState,
-					reducer,
+					{ reducer, reducingActions: usedActions },
 				]): ReduceActionSliceSnapshot<State> => {
 					if (this.#isRootOrParentStateUndefined()) {
 						return {
@@ -458,7 +467,7 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 						};
 					}
 
-					const withSliceChanges: State =
+					const nextState: State =
 						sliceChanges
 							?.filter(
 								(sliceChange) =>
@@ -474,12 +483,12 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 								prevState
 							) ?? prevState;
 
-					const nextState = reducer(withSliceChanges, action);
-
 					return {
 						action,
 						prevState,
-						nextState,
+						nextState: usedActions.includes(action.type)
+							? reducer(nextState, action)
+							: nextState,
 					};
 				}
 			),
@@ -488,14 +497,6 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 					this.#state$.next(snapshot.nextState);
 				}
 			}),
-			withLatestFrom(this.#metaReducer$),
-			tap(([snapshot, metaReducer]) => {
-				metaReducer(snapshot);
-				if (snapshot.prevState !== snapshot.nextState) {
-					this.#state$.next(snapshot.nextState);
-				}
-			}),
-			map(([snapshot, _metaReducer]) => snapshot),
 			catchError((error, pipeline$) => {
 				console.error(`${TINYSLICE_PREFIX} slice pipeline error \n`, error);
 				return this.#plugins$.pipe(
@@ -522,8 +523,8 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 		);
 
 		this.#pipeline = this.#pause$.pipe(
-			// distinctUntilChanged(),
 			switchMap((paused) => (paused ? this.#inactivePipeline : this.#activePipeline)),
+			tap((snapshot) => this.executeMetaPostReducers(snapshot)),
 			share() // Listened to by child slices
 		);
 
@@ -533,24 +534,11 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 		this.#parentListener = this.#parentCoupling?.rawParentState.pipe(
 			skip(1),
 			finalize(() => this.complete()),
-			// TODO: revisit completeability, maybe only for production? Or let the dev plugin disable it, it only breaks replayability as turning time back unsubscribes leaves
-			// TODO: when replaying, disable from here (maybe as the dropSliceWithKey optimization option)
-			//// ifLatestFrom(this.#nullishParentPause$, (nullishParentPause) => !nullishParentPause),
-			tap((a) =>
-				console.log(
-					'PARENT LIST',
-					this.absolutePath,
-					'amithere',
-					hasKey(a, this.#parentCoupling?.key)
-				)
-			),
-			// only diced should be dropped, only they can redefine themselves
 			takeWhile((parentState) =>
 				this.#parentCoupling?.droppable
 					? hasKey(parentState, this.#parentCoupling?.key)
 					: true
 			),
-			// TODO: to here, aka all unsubscribe logic
 			tap((parentState) => {
 				if (isNullish(parentState) && !this.#nullishParentPause$.value) {
 					this.#nullishParentPause$.next(true);
@@ -601,6 +589,24 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 		this.#sink.add(this.#pipeline.subscribe()); // Slices are hot!
 
 		this.#internals = this.#defineInternals?.(this) ?? ({} as Internals);
+	}
+
+	private executeMetaPreReducers(action: ActionPacket<unknown>) {
+		for (const meta of this.#metaReducerConfigurations$.value) {
+			if (!this.#options.parentCoupling) {
+				meta.preRootReduce(this.#absolutePath, this.#state$.value, action);
+			}
+			meta.preReduce(this.#absolutePath, this.#state$.value, action);
+		}
+	}
+
+	private executeMetaPostReducers<State>(snapshot: ReduceActionSliceSnapshot<State>) {
+		for (const meta of this.#metaReducerConfigurations$.value) {
+			meta.postReduce(this.#absolutePath, snapshot);
+			if (!this.#options.parentCoupling) {
+				meta.postRootReduce(this.#absolutePath, snapshot);
+			}
+		}
 	}
 
 	public get paused$(): Observable<boolean> {
@@ -656,18 +662,18 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 		this.#plugins$.next([...this.#plugins$.value, ...plugins]);
 	}
 
-	public getMetaReducers(): MetaPacketReducer<State>[] {
+	public getMetaReducers(): MetaReducer[] {
 		return this.#metaReducerConfigurations$.value;
 	}
 
-	public setMetaReducers(metaReducerConfigurations: MetaPacketReducer<State>[]): void {
+	public setMetaReducers(metaReducerConfigurations: MetaReducer[]): void {
 		this.#metaReducerConfigurations$.next([
 			...this.#defaultMetaReducers,
 			...metaReducerConfigurations,
 		]);
 	}
 
-	public addMetaReducer(...metaReducerConfigurations: MetaPacketReducer<State>[]): void {
+	public addMetaReducer(...metaReducerConfigurations: MetaReducer[]): void {
 		this.#metaReducerConfigurations$.next([
 			...this.#metaReducerConfigurations$.value,
 			...metaReducerConfigurations,
@@ -787,6 +793,8 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 
 			return new Slice<State, ChildState, ChildInternals>({
 				...extractSliceOptions(childSliceConstructOptions),
+				metaReducers: this.#metaReducerConfigurations$.value,
+				// useDefaultLogger: this.#options.useDefaultLogger,
 				scope: this.#scope,
 				initialState,
 				parentCoupling: {

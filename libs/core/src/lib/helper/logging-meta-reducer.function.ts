@@ -1,5 +1,5 @@
 import { TINYSLICE_PREFIX } from '../internal/consts';
-import type { MetaPacketReducer } from '../store/reducer.type';
+import type { MetaReducer } from '../store/reducer.type';
 
 const brightFgColor = '#ffe36a';
 const dimFgColor = '#f9c33c';
@@ -8,6 +8,8 @@ const defaultCss = `background: #222; color: ${brightFgColor};`;
 const defaultCssDim = `background: #222; color: ${dimFgColor};`;
 const successCss = `background: #090; color: ${brightFgColor};`;
 const failCss = `background: #900; color: ${brightFgColor};`;
+const normalCss = 'background: #222; color: #fff;';
+const hiddenCss = 'background: #222; color: #444;';
 
 const isSuccessMessage = (message: string): boolean => message.toLowerCase().includes('success');
 const isFailureMessage = (message: string): boolean => message.toLowerCase().includes('fail');
@@ -58,12 +60,33 @@ export const colorizeLogString = (message: string): string[] => {
 	return ['🍕 ' + codedSegments.join(''), ...colorisedSegments];
 };
 
-export const createLoggingMetaReducer =
-	<State>(): MetaPacketReducer<State> =>
-	({ action, prevState, nextState }) => {
+/**
+ * When measuring times, do it with a closed console so rendering of the logs
+ * won't be accounted
+ */
+export const createLoggingMetaReducer = (): MetaReducer => ({
+	preRootReduce: (_absolutePath, _state, action) => {
 		console.groupCollapsed(...colorizeLogString(action.type));
-		console.info('prevState', prevState);
-		console.info('payload', action.payload);
-		console.info('nextState', nextState);
+	},
+	preReduce: (absolutePath) => {
+		console.time(`${absolutePath} reduce took`);
+	},
+	postReduce: (absolutePath, { action, prevState, nextState }) => {
+		const changed = prevState !== nextState;
+		const logCss = changed ? normalCss : hiddenCss;
+		if (changed) {
+			console.group(`%c${absolutePath}`, logCss);
+		} else {
+			console.groupCollapsed(`%c${absolutePath}`, logCss);
+		}
+
+		console.info('%cprevState', logCss, prevState);
+		console.info('%cpayload', logCss, action.payload);
+		console.info('%cnextState', logCss, nextState);
+		console.timeEnd(`${absolutePath} reduce took`);
 		console.groupEnd();
-	};
+	},
+	postRootReduce: () => {
+		console.groupEnd();
+	},
+});

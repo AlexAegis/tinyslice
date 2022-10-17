@@ -19,7 +19,17 @@ export const isReduceActionSliceSnapshot = <State>(
 ): t is ReduceActionSliceSnapshot<State> =>
 	!isNullish((t as ReduceActionSliceSnapshot<State>).action);
 
-export type MetaPacketReducer<State> = (snapshot: ReduceActionSliceSnapshot<State>) => void;
+export interface MetaReducer {
+	preRootReduce: (absolutePath: string, state: unknown, action: ActionPacket<unknown>) => void;
+	preReduce: (absolutePath: string, state: unknown, action: ActionPacket<unknown>) => void;
+	postReduce: MetaSnapshotReducer;
+	postRootReduce: MetaSnapshotReducer;
+}
+
+export type MetaSnapshotReducer = (
+	absolutePath: string,
+	snapshot: ReduceActionSliceSnapshot<unknown>
+) => void;
 
 export type PacketReducer<State, Payload = unknown> = (
 	state: State,
