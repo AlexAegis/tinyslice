@@ -438,13 +438,128 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 			}),
 			shareReplay(1)
 		);
+		const schedulingDispatcher$ = this.#scope.schedulingDispatcher$.pipe(shareReplay(1));
+		// const schedulingDispatcher$ = this.#scope.schedulingDispatcher$;
 
-		const zipSubSlices = (
+		const slicesWithDownStreamReducers$ = this.#slices$.pipe(
+			tap((a) => console.log('a', this.absolutePath, a)),
+			switchMap((sliceRegistrations) =>
+				combineLatest(
+					Object.values(sliceRegistrations).map((sliceRegistration) =>
+						sliceRegistration.slice.#downStreamReducers$.pipe(
+							map((downStreamReducers) => ({ downStreamReducers, sliceRegistration }))
+						)
+					)
+				)
+			),
+			shareReplay(1)
+		);
+
+		const dispatchAndSlices$ = schedulingDispatcher$.pipe(
+			tap((a) => console.log('b', this.absolutePath, a)),
+			withLatestFrom(slicesWithDownStreamReducers$),
+			map(([actionPacket, sliceRegistrationsAndDownStreamReducers]) => ({
+				sliceRegistrationsAndDownStreamReducers,
+				actionPacket,
+			})),
+			tap((a) => console.log('c', this.absolutePath, a))
+		);
+
+		// ? maybe use the old solution but proxy the active subSlices using the dispatcher
+		const zipSubSlicesOLD = (
 			sliceRegistrations: Record<string, SliceRegistration<State, unknown, Internals>>,
-			schedule: Observable<ActionPacket<unknown>>
+			fallback: Observable<unknown>
 		) => {
+			const subSlicePipelines = Object.values(sliceRegistrations).map((sliceRegistration) =>
+				sliceRegistration.slice.#pipeline.pipe(
+					map((snapshot) => ({ snapshot, sliceRegistration }))
+				)
+			);
+			if (subSlicePipelines.length) {
+				return zip(subSlicePipelines);
+			} else {
+				return fallback.pipe(map(() => []));
+			}
+		};
+
+		const subSliceEmissionsOLD = this.#slices$.pipe(
+			switchMap((sl) => zipSubSlicesOLD(sl, this.#scope.schedulingDispatcher$))
+		);
+
+		const scheduleOLD = zip(
+			this.#scope.schedulingDispatcher$.pipe(
+				tap((action) => this.executeMetaPreReducers(action))
+			),
+			subSliceEmissionsOLD
+		).pipe(map(([action, sliceChanges]) => ({ action, sliceChanges })));
+		console.log(scheduleOLD);
+
+		//---------------------------------------
+
+		const filterSliceRegistrationBasedOnActionTypeSupport = (
+			sliceRegistrationsAndDownStreamReducers: {
+				downStreamReducers: string[];
+				sliceRegistration: SliceRegistration<State, unknown, Internals>;
+			}[],
+			actionType: string
+		) => {
+			console.log('CEREARAERE', this.#absolutePath, actionType);
+			return sliceRegistrationsAndDownStreamReducers.map(
+				({ sliceRegistration, downStreamReducers }) =>
+					downStreamReducers.includes(actionType)
+						? sliceRegistration.slice.#pipeline.pipe(
+								map(
+									(snapshot) =>
+										({
+											snapshot,
+											sliceRegistration,
+										} as SliceChange<State>)
+								)
+						  )
+						: of(undefined)
+			);
+		};
+
+		const zippedDispatch = dispatchAndSlices$.pipe(
+			switchMap(({ sliceRegistrationsAndDownStreamReducers, actionPacket }) =>
+				zip(
+					filterSliceRegistrationBasedOnActionTypeSupport(
+						sliceRegistrationsAndDownStreamReducers,
+						actionPacket.type
+					)
+				).pipe(map((r) => ({ sliceChanges: r.filter(isNonNullable), actionPacket })))
+			),
+			tap((a) => console.log('d', this.absolutePath, a))
+		);
+
+		/*
+		const zippedDispatch = dispatchAndSlices$.pipe(
+			switchMap(({ sliceRegistrationsAndDownStreamReducers, actionPacket }) =>
+				forkJoin(
+					sliceRegistrationsAndDownStreamReducers.map(
+						({ sliceRegistration, downStreamReducers }) =>
+							downStreamReducers.includes(actionPacket.type)
+								? sliceRegistration.slice.#pipeline.pipe(
+										take(1),
+										map(
+											(snapshot) =>
+												({
+													snapshot,
+													sliceRegistration,
+												} as SliceChange<State>)
+										)
+								  )
+								: of(undefined)
+					)
+				).pipe(map((r) => ({ sliceChanges: r.filter(isNonNullable), actionPacket })))
+			),
+			tap((a) => console.log('d', this.absolutePath, a))
+		);*/
+		/*
+		const zipSubSlices = (schedule: Observable<ActionPacket<unknown>>) => {
 			return schedule.pipe(
-				switchMap((actionPacket) => {
+				withLatestFrom(this.#slices$),
+				switchMap(([actionPacket, sliceRegistrations]) => {
 					const subSlicePipelines = Object.values(sliceRegistrations).map(
 						(sliceRegistration) =>
 							sliceRegistration.slice.#downStreamReducers$.pipe(
@@ -480,25 +595,19 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 					}
 				})
 			);
-		};
+		};*/
 
-		this.#schedule = this.#slices$.pipe(
-			switchMap((subSlices) =>
-				zipSubSlices(
-					subSlices,
-					this.#scope.schedulingDispatcher$.pipe(
-						tap((actionPacket) => this.executeMetaPreRootReducers(actionPacket))
-					)
-				)
-			),
+		this.#schedule = zippedDispatch.pipe(
 			ifLatestFrom(this.#downStreamReducers$, (downStreamReducers, sliceChange) => {
 				return downStreamReducers.includes(sliceChange.actionPacket.type);
 			}),
+			tap((a) => console.log('e', this.absolutePath, a)),
 			tap(({ actionPacket }) => this.executeMetaPreReducers(actionPacket))
 		);
 
 		this.#activePipeline = this.#schedule.pipe(
 			withLatestFrom(this.#state$, this.#sliceReducer$),
+			tap((a) => console.log('activePipeline', a)),
 			map(
 				([
 					{ actionPacket, sliceChanges },
@@ -558,7 +667,7 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 			})
 		) as Observable<ReduceActionSliceSnapshot<State>>;
 
-		this.#inactivePipeline = this.#scope.schedulingDispatcher$.pipe(
+		this.#inactivePipeline = schedulingDispatcher$.pipe(
 			withLatestFrom(this.#state$),
 			map(([, state]) => {
 				return {
