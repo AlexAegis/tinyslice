@@ -128,7 +128,7 @@ export class TinySliceLoggerPlugin<State> implements TinySlicePlugin<State> {
 	}
 
 	postReduce(absolutePath: string, snapshot: ReduceActionSliceSnapshot<unknown>): void {
-		if (!this.isIgnored(absolutePath, snapshot.action)) {
+		if (!this.isIgnored(absolutePath, snapshot.actionPacket)) {
 			const changed = snapshot.prevState !== snapshot.nextState;
 			const logCss = changed ? normalCss : hiddenCss;
 			if (this.options.disableGrouping) {
@@ -142,7 +142,7 @@ export class TinySliceLoggerPlugin<State> implements TinySlicePlugin<State> {
 			}
 
 			console.info('%cprevState', logCss, snapshot.prevState);
-			console.info('%cpayload', logCss, snapshot.action.payload);
+			console.info('%cpayload', logCss, snapshot.actionPacket.payload);
 			console.info('%cnextState', logCss, snapshot.nextState);
 			console.timeEnd(`${absolutePath} reduce took`);
 			if (!this.options.disableGrouping) {
@@ -152,7 +152,7 @@ export class TinySliceLoggerPlugin<State> implements TinySlicePlugin<State> {
 	}
 
 	postRootReduce(absolutePath: string, snapshot: ReduceActionSliceSnapshot<unknown>): void {
-		if (!this.isIgnored(absolutePath, snapshot.action)) {
+		if (!this.isIgnored(absolutePath, snapshot.actionPacket)) {
 			if (!this.options.disableGrouping) {
 				console.groupEnd();
 			}

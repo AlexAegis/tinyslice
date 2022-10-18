@@ -7,7 +7,7 @@ export interface InitialSliceSnapshot<State> {
 }
 
 export type ReduceActionSliceSnapshot<State> = {
-	action: ActionPacket;
+	actionPacket: ActionPacket;
 	prevState: State;
 	nextState: State;
 };
@@ -17,7 +17,7 @@ export type SliceSnapshot<State> = InitialSliceSnapshot<State> | ReduceActionSli
 export const isReduceActionSliceSnapshot = <State>(
 	t: ReduceActionSliceSnapshot<State> | InitialSliceSnapshot<State>
 ): t is ReduceActionSliceSnapshot<State> =>
-	!isNullish((t as ReduceActionSliceSnapshot<State>).action);
+	!isNullish((t as ReduceActionSliceSnapshot<State>).actionPacket);
 
 export interface MetaReducer {
 	preRootReduce: (absolutePath: string, state: unknown, action: ActionPacket<unknown>) => void;

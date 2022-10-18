@@ -67,7 +67,7 @@ export class TinySliceDevtoolPlugin<State = unknown> implements TinySlicePlugin<
 		this.sink.add(
 			this.hooks.state$
 				.pipe(
-					tap(({ action, nextState }) => {
+					tap(({ actionPacket: action, nextState }) => {
 						this.lastState = normalizeUndefined(nextState);
 						this.actions[this.actionId] = action;
 						this.actionId += 1;
