@@ -11,7 +11,7 @@ import {
 	Observable,
 	of,
 	pairwise,
-	shareReplay,
+	share,
 	skip,
 	startWith,
 	Subscription,
@@ -435,34 +435,54 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 				} else {
 					return of(sliceReducer.reducingActions);
 				}
-			}),
-			shareReplay(1)
+			})
+			// shareReplay(1)
 		);
-		const schedulingDispatcher$ = this.#scope.schedulingDispatcher$.pipe(shareReplay(1));
-		// const schedulingDispatcher$ = this.#scope.schedulingDispatcher$;
+		//const schedulingDispatcher$ = this.#scope.schedulingDispatcher$.pipe(shareReplay(1));
+		const schedulingDispatcher$ = this.#scope.schedulingDispatcher$;
 
 		const slicesWithDownStreamReducers$ = this.#slices$.pipe(
-			tap((a) => console.log('a', this.absolutePath, a)),
-			switchMap((sliceRegistrations) =>
-				combineLatest(
-					Object.values(sliceRegistrations).map((sliceRegistration) =>
-						sliceRegistration.slice.#downStreamReducers$.pipe(
-							map((downStreamReducers) => ({ downStreamReducers, sliceRegistration }))
+			switchMap((sliceRegistrations) => {
+				const sliceRegistrationValues = Object.values(sliceRegistrations);
+				if (sliceRegistrationValues.length) {
+					return zip(
+						sliceRegistrationValues.map((sliceRegistration) =>
+							sliceRegistration.slice.#downStreamReducers$.pipe(
+								map((downStreamReducers) => ({
+									downStreamReducers,
+									sliceRegistration,
+								}))
+							)
 						)
-					)
-				)
-			),
-			shareReplay(1)
+					);
+				} else {
+					return of([]);
+				}
+			}),
+			tap(() => console.log(this.absolutePath, 'slicesWithDownStreamReducers out'))
+			// share(),
+			// shareReplay(1)
 		);
 
 		const dispatchAndSlices$ = schedulingDispatcher$.pipe(
-			tap((a) => console.log('b', this.absolutePath, a)),
+			tap(() =>
+				console.log(
+					this.absolutePath,
+					'schedulingDispatcher out dispatchAndSlices in START HERE'
+				)
+			),
 			withLatestFrom(slicesWithDownStreamReducers$),
+			tap(() =>
+				console.log(
+					this.absolutePath,
+					'schedulingDispatcher out dispatchAndSlices in START HERE GOT DOWNSTREAMREDS'
+				)
+			),
 			map(([actionPacket, sliceRegistrationsAndDownStreamReducers]) => ({
 				sliceRegistrationsAndDownStreamReducers,
 				actionPacket,
 			})),
-			tap((a) => console.log('c', this.absolutePath, a))
+			tap((a) => console.log(this.absolutePath, 'dispatchAndSlices out', a))
 		);
 
 		// ? maybe use the old solution but proxy the active subSlices using the dispatcher
@@ -503,11 +523,18 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 			}[],
 			actionType: string
 		) => {
-			console.log('CEREARAERE', this.#absolutePath, actionType);
-			return sliceRegistrationsAndDownStreamReducers.map(
-				({ sliceRegistration, downStreamReducers }) =>
-					downStreamReducers.includes(actionType)
+			const a = 1;
+			return sliceRegistrationsAndDownStreamReducers
+				.map(({ sliceRegistration, downStreamReducers }) =>
+					downStreamReducers.includes(actionType) || a === 1
 						? sliceRegistration.slice.#pipeline.pipe(
+								tap(() =>
+									console.log(
+										this.absolutePath,
+										'child slice emit',
+										sliceRegistration.key
+									)
+								),
 								map(
 									(snapshot) =>
 										({
@@ -516,20 +543,25 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 										} as SliceChange<State>)
 								)
 						  )
-						: of(undefined)
-			);
+						: undefined
+				)
+				.filter(isNonNullable);
 		};
 
 		const zippedDispatch = dispatchAndSlices$.pipe(
-			switchMap(({ sliceRegistrationsAndDownStreamReducers, actionPacket }) =>
-				zip(
-					filterSliceRegistrationBasedOnActionTypeSupport(
-						sliceRegistrationsAndDownStreamReducers,
-						actionPacket.type
-					)
-				).pipe(map((r) => ({ sliceChanges: r.filter(isNonNullable), actionPacket })))
-			),
-			tap((a) => console.log('d', this.absolutePath, a))
+			switchMap(({ sliceRegistrationsAndDownStreamReducers, actionPacket }) => {
+				if (sliceRegistrationsAndDownStreamReducers.length) {
+					return zip(
+						filterSliceRegistrationBasedOnActionTypeSupport(
+							sliceRegistrationsAndDownStreamReducers,
+							actionPacket.type
+						)
+					).pipe(map((sliceChanges) => ({ sliceChanges, actionPacket })));
+				} else {
+					return of({ sliceChanges: [], actionPacket });
+				}
+			}),
+			tap((_a) => console.log(this.absolutePath, 'zippedDispatch out'))
 		);
 
 		/*
@@ -599,15 +631,16 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 
 		this.#schedule = zippedDispatch.pipe(
 			ifLatestFrom(this.#downStreamReducers$, (downStreamReducers, sliceChange) => {
-				return downStreamReducers.includes(sliceChange.actionPacket.type);
+				const a = 1;
+				return downStreamReducers.includes(sliceChange.actionPacket.type) || a === 1;
 			}),
-			tap((a) => console.log('e', this.absolutePath, a)),
-			tap(({ actionPacket }) => this.executeMetaPreReducers(actionPacket))
+			tap(({ actionPacket }) => this.executeMetaPreReducers(actionPacket)),
+			tap(() => console.log(this.absolutePath, 'schedule out'))
 		);
 
 		this.#activePipeline = this.#schedule.pipe(
 			withLatestFrom(this.#state$, this.#sliceReducer$),
-			tap((a) => console.log('activePipeline', a)),
+			tap(() => console.log(this.absolutePath, 'active pipe in')),
 			map(
 				([
 					{ actionPacket, sliceChanges },
@@ -686,7 +719,14 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 					// this.printSliceStructure();
 				}
 			}),
-			shareReplay(1) // has to be shared because of child listeners, has to be replayed because of downStreamActions
+			tap(() =>
+				console.log(
+					this.absolutePath,
+					'shared #pipeline out before share (meta post reducers)'
+				)
+			),
+			share()
+			//shareReplay(1) // has to be shared because of child listeners, has to be replayed because of downStreamActions
 		);
 
 		this.#plugins$ = new BehaviorSubject<TinySlicePlugin<State>[]>(this.#initialPlugins);
@@ -732,6 +772,10 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 
 		this.#scope.slices.set(this.#absolutePath, this);
 
+		this.#sink.add(this.#autoRegisterReducerActions$.subscribe());
+		this.#sink.add(this.#autoRegisterPlugins$.subscribe());
+		this.#sink.add(this.#pipeline.subscribe()); // Slices are hot!
+
 		if (this.#parentCoupling) {
 			this.#parentCoupling.parentSlice.#registerSlice({
 				slice: this,
@@ -744,10 +788,6 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 		}
 		// ? internal call has to happen after this slice has been coupled to
 		// ? its parent
-
-		this.#sink.add(this.#autoRegisterReducerActions$.subscribe());
-		this.#sink.add(this.#autoRegisterPlugins$.subscribe());
-		this.#sink.add(this.#pipeline.subscribe()); // Slices are hot!
 
 		this.#internals = this.#defineInternals?.(this) ?? ({} as Internals);
 	}
@@ -770,7 +810,6 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 	}
 
 	private executeMetaPostReducers<State>(snapshot: ReduceActionSliceSnapshot<State>) {
-		console.log('POSTRED', this.absolutePath);
 		for (const plugin of this.#plugins$.value) {
 			plugin.postReduce?.(this.#absolutePath, snapshot);
 			if (!this.#options.parentCoupling) {
@@ -1199,12 +1238,15 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 				never
 			>,
 		});
+		console.log(this.absolutePath, 'register slice', sliceRegistration.key);
 
 		// If the lazily added subslice is not already merged, merge it back
 		if (
 			!hasKey(this.value, sliceRegistration.key) ||
 			sliceRegistration.lazyInitialState !== sliceRegistration.slicer.selector(this.value)
 		) {
+			console.log(this.absolutePath, 'register slice SEND ACTIon', sliceRegistration.key);
+
 			this.setAction.next(
 				sliceRegistration.slicer.merger(
 					this.value,
