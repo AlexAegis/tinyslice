@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.6.0](https://github.com/AlexAegis/tinyslice/compare/v0.5.1...v0.6.0) (2022-10-20)
+
+
+### Features
+
+* fully disconnect redux devtools, better logging ([20fdeea](https://github.com/AlexAegis/tinyslice/commit/20fdeea21f5465b4cf31b4122c39099dbe69592e))
+* optimization idea ([72311e7](https://github.com/AlexAegis/tinyslice/commit/72311e731acb628b79aa72010761ac438c65479a))
+* removed lazy flags as everything is lazy! ([dd94869](https://github.com/AlexAegis/tinyslice/commit/dd948697a8504e324a391ab3298e1bae602bb807))
+
+
+### Bug Fixes
+
+* fixed metareducers ([f93e975](https://github.com/AlexAegis/tinyslice/commit/f93e9755a01a2a4688cedde87d08aabdd615878e))
+* looks like everything's working ([de2f18c](https://github.com/AlexAegis/tinyslice/commit/de2f18c7c282639a11fa47bd38c5909c69af0715))
+* normal lazy slices now merge back, dices are still wrong ([f911bc3](https://github.com/AlexAegis/tinyslice/commit/f911bc38f1decc4cb490157877f1dd6ddfe4d381))
+* reduce logic works, metareducers are broken ([9af4b3a](https://github.com/AlexAegis/tinyslice/commit/9af4b3a805af8b9cd6b17e87095303c8fce6be13))
+* renamed function ([67152c9](https://github.com/AlexAegis/tinyslice/commit/67152c943411cf53cd73bf493680465b77a11cdd))
+* works a bit better, deep optionals are still bad ([77b7cd7](https://github.com/AlexAegis/tinyslice/commit/77b7cd7fc58973b9685394aeedb9e4a699f2f16d))
+
 ### [0.5.1](https://github.com/AlexAegis/tinyslice/compare/v0.5.0...v0.5.1) (2022-10-17)
 
 
