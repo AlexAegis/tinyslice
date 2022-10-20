@@ -14,6 +14,7 @@
 		SideNavLink,
 		SkipToContent,
 	} from 'carbon-components-svelte';
+	import Debug from 'carbon-icons-svelte/lib/Debug.svelte';
 	import DotMark from 'carbon-icons-svelte/lib/DotMark.svelte';
 	import LogoGithub from 'carbon-icons-svelte/lib/LogoGithub.svelte';
 
@@ -23,7 +24,7 @@
 	import { wrap } from 'svelte-spa-router/wrap';
 
 	import packageJson from '../../../package.json';
-	import { rootActions } from './root.slice';
+	import { debug$, rootActions } from './root.slice';
 
 	let isSideNavOpen = false;
 
@@ -109,6 +110,15 @@
 		/>
 		<SideNavDivider />
 		<SideNavLink icon={LogoGithub} text="Github" href={packageJson.repository} />
+		{#if $debug$}
+			<SideNavLink
+				icon={Debug}
+				text="Disable Debug Tools"
+				on:click={() => debug$.set(false)}
+			/>
+		{:else}
+			<SideNavLink icon={Debug} text="Enable Debug Tools" on:click={() => debug$.set(true)} />
+		{/if}
 	</SideNavItems>
 </SideNav>
 

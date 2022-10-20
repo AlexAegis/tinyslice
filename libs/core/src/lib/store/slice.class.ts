@@ -624,13 +624,15 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 		);
 
 		this.#autoRegisterPlugins$ = this.#plugins$.pipe(
-			startWith([]),
+			startWith([] as TinySlicePlugin<State>[]),
 			pairwise(),
-			tap(([p, n]) => {
-				for (const plugin of p) {
+			tap(([previous, next]) => {
+				// Stop whats no longer present
+				for (const plugin of previous.filter((plugin) => !next.includes(plugin))) {
 					plugin.stop();
 				}
-				for (const plugin of n) {
+				// Start what's new
+				for (const plugin of next.filter((plugin) => !previous.includes(plugin))) {
 					this.#registerPlugin(plugin);
 				}
 			})
@@ -680,11 +682,11 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 		}
 	}
 
-	public loadAndAddPlugins(
+	public loadAndSetPlugins(
 		...pluginImports: (() => Promise<TinySlicePlugin<State>>)[]
 	): Promise<TinySlicePlugin<State>[]> {
 		return Promise.all(pluginImports.map((pluginImport) => pluginImport())).then((plugins) => {
-			this.addPlugin(...plugins);
+			this.setPlugins(plugins);
 			return plugins;
 		});
 	}
@@ -731,7 +733,7 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 	}
 
 	public setPlugins(plugins: TinySlicePlugin<State>[]): void {
-		this.#plugins$.next(plugins);
+		this.#plugins$.next([...(this.#options.plugins ?? []), ...plugins]);
 	}
 
 	public getPlugins(): TinySlicePlugin<State>[] {

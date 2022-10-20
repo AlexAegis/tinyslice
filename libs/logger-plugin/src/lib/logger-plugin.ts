@@ -70,16 +70,47 @@ export const DEFAULT_OPTIONS: LoggerPluginOptions = {
 	ignorePaths: [],
 	ignoreActions: [],
 	disableGrouping: false,
+	onlyRoot: false,
+	onlyTimers: false,
 };
 
 export interface LoggerPluginOptions {
 	ignorePaths: (RegExp | string)[];
 	ignoreActions: (RegExp | string)[];
 	disableGrouping: boolean;
+	/**
+	 * Will only execute the root logs
+	 */
+	onlyRoot: boolean;
+	/**
+	 * Will only print timers
+	 */
+	onlyTimers: boolean;
 }
 
+/**
+ * This plugin lets you see changes during reduces.
+ *
+ * Every executed reducer is printed, ones where the state is changed are
+ * printed white while unchanged ones are grey. Optimizations won't run
+ * reducers where they wouldn't do anything so you'll mostly only see white
+ * texts unless you have reducers that can just return the previous state
+ * as is.
+ *
+ * It also measures each reducer how long it takes to execute and how long
+ * the total action roundtrip took.
+ *
+ * For more accurate timing results, close the devtools panel, fire your
+ * actions and then reopen to inspect. That way the cost of rendering these
+ * console logs is minimal. You can also enable 'onlyTimers' and 'onlyRoot'
+ * for even better results.
+ */
 export class TinySliceLoggerPlugin<State> implements TinySlicePlugin<State> {
 	private options: LoggerPluginOptions;
+
+	#first = false;
+	#enabled = false;
+	#lastTimer: string | undefined = undefined;
 
 	#pluginOptions: TinySlicePluginSliceOptions = {
 		passToChildren: true,
@@ -112,7 +143,9 @@ export class TinySliceLoggerPlugin<State> implements TinySlicePlugin<State> {
 	}
 
 	preRootReduce(absolutePath: string, _state: unknown, action: ActionPacket<unknown>): void {
-		if (!this.isIgnored(absolutePath, action)) {
+		this.#first = true;
+		if (this.#enabled && !this.isIgnored(absolutePath, action)) {
+			console.time('entire reduce took');
 			if (this.options.disableGrouping) {
 				console.log(...colorizeLogString(action.type));
 			} else {
@@ -122,37 +155,47 @@ export class TinySliceLoggerPlugin<State> implements TinySlicePlugin<State> {
 	}
 
 	preReduce(absolutePath: string, _state: unknown, action: ActionPacket<unknown>): void {
-		if (!this.isIgnored(absolutePath, action)) {
-			console.time(`${absolutePath} reduce took`);
+		if (this.#enabled && !this.options.onlyRoot && !this.isIgnored(absolutePath, action)) {
+			this.#lastTimer = `${absolutePath} reduce took`;
+			console.time(this.#lastTimer);
 		}
 	}
 
 	postReduce(absolutePath: string, snapshot: ReduceActionSliceSnapshot<unknown>): void {
-		if (!this.isIgnored(absolutePath, snapshot.actionPacket)) {
+		if (
+			this.#enabled &&
+			!this.options.onlyRoot &&
+			!this.isIgnored(absolutePath, snapshot.actionPacket)
+		) {
 			const changed = snapshot.prevState !== snapshot.nextState;
 			const logCss = changed ? normalCss : hiddenCss;
-			if (this.options.disableGrouping) {
-				console.log(`%c${absolutePath}`, logCss);
-			} else {
-				if (changed) {
-					console.group(`%c${absolutePath}`, logCss);
+			if (!this.options.onlyTimers) {
+				if (this.options.disableGrouping) {
+					console.log(`%c${absolutePath}`, logCss);
 				} else {
-					console.groupCollapsed(`%c${absolutePath}`, logCss);
+					if (this.#first) {
+						this.#first = false;
+						console.group(`%c${absolutePath}`, logCss);
+					} else {
+						console.groupCollapsed(`%c${absolutePath}`, logCss);
+					}
 				}
+
+				console.info('%cprevState', logCss, snapshot.prevState);
+				console.info('%cpayload', logCss, snapshot.actionPacket.payload);
+				console.info('%cnextState', logCss, snapshot.nextState);
 			}
 
-			console.info('%cprevState', logCss, snapshot.prevState);
-			console.info('%cpayload', logCss, snapshot.actionPacket.payload);
-			console.info('%cnextState', logCss, snapshot.nextState);
 			console.timeEnd(`${absolutePath} reduce took`);
-			if (!this.options.disableGrouping) {
+			if (!this.options.onlyTimers && !this.options.disableGrouping) {
 				console.groupEnd();
 			}
 		}
 	}
 
 	postRootReduce(absolutePath: string, snapshot: ReduceActionSliceSnapshot<unknown>): void {
-		if (!this.isIgnored(absolutePath, snapshot.actionPacket)) {
+		if (this.#enabled && !this.isIgnored(absolutePath, snapshot.actionPacket)) {
+			console.timeEnd('entire reduce took');
 			if (!this.options.disableGrouping) {
 				console.groupEnd();
 			}
@@ -160,10 +203,18 @@ export class TinySliceLoggerPlugin<State> implements TinySlicePlugin<State> {
 	}
 
 	start(): void {
+		this.#enabled = true;
 		return undefined;
 	}
 
 	stop(): void {
+		if (!this.options.disableGrouping) {
+			if (this.#lastTimer) {
+				console.timeEnd(this.#lastTimer);
+			}
+			console.groupEnd();
+		}
+		this.#enabled = false;
 		return undefined;
 	}
 

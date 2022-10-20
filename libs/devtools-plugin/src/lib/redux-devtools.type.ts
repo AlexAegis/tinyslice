@@ -125,6 +125,7 @@ export interface ReduxDevtoolsExtensionConnection<State> {
 
 export interface ReduxDevtoolsExtension<State> {
 	connect(options: ReduxDevtoolsExtensionConfig): ReduxDevtoolsExtensionConnection<State>;
+	disconnect(): void;
 	send(action: ActionLike | string, state: State, options: ReduxDevtoolsExtensionConfig): void;
 }
 

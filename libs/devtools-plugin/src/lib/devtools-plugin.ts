@@ -127,6 +127,10 @@ export class TinySliceDevtoolPlugin<State = unknown> implements TinySlicePlugin<
 		});
 	}
 
+	private disconnect(): void {
+		this.extension?.disconnect();
+	}
+
 	start = (): void => {
 		this.extensionConnection = this.extension?.connect({
 			...DEFAULT_DEVTOOLS_OPTIONS,
@@ -141,6 +145,9 @@ export class TinySliceDevtoolPlugin<State = unknown> implements TinySlicePlugin<
 		this.sink.unsubscribe();
 		this.unsubscribeStateInjector?.();
 		this.extensionConnection?.unsubscribe();
+		if (this.extensionConnection) {
+			this.disconnect();
+		}
 		this.sink = new Subscription();
 	};
 
