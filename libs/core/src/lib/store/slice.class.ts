@@ -104,7 +104,6 @@ export interface SliceCoupling<ParentState, State> {
 	 */
 	key: ObjectKey | undefined;
 	slicer: SelectSlicer<ParentState, State>;
-	lazy: boolean;
 	droppable: boolean;
 }
 
@@ -112,7 +111,7 @@ export interface SliceRegistration<ParentState, State, Internals> {
 	slice: Slice<ParentState, State, Internals>;
 	slicer: SelectSlicer<ParentState, State>;
 	key: ObjectKey | undefined;
-	lazyInitialState: State | undefined;
+	initialState: State | undefined;
 }
 
 export interface SliceOptions<ParentState, State, Internals> {
@@ -175,7 +174,6 @@ const extractSliceOptions = <ParentState, State, Internals>(
 export interface ChildSliceConstructOptions<ParentState, State, Internals>
 	extends SliceOptions<ParentState, State, Internals> {
 	initialState?: State;
-	lazy: boolean;
 	/**
 	 * Marks if a slice should be dropped when its key is dropped from its
 	 * parent. It's generally only safe to do with dynamic slices (dices)
@@ -570,7 +568,6 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 					this.#state$.next(snapshot.nextState);
 				}
 			}),
-
 			catchError((error, pipeline$) => {
 				console.error(`${TINYSLICE_PREFIX} slice pipeline error \n`, error);
 				return this.#plugins$.pipe(
@@ -649,7 +646,7 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 			this.#parentCoupling.parentSlice.#registerSlice({
 				slice: this,
 				slicer: this.#parentCoupling.slicer,
-				lazyInitialState: this.#initialState,
+				initialState: this.#initialState,
 				key: this.#parentCoupling.key,
 			});
 
@@ -870,7 +867,6 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 					parentSlice: this as Slice<unknown, State, UnknownObject>,
 					rawParentState: this.#observableState$,
 					slicer: childSliceConstructOptions.slicer,
-					lazy: childSliceConstructOptions.lazy ?? false,
 					droppable: childSliceConstructOptions.droppable ?? false,
 					key: childSliceConstructOptions.key,
 				},
@@ -890,7 +886,6 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 		return this.#slice({
 			...sliceOptions,
 			initialState: undefined,
-			lazy: true,
 			droppable: false,
 			slicer: {
 				selector,
@@ -910,9 +905,8 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 			...sliceOptions,
 			pathSegment: key.toString(),
 			slicer,
-			lazy: false,
-			droppable: false,
 			key: key as string,
+			droppable: false,
 		});
 	}
 
@@ -934,7 +928,6 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 			pathSegment: key.toString(),
 			slicer,
 			key: key as string,
-			lazy: true,
 			droppable: false,
 		}) as Slice<
 			State & Record<AdditionalKey, ChildState>,
@@ -1008,7 +1001,6 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 				pathSegment: key.toString(),
 				slicer,
 				key,
-				lazy: true,
 				droppable: true,
 			}) as Slice<
 				State & Record<DiceKey, ChildState>,
@@ -1097,12 +1089,12 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 		// If the lazily added subslice is not already merged, merge it back
 		if (
 			!hasKey(this.value, sliceRegistration.key) ||
-			sliceRegistration.lazyInitialState !== sliceRegistration.slicer.selector(this.value)
+			sliceRegistration.initialState !== sliceRegistration.slicer.selector(this.value)
 		) {
 			this.setAction.next(
 				sliceRegistration.slicer.merger(
 					this.value,
-					sliceRegistration.lazyInitialState as ChildState
+					sliceRegistration.initialState as ChildState
 				)
 			);
 		}
