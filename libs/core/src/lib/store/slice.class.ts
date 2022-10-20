@@ -404,23 +404,26 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 		);
 
 		this.#sliceReducer$ = this.#reducerConfigurations$.pipe(
-			map((reducerConfigurations) => (state, action) => {
-				let nextState = state;
-				if (action) {
-					nextState = reducerConfigurations
-						.filter((rc) => rc.action.type === action.type)
-						.reduce((acc, { packetReducer }) => packetReducer(acc, action), state);
-				}
-				return nextState;
-			})
-			// shareReplay(1) // can't add, changes order of subscription as it will be subscribed to a withLatestFrom
+			map(
+				(reducerConfigurations): PacketReducer<State, unknown> =>
+					(state, action) =>
+						action
+							? reducerConfigurations
+									.filter((rc) => rc.action.type === action.type)
+									.reduce(
+										(acc, { packetReducer }) => packetReducer(acc, action),
+										state
+									)
+							: state
+			),
+			shareReplay(1)
 		);
 
 		this.#sliceReducingActions$ = this.#reducerConfigurations$.pipe(
 			map((reducerConfigurations) => [
 				...new Set(reducerConfigurations.map((r) => r.action.type)),
-			])
-			// shareReplay(1)
+			]),
+			shareReplay(1)
 		);
 
 		this.#downStreamReducers$ = this.#slices$.pipe(
@@ -442,13 +445,6 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 			shareReplay(1) // computed from a behaviorSubject and another computed field
 		);
 
-		const schedulingDispatcher$ = this.#scope.schedulingDispatcher$.pipe(
-			ifLatestFrom(this.#downStreamReducers$, (downStreamReducers, actionPacket) =>
-				downStreamReducers.includes(actionPacket.type)
-			),
-			tap((actionPacket) => this.executeMetaPreReducers(actionPacket))
-		);
-
 		const slicesWithDownStreamReducers$ = this.#slices$.pipe(
 			switchMap((sliceRegistrations) => {
 				if (sliceRegistrations.length) {
@@ -467,6 +463,13 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 				}
 			}),
 			shareReplay(1) // computed from behaviorSubjects from a behaviorSubject
+		);
+
+		const schedulingDispatcher$ = this.#scope.schedulingDispatcher$.pipe(
+			ifLatestFrom(this.#downStreamReducers$, (downStreamReducers, actionPacket) =>
+				downStreamReducers.includes(actionPacket.type)
+			),
+			tap((actionPacket) => this.executeMetaPreReducers(actionPacket))
 		);
 
 		const dispatchAndSlices$ = schedulingDispatcher$.pipe(
@@ -563,9 +566,9 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 				}
 			),
 			tap((snapshot) => {
-				//if (snapshot.prevState !== snapshot.nextState) {
-				this.#state$.next(snapshot.nextState);
-				//}
+				if (snapshot.prevState !== snapshot.nextState) {
+					this.#state$.next(snapshot.nextState);
+				}
 			}),
 
 			catchError((error, pipeline$) => {
