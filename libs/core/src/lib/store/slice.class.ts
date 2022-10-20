@@ -427,7 +427,9 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 			withLatestFrom(this.#sliceReducingActions$),
 			switchMap(([slices, sliceReducingActions]) => {
 				if (slices.length) {
-					return zip(slices.map((next) => next.slice.#downStreamReducers$)).pipe(
+					return combineLatest(
+						slices.map((next) => next.slice.#downStreamReducers$)
+					).pipe(
 						map((subSliceReducer) => [
 							...sliceReducingActions,
 							...subSliceReducer.flat(),
