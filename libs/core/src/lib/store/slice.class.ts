@@ -439,17 +439,14 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 					return of(sliceReducingActions);
 				}
 			}),
-			tap((a) => console.log(this.absolutePath, 'downStreamReducers', a)),
 			shareReplay(1) // computed from a behaviorSubject and another computed field
 		);
 
-		this.#downStreamReducers$.subscribe();
-
 		const schedulingDispatcher$ = this.#scope.schedulingDispatcher$.pipe(
-			tap((actionPacket) => this.executeMetaPreRootReducers(actionPacket)),
 			ifLatestFrom(this.#downStreamReducers$, (downStreamReducers, actionPacket) =>
 				downStreamReducers.includes(actionPacket.type)
-			)
+			),
+			tap((actionPacket) => this.executeMetaPreReducers(actionPacket))
 		);
 
 		const slicesWithDownStreamReducers$ = this.#slices$.pipe(
@@ -469,21 +466,19 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 					return of([]);
 				}
 			}),
-
 			shareReplay(1) // computed from behaviorSubjects from a behaviorSubject
 		);
 
 		const dispatchAndSlices$ = schedulingDispatcher$.pipe(
 			switchMap((actionPacket) =>
 				slicesWithDownStreamReducers$.pipe(
+					take(1),
 					map((slicesWithDownStreamReducers) => ({
 						actionPacket,
 						slicesWithDownStreamReducers,
 					}))
 				)
-			),
-
-			tap(({ actionPacket }) => this.executeMetaPreReducers(actionPacket))
+			)
 		);
 
 		const filterSliceRegistrationBasedOnActionTypeSupport = (
@@ -518,17 +513,12 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 					slicesWithDownStreamReducers,
 					actionPacket.type
 				);
-
 				if (neededChildSlices.length) {
 					return zip(neededChildSlices).pipe(
 						map((sliceChanges) => ({ sliceChanges, actionPacket }))
 					);
 				} else {
 					return of({ sliceChanges: [], actionPacket });
-					//return schedulingDispatcher$.pipe(
-					//	startWith(undefined),
-					//	map(() => ({ sliceChanges: [], actionPacket }))
-					//);
 				}
 			})
 		);
@@ -551,7 +541,7 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 
 					const nextState: State =
 						sliceChanges
-							?.filter(
+							.filter(
 								(sliceChange) =>
 									sliceChange.snapshot.prevState !==
 									sliceChange.snapshot.nextState
@@ -573,9 +563,9 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 				}
 			),
 			tap((snapshot) => {
-				if (snapshot.prevState !== snapshot.nextState) {
-					this.#state$.next(snapshot.nextState);
-				}
+				//if (snapshot.prevState !== snapshot.nextState) {
+				this.#state$.next(snapshot.nextState);
+				//}
 			}),
 
 			catchError((error, pipeline$) => {
@@ -606,7 +596,6 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 		this.#pipeline = this.#pause$.pipe(
 			switchMap((paused) => (paused ? this.#inactivePipeline : this.#activePipeline)),
 			tap((snapshot) => this.executeMetaPostReducers(snapshot)),
-			tap((snapshot) => this.executeMetaPostRootReducers(snapshot)),
 			share() // has to be shared because of child listeners
 		);
 
@@ -653,10 +642,6 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 
 		this.#scope.slices.set(this.#absolutePath, this);
 
-		this.#sink.add(this.#autoRegisterReducerActions$.subscribe());
-		this.#sink.add(this.#autoRegisterPlugins$.subscribe());
-		this.#sink.add(this.#pipeline.subscribe()); // Slices are hot!
-
 		if (this.#parentCoupling) {
 			this.#parentCoupling.parentSlice.#registerSlice({
 				slice: this,
@@ -668,6 +653,10 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 			this.#sink.add(this.#parentListener?.subscribe());
 		}
 
+		this.#sink.add(this.#autoRegisterReducerActions$.subscribe());
+		this.#sink.add(this.#autoRegisterPlugins$.subscribe());
+		this.#sink.add(this.#pipeline.subscribe()); // Slices are hot!
+
 		// ? defineInternals call has to happen after this slice has been
 		// ? coupled to its parent
 		this.#internals = this.#defineInternals?.(this) ?? ({} as Internals);
@@ -675,30 +664,17 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 
 	private executeMetaPreReducers(action: ActionPacket<unknown>) {
 		for (const plugin of this.#plugins$.value) {
-			plugin.preReduce?.(this.#absolutePath, this.#state$.value, action);
-		}
-	}
-
-	private executeMetaPreRootReducers(action: ActionPacket<unknown>) {
-		if (!this.#options.parentCoupling) {
-			for (const plugin of this.#plugins$.value) {
+			if (!this.#options.parentCoupling) {
 				plugin.preRootReduce?.(this.#absolutePath, this.#state$.value, action);
 			}
+			plugin.preReduce?.(this.#absolutePath, this.#state$.value, action);
 		}
 	}
 
 	private executeMetaPostReducers<State>(snapshot: ReduceActionSliceSnapshot<State>) {
 		for (const plugin of this.#plugins$.value) {
 			plugin.postReduce?.(this.#absolutePath, snapshot);
-			// if (!this.#options.parentCoupling) {
-			// 	plugin.postRootReduce?.(this.#absolutePath, snapshot);
-			// }
-		}
-	}
-
-	private executeMetaPostRootReducers<State>(snapshot: ReduceActionSliceSnapshot<State>) {
-		if (!this.#options.parentCoupling) {
-			for (const plugin of this.#plugins$.value) {
+			if (!this.#options.parentCoupling) {
 				plugin.postRootReduce?.(this.#absolutePath, snapshot);
 			}
 		}
@@ -1107,8 +1083,6 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 	#registerSlice<ChildState, ChildInternals>(
 		sliceRegistration: SliceRegistration<State, ChildState, ChildInternals>
 	): void {
-		// ! SLICE REGISTRATION ALSO REGISTERS THE REDUCER SUBTREE!!!!!!!!!!!!
-		console.log('REGISTER!', this.absolutePath);
 		this.#keyedSlices$.next({
 			...this.#keyedSlices$.value,
 			[sliceRegistration.slice.#pathSegment]: sliceRegistration as SliceRegistration<
