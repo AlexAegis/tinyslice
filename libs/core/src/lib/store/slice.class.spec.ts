@@ -635,7 +635,7 @@ describe('slice', () => {
 				],
 			});
 
-			consoleErrorSpy = jest.spyOn(console, 'error');
+			consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => undefined);
 
 			sink.add(rootSlice.subscribe(rootObserver));
 		});
