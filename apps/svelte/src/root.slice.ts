@@ -1,6 +1,5 @@
 import { Scope } from '@tinyslice/core';
 import { TinySliceDevtoolPlugin } from '@tinyslice/devtools-plugin';
-import { TinySliceHydrationPlugin } from '@tinyslice/hydration-plugin';
 import { TinySliceLoggerPlugin } from '@tinyslice/logger-plugin';
 import { tap } from 'rxjs';
 
@@ -22,7 +21,7 @@ export const rootSlice = scope.createRootSlice(
 				ignorePaths: ['root.theme'],
 				disableGrouping: false,
 			}),
-			new TinySliceHydrationPlugin('cache2'),
+			// new TinySliceHydrationPlugin('cache2'),
 			new TinySliceDevtoolPlugin({
 				name: 'Svelte TinySlice',
 			}),

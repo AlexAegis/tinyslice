@@ -439,6 +439,7 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 					return of(sliceReducingActions);
 				}
 			}),
+			tap((a) => console.log(this.absolutePath, 'downStreamReducers', a)),
 			shareReplay(1) // computed from a behaviorSubject and another computed field
 		);
 
@@ -454,7 +455,7 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 		const slicesWithDownStreamReducers$ = this.#slices$.pipe(
 			switchMap((sliceRegistrations) => {
 				if (sliceRegistrations.length) {
-					return zip(
+					return combineLatest(
 						sliceRegistrations.map((sliceRegistration) =>
 							sliceRegistration.slice.#downStreamReducers$.pipe(
 								map((downStreamReducers) => ({
@@ -525,6 +526,7 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 				} else {
 					return of({ sliceChanges: [], actionPacket });
 					//return schedulingDispatcher$.pipe(
+					//	startWith(undefined),
 					//	map(() => ({ sliceChanges: [], actionPacket }))
 					//);
 				}
@@ -1106,6 +1108,7 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 		sliceRegistration: SliceRegistration<State, ChildState, ChildInternals>
 	): void {
 		// ! SLICE REGISTRATION ALSO REGISTERS THE REDUCER SUBTREE!!!!!!!!!!!!
+		console.log('REGISTER!', this.absolutePath);
 		this.#keyedSlices$.next({
 			...this.#keyedSlices$.value,
 			[sliceRegistration.slice.#pathSegment]: sliceRegistration as SliceRegistration<
