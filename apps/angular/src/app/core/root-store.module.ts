@@ -28,7 +28,7 @@ export class RootStore {
 				take(1),
 				tap((debug) => {
 					if (debug) {
-						store.loadAndAddPlugins(
+						store.loadAndSetPlugins(
 							() =>
 								import('@tinyslice/devtools-plugin').then(
 									(plugin) =>
