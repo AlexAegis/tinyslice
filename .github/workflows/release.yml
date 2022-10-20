@@ -11,6 +11,16 @@ jobs:
   release:
     name: Release
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        artifact:
+          [
+            'core',
+            'ngx',
+            'devtools-plugin',
+            'hydration-plugin',
+            'logger-plugin',
+          ]
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -26,70 +36,54 @@ jobs:
           node-version: 16
       - name: Ensure NPM 8
         run: npm install --global npm@8
-      - name: Check if libraries are already deployed
+      - name: Check if ${{ matrix.artifact }} is already deployed
         run: |
           VERSION=$(cat ".github/version.txt")
           echo "VERSION=$VERSION" >> $GITHUB_ENV
-          IS_ON_NPM_CORE=$(if [ ! -z "$(npm view @tinyslice/core@$VERSION 2> /dev/null)" ]; then echo 'true'; else echo 'false'; fi)
-          echo "IS_ON_NPM_CORE=$IS_ON_NPM_CORE" >> $GITHUB_ENV
-          IS_ON_NPM_DEVTOOLS_PLUGIN=$(if [ ! -z "$(npm view @tinyslice/devtools-plugin@$VERSION 2> /dev/null)" ]; then echo 'true'; else echo 'false'; fi)
-          echo "IS_ON_NPM_DEVTOOLS_PLUGIN=$IS_ON_NPM_DEVTOOLS_PLUGIN" >> $GITHUB_ENV
-          IS_ON_NPM_HYDRATION_PLUGIN=$(if [ ! -z "$(npm view @tinyslice/hydration-plugin@$VERSION 2> /dev/null)" ]; then echo 'true'; else echo 'false'; fi)
-          echo "IS_ON_NPM_HYDRATION_PLUGIN=$IS_ON_NPM_HYDRATION_PLUGIN" >> $GITHUB_ENV
-          IS_ON_NPM_LOGGER_PLUGIN=$(if [ ! -z "$(npm view @tinyslice/logger-plugin@$VERSION 2> /dev/null)" ]; then echo 'true'; else echo 'false'; fi)
-          echo "IS_ON_NPM_LOGGER_PLUGIN=$IS_ON_NPM_LOGGER_PLUGIN" >> $GITHUB_ENV
-          IS_ON_NPM_NGX=$(if [ ! -z "$(npm view @tinyslice/ngx@$VERSION 2> /dev/null)" ]; then echo 'true'; else echo 'false'; fi)
-          echo "IS_ON_NPM_NGX=$IS_ON_NPM_NGX" >> $GITHUB_ENV
-          echo "was @tinyslice/core@$VERSION already on npm: $IS_ON_NPM_CORE"
-          echo "was @tinyslice/devtools-plugin@$VERSION already on npm: $IS_ON_NPM_DEVTOOLS_PLUGIN"
-          echo "was @tinyslice/hydration-plugin@$VERSION already on npm: $IS_ON_NPM_HYDRATION_PLUGIN"
-          echo "was @tinyslice/logger-plugin@$VERSION already on npm: $IS_ON_NPM_LOGGER_PLUGIN"
-          echo "was @tinyslice/ngx@$VERSION already on npm: $IS_ON_NPM_NGX"
+          IS_ON_NPM=$(if [ ! -z "$(npm view @tinyslice/${{ matrix.artifact }}@$VERSION 2> /dev/null)" ]; then echo 'true'; else echo 'false'; fi)
+          echo "IS_ON_NPM=$IS_ON_NPM" >> $GITHUB_ENV
+          echo "was @tinyslice/${{ matrix.artifact }}@$VERSION already on npm: $IS_ON_NPM"
       - name: Install dependencies
+        if: env.IS_ON_NPM != 'true'
         run: npm install
-      - name: Build all except apps
+      - name: Verify that ${{ matrix.artifact }} builds
+        if: env.IS_ON_NPM != 'true'
         run: |
-          npm run build -- --exclude angular,svelte
-      - name: Release @tinyslice/core on NPM
-        if: env.IS_ON_NPM_CORE != 'true'
+          npx nx run ${{ matrix.artifact }}:build:production
+      - name: Verify that ${{ matrix.artifact }} lints are succeeding
+        if: env.IS_ON_NPM != 'true'
+        run: |
+          npx nx run ${{ matrix.artifact }}:lint
+      - name: Verify that ${{ matrix.artifact }} tests are succeeding
+        if: env.IS_ON_NPM != 'true'
+        run: |
+          npx nx run ${{ matrix.artifact }}:test
+      - name: Release ${{ matrix.artifact }} on NPM
+        if: env.IS_ON_NPM != 'true'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           npm config set '//registry.npmjs.org/:_authToken' "${NPM_TOKEN}"
-          npm publish ./dist/libs/core --access public
-      - name: Release @tinyslice/devtools-plugin on NPM
-        if: env.IS_ON_NPM_DEVTOOLS_PLUGIN != 'true'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: |
-          npm config set '//registry.npmjs.org/:_authToken' "${NPM_TOKEN}"
-          npm publish ./dist/libs/devtools-plugin --access public
-      - name: Release @tinyslice/hydration-plugin on NPM
-        if: env.IS_ON_NPM_HYDRATION_PLUGIN != 'true'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: |
-          npm config set '//registry.npmjs.org/:_authToken' "${NPM_TOKEN}"
-          npm publish ./dist/libs/hydration-plugin --access public
-      - name: Release @tinyslice/logger-plugin on NPM
-        if: env.IS_ON_NPM_LOGGER_PLUGIN != 'true'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: |
-          npm config set '//registry.npmjs.org/:_authToken' "${NPM_TOKEN}"
-          npm publish ./dist/libs/logger-plugin --access public
-      - name: Release @tinyslice/ngx on NPM
-        if: env.IS_ON_NPM_NGX != 'true'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: |
-          npm config set '//registry.npmjs.org/:_authToken' "${NPM_TOKEN}"
-          npm publish ./dist/libs/ngx --access public
+          npm publish ./dist/libs/${{ matrix.artifact }} --access public
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Cache Packages
+        id: cache-packages
+        uses: actions/cache@v3
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16
+      - name: Ensure NPM 8
+        run: npm install --global npm@8
       - name: Build Angular Github Pages example
         if: env.EXAMPLE_APP == 'angular'
         run: |
