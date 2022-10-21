@@ -1,10 +1,11 @@
 import {
 	isNonNullable,
+	ReduceActionSliceSnapshot,
 	TinySlicePlugin,
 	TinySlicePluginHooks,
 	TINYSLICE_PREFIX,
 } from '@tinyslice/core';
-import { Observable, Subscription, tap } from 'rxjs';
+import { debounceTime, Observable, Subscription, tap } from 'rxjs';
 
 export const DEFAULT_OPTIONS: HydrationPluginOptions<unknown, unknown> = {
 	trimmer: (state) => state,
@@ -22,6 +23,7 @@ export const DEFAULT_OPTIONS: HydrationPluginOptions<unknown, unknown> = {
 		localStorage.setItem(key, serializedState);
 	},
 	remover: (key) => localStorage.removeItem(key),
+	debounceTime: 100,
 };
 
 export interface Migration<OldState, NewState> {
@@ -40,6 +42,7 @@ export interface HydrationPluginOptions<State, SavedState extends State = State>
 	getter: (key: string) => State | undefined | null;
 	setter: (key: string, state: State) => void;
 	remover: (key: string) => void;
+	debounceTime: number;
 }
 
 /**
@@ -56,7 +59,7 @@ export class TinySliceHydrationPlugin<State, SavedState extends State = State>
 	private hooks!: TinySlicePluginHooks<State>;
 	private additionalTriggers: (() => void)[] = [];
 
-	private pipeline?: Observable<unknown>;
+	private pipeline?: Observable<ReduceActionSliceSnapshot<State>>;
 
 	constructor(
 		private readonly localStorageKey: string,
@@ -124,7 +127,11 @@ export class TinySliceHydrationPlugin<State, SavedState extends State = State>
 		if (retrievedState && (this.options.validateRetrieved?.(retrievedState) ?? true)) {
 			this.hooks.stateInjector(retrievedState);
 		}
-		this.pipeline = this.hooks.state$.pipe(tap((state) => this.persist(state.nextState)));
+		this.pipeline = this.hooks.state$;
+		if (this.options.debounceTime) {
+			this.pipeline = this.pipeline.pipe(debounceTime(this.options.debounceTime));
+		}
+		this.pipeline = this.pipeline.pipe(tap((state) => this.persist(state.nextState)));
 	};
 
 	start = (): void => {
