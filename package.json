@@ -2,7 +2,7 @@
 	"name": "tinyslice",
 	"displayName": "TinySlice",
 	"description": "Reactive state management made tiny",
-	"version": "0.6.0",
+	"version": "0.6.1",
 	"license": "MIT",
 	"author": {
 		"email": "alexaegis@gmail.com",
