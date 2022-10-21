@@ -84,6 +84,8 @@ jobs:
           node-version: 16
       - name: Ensure NPM 8
         run: npm install --global npm@8
+      - name: Install dependencies
+        run: npm install
       - name: Build Angular Github Pages example
         if: env.EXAMPLE_APP == 'angular'
         run: |
