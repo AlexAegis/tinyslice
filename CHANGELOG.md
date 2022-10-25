@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.6.3](https://github.com/AlexAegis/tinyslice/compare/v0.6.2...v0.6.3) (2022-10-25)
+
+
+### Features
+
+* switched to vite for packaging ([6d719ff](https://github.com/AlexAegis/tinyslice/commit/6d719ff0a30d420c8b7d32fe2a24bbeb67c64070))
+
 ### [0.6.2](https://github.com/AlexAegis/tinyslice/compare/v0.6.1...v0.6.2) (2022-10-25)
 
 
