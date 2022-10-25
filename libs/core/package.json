@@ -41,8 +41,7 @@
 		"prepublish": "pinst --disable",
 		"postpublish": "pinst --enable"
 	},
-	"type": "module",
-	"main": "src/index.js",
+	"main": "core.cjs.js",
 	"peerDependencies": {
 		"rxjs": "^7.5.6"
 	},

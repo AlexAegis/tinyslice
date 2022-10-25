@@ -4,13 +4,18 @@
 	"projectType": "library",
 	"targets": {
 		"build": {
-			"executor": "@nrwl/js:tsc",
+			"executor": "@nxext/vite:package",
 			"outputs": ["{options.outputPath}"],
 			"options": {
+				"entryFile": "src/index.ts",
+				"sourcemaps": true,
+				"configFile": "libs/hydration-plugin/vite.config.ts",
 				"outputPath": "dist/libs/hydration-plugin",
-				"main": "libs/hydration-plugin/src/index.ts",
-				"tsConfig": "libs/hydration-plugin/tsconfig.lib.json",
-				"assets": ["libs/hydration-plugin/*.md"]
+				"assets": ["libs/hydration-plugin/*.md"],
+				"tsConfig": "libs/hydration-plugin/tsconfig.lib.json"
+			},
+			"configurations": {
+				"production": {}
 			}
 		},
 		"publish": {

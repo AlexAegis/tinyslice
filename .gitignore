@@ -47,3 +47,6 @@ typedocs
 .cache
 .angular
 .svelte-kit
+
+vite.config.ts.*
+vite.config.js.*

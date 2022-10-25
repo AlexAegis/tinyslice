@@ -4,13 +4,18 @@
 	"projectType": "library",
 	"targets": {
 		"build": {
-			"executor": "@nrwl/js:tsc",
+			"executor": "@nxext/vite:package",
 			"outputs": ["{options.outputPath}"],
 			"options": {
+				"entryFile": "src/index.ts",
+				"sourcemaps": true,
+				"configFile": "libs/devtools-plugin/vite.config.ts",
 				"outputPath": "dist/libs/devtools-plugin",
-				"main": "libs/devtools-plugin/src/index.ts",
-				"tsConfig": "libs/devtools-plugin/tsconfig.lib.json",
-				"assets": ["libs/devtools-plugin/*.md"]
+				"assets": ["libs/devtools-plugin/*.md"],
+				"tsConfig": "libs/devtools-plugin/tsconfig.lib.json"
+			},
+			"configurations": {
+				"production": {}
 			}
 		},
 		"publish": {

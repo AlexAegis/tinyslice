@@ -32,7 +32,6 @@
 	"config": {
 		"engine-strict": true
 	},
-	"type": "module",
 	"scripts": {
 		"format": "prettier --write .",
 		"lint:es": "eslint",
@@ -42,7 +41,7 @@
 		"prepublish": "pinst --disable",
 		"postpublish": "pinst --enable"
 	},
-	"main": "src/index.js",
+	"main": "hydration-plugin.cjs.js",
 	"peerDependencies": {
 		"rxjs": "^7.5.6"
 	},
