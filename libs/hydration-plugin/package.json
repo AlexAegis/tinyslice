@@ -32,7 +32,7 @@
 	"config": {
 		"engine-strict": true
 	},
-	"type": "commonjs",
+	"type": "module",
 	"scripts": {
 		"format": "prettier --write .",
 		"lint:es": "eslint",
