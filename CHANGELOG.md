@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.6.2](https://github.com/AlexAegis/tinyslice/compare/v0.6.1...v0.6.2) (2022-10-25)
+
+
+### Bug Fixes
+
+* mark npm packages as type: module ([f0c559e](https://github.com/AlexAegis/tinyslice/commit/f0c559ec7fa1e42610f24c1dd3f32d0e2c74a9b0))
+
 ### [0.6.1](https://github.com/AlexAegis/tinyslice/compare/v0.6.0...v0.6.1) (2022-10-21)
 
 
