@@ -41,7 +41,7 @@
 		"prepublish": "pinst --disable",
 		"postpublish": "pinst --enable"
 	},
-	"main": "devtools-plugin.mjs.js",
+	"main": "devtools-plugin.cjs.js",
 	"sideEffects": false,
 	"peerDependencies": {
 		"rxjs": "^7.5.6"
