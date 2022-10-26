@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.6.5](https://github.com/AlexAegis/tinyslice/compare/v0.6.4...v0.6.5) (2022-10-26)
+
+
+### Bug Fixes
+
+* moved init to the constructor ([d64f298](https://github.com/AlexAegis/tinyslice/commit/d64f2980152ee6cb41daa6bfe98429b6707c4982))
+
 ### [0.6.4](https://github.com/AlexAegis/tinyslice/compare/v0.6.3...v0.6.4) (2022-10-25)
 
 

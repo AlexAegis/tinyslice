@@ -1,7 +1,7 @@
 {
 	"name": "@tinyslice/logger-plugin",
 	"description": "Logger plugin for TinySlice",
-	"version": "0.6.4",
+	"version": "0.6.5",
 	"license": "MIT",
 	"author": {
 		"email": "alexaegis@gmail.com",
