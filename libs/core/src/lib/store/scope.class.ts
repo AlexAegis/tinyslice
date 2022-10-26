@@ -31,8 +31,8 @@ export class Scope {
 
 	public constructor() {
 		this.#schedulingDispatcher = new Subject<ActionPacket<unknown>>();
-		this.#actionMap = new Map<string, Action<unknown>>();
 		this.schedulingDispatcher$ = this.#schedulingDispatcher.asObservable();
+		this.#actionMap = new Map<string, Action<unknown>>();
 		this.#effectSubscriptions = new Subscription();
 		this.#stores = [];
 		this.slices = new Map<string, unknown>();
