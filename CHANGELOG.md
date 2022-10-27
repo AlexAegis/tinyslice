@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.7.0](https://github.com/AlexAegis/tinyslice/compare/v0.6.6...v0.7.0) (2022-10-27)
+
+
+### Bug Fixes
+
+* improved package.json and made sure rxjs is external ([87f34d3](https://github.com/AlexAegis/tinyslice/commit/87f34d3242c01fe78bf5d45ba3b7b68555464841))
+
 ### [0.6.6](https://github.com/AlexAegis/tinyslice/compare/v0.6.5...v0.6.6) (2022-10-27)
 
 ### [0.6.5](https://github.com/AlexAegis/tinyslice/compare/v0.6.4...v0.6.5) (2022-10-26)
