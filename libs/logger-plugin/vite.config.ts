@@ -15,9 +15,13 @@ export default defineConfig({
 	},
 	build: {
 		manifest: true,
+		sourcemap: true,
 		lib: {
 			entry: 'src/index.ts',
-			formats: ['cjs', 'es'],
+			formats: ['es', 'umd'],
+		},
+		rollupOptions: {
+			external: ['rxjs'],
 		},
 	},
 });

@@ -41,7 +41,18 @@
 		"prepublish": "pinst --disable",
 		"postpublish": "pinst --enable"
 	},
-	"main": "core.cjs.js",
+	"sideEffects": false,
+	"main": "./core.umd.js",
+	"module": "./core.es.js",
+	"exports": {
+		".": {
+			"types": "./index.d.ts",
+			"node": "./core.umd.js",
+			"require": "./core.umd.js",
+			"import": "./core.es.js",
+			"default": "./core.es.js"
+		}
+	},
 	"peerDependencies": {
 		"rxjs": "^7.5.6"
 	},

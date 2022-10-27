@@ -41,8 +41,18 @@
 		"prepublish": "pinst --disable",
 		"postpublish": "pinst --enable"
 	},
-	"main": "devtools-plugin.cjs.js",
 	"sideEffects": false,
+	"main": "./devtools-plugin.umd.js",
+	"module": "./devtools-plugin.es.js",
+	"exports": {
+		".": {
+			"types": "./index.d.ts",
+			"node": "./devtools-plugin.umd.js",
+			"require": "./devtools-plugin.umd.js",
+			"import": "./devtools-plugin.es.js",
+			"default": "./devtools-plugin.es.js"
+		}
+	},
 	"peerDependencies": {
 		"rxjs": "^7.5.6"
 	},
