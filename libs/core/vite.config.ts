@@ -10,7 +10,11 @@ export default defineConfig({
 			entryRoot: 'src',
 		}),
 	],
+	esbuild: {
+		target: 'es2020',
+	},
 	build: {
+		manifest: true,
 		lib: {
 			entry: 'src/index.ts',
 			formats: ['cjs', 'es'],

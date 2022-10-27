@@ -247,66 +247,66 @@ export const normalizeSliceDirection = <ParentState, State>(
  * It's pizza time!
  */
 export class Slice<ParentState, State, Internals = unknown> extends Observable<State> {
-	#sink = new Subscription();
+	private readonly sink = new Subscription();
 
-	#options: SliceConstructOptions<ParentState, State, Internals>;
-	#scope: Scope;
-	#initialState: State;
-	#parentCoupling: SliceCoupling<ParentState, State> | undefined;
-	#initialReducers: ReducerConfiguration<State>[];
-	#initialPlugins: TinySlicePlugin<State>[];
-	#state$: BehaviorSubject<State>;
-	#pathSegment: string;
-	#absolutePath: string;
-	setAction: Action<State>;
-	updateAction: Action<Partial<State>>;
-	deleteKeyAction: Action<ObjectKey>;
-	defineKeyAction: Action<{ key: ObjectKey; data: unknown }>;
-	#observableState$: Observable<State>;
-	#defaultReducerConfigurations: ReducerConfiguration<State>[];
-	#reducerConfigurations$: BehaviorSubject<ReducerConfiguration<State>[]>;
-	#autoRegisterReducerActions$: Observable<ReducerConfiguration<State, unknown>[]>;
-	#downStreamReducers$: Observable<string[]>;
-	#sliceReducer$: Observable<PacketReducer<State>>;
-	#sliceReducingActions$: Observable<string[]>;
-	#plugins$: BehaviorSubject<TinySlicePlugin<State>[]>;
-	#autoRegisterPlugins$: Observable<unknown>;
-	#nullishParentPause$: BehaviorSubject<boolean>;
-	#manualPause$: BehaviorSubject<boolean>;
-	#pause$: Observable<boolean>;
+	private options: SliceConstructOptions<ParentState, State, Internals>;
+	private scope: Scope;
+	private initialState: State;
+	private parentCoupling: SliceCoupling<ParentState, State> | undefined;
+	private initialReducers: ReducerConfiguration<State>[];
+	private initialPlugins: TinySlicePlugin<State>[];
+	private state$: BehaviorSubject<State>;
+	private _pathSegment: string;
+	private _absolutePath: string;
+	public setAction: Action<State>;
+	public updateAction: Action<Partial<State>>;
+	public deleteKeyAction: Action<ObjectKey>;
+	public defineKeyAction: Action<{ key: ObjectKey; data: unknown }>;
+	private observableState$: Observable<State>;
+	private defaultReducerConfigurations: ReducerConfiguration<State>[];
+	private reducerConfigurations$: BehaviorSubject<ReducerConfiguration<State>[]>;
+	private autoRegisterReducerActions$: Observable<ReducerConfiguration<State, unknown>[]>;
+	private downStreamReducers$: Observable<string[]>;
+	private sliceReducer$: Observable<PacketReducer<State>>;
+	private sliceReducingActions$: Observable<string[]>;
+	private plugins$: BehaviorSubject<TinySlicePlugin<State>[]>;
+	private autoRegisterPlugins$: Observable<unknown>;
+	private nullishParentPause$: BehaviorSubject<boolean>;
+	private manualPause$: BehaviorSubject<boolean>;
+	private pause$: Observable<boolean>;
 
-	#keyedSlices$: BehaviorSubject<Record<string, SliceRegistration<State, unknown, Internals>>> =
-		new BehaviorSubject({});
+	private keyedSlices$: BehaviorSubject<
+		Record<string, SliceRegistration<State, unknown, Internals>>
+	> = new BehaviorSubject({});
 
-	#slices$: Observable<SliceRegistration<State, unknown, Internals>[]> = this.#keyedSlices$.pipe(
-		map((keyedSlices) => Object.values(keyedSlices))
-	);
+	private slices$: Observable<SliceRegistration<State, unknown, Internals>[]> =
+		this.keyedSlices$.pipe(map((keyedSlices) => Object.values(keyedSlices)));
 
 	override subscribe;
 
 	// Listens to the parent for changes to select itself from
 	// check if the parent could do it instead
-	#parentListener: Observable<State | undefined> | undefined;
+	private parentListener: Observable<State | undefined> | undefined;
 
-	#inactivePipeline: Observable<ReduceActionSliceSnapshot<State>>;
-	#activePipeline: Observable<ReduceActionSliceSnapshot<State>>;
+	private inactivePipeline: Observable<ReduceActionSliceSnapshot<State>>;
+	private activePipeline: Observable<ReduceActionSliceSnapshot<State>>;
 
-	#pipeline: Observable<ReduceActionSliceSnapshot<State>>;
+	private pipeline: Observable<ReduceActionSliceSnapshot<State>>;
 
-	#defineInternals: ((state: Slice<ParentState, State, unknown>) => Internals) | undefined;
-	#internals: Internals;
-	#scopedActions: Action<unknown>[] = [];
+	private defineInternals: ((state: Slice<ParentState, State, unknown>) => Internals) | undefined;
+	private _internals: Internals;
+	private scopedActions: Action<unknown>[] = [];
 
 	get internals(): Internals {
-		return this.#internals;
+		return this._internals;
 	}
 
 	get absolutePath(): string {
-		return this.#absolutePath;
+		return this._absolutePath;
 	}
 
 	get pathSegment(): string {
-		return this.#pathSegment;
+		return this._pathSegment;
 	}
 
 	/**
@@ -317,7 +317,7 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 			console.groupCollapsed('Slice Structure', this.absolutePath);
 		}
 		console.log('\t'.repeat(indentationLevel) + this.pathSegment);
-		for (const [, value] of Object.entries(this.#keyedSlices$.value)) {
+		for (const [, value] of Object.entries(this.keyedSlices$.value)) {
 			value.slice.printSliceStructure(indentationLevel + 1);
 		}
 		if (indentationLevel === 0) {
@@ -333,22 +333,22 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 	 */
 	private constructor(options: SliceConstructOptions<ParentState, State, Internals>) {
 		super();
-		this.#options = options;
-		this.#scope = options.scope;
-		this.#pathSegment = options.pathSegment;
-		this.#initialState = options.initialState;
-		this.#parentCoupling = options.parentCoupling;
-		this.#initialReducers = options.reducers ?? [];
-		this.#initialPlugins = options.plugins ?? [];
-		this.#defineInternals = options.defineInternals;
+		this.options = options;
+		this.scope = options.scope;
+		this._pathSegment = options.pathSegment;
+		this.initialState = options.initialState;
+		this.parentCoupling = options.parentCoupling;
+		this.initialReducers = options.reducers ?? [];
+		this.initialPlugins = options.plugins ?? [];
+		this.defineInternals = options.defineInternals;
 
-		this.#nullishParentPause$ = new BehaviorSubject(false);
-		this.#manualPause$ = new BehaviorSubject(false);
-		this.#pause$ = combineLatest([this.#nullishParentPause$, this.#manualPause$]).pipe(
+		this.nullishParentPause$ = new BehaviorSubject(false);
+		this.manualPause$ = new BehaviorSubject(false);
+		this.pause$ = combineLatest([this.nullishParentPause$, this.manualPause$]).pipe(
 			map(([nullishParentPause, manualPause]) => nullishParentPause || manualPause)
 		);
 
-		this.#absolutePath = Slice.calculateAbsolutePath(this.#parentCoupling, this.#pathSegment);
+		this._absolutePath = Slice.calculateAbsolutePath(this.parentCoupling, this._pathSegment);
 
 		this.setAction = this.createAction<State>(`${TINYSLICE_DEFAULT_PREFIX} set`);
 		this.updateAction = this.createAction<Partial<State>>(`${TINYSLICE_DEFAULT_PREFIX} update`);
@@ -361,10 +361,10 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 			`${TINYSLICE_DEFAULT_PREFIX} define key`
 		);
 
-		this.#state$ = new BehaviorSubject<State>(this.#initialState);
-		this.#observableState$ = this.#state$.pipe(distinctUntilChanged());
+		this.state$ = new BehaviorSubject<State>(this.initialState);
+		this.observableState$ = this.state$.pipe(distinctUntilChanged());
 
-		this.#defaultReducerConfigurations = [
+		this.defaultReducerConfigurations = [
 			this.setAction.reduce((_state, payload) => payload),
 			this.updateAction.reduce((state, payload) => updateObject(state, payload)),
 			this.deleteKeyAction.reduce((state, payload) => {
@@ -388,20 +388,20 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 			}),
 		];
 
-		this.#reducerConfigurations$ = new BehaviorSubject<ReducerConfiguration<State>[]>([
-			...this.#defaultReducerConfigurations,
-			...this.#initialReducers,
+		this.reducerConfigurations$ = new BehaviorSubject<ReducerConfiguration<State>[]>([
+			...this.defaultReducerConfigurations,
+			...this.initialReducers,
 		]);
 
-		this.#autoRegisterReducerActions$ = this.#reducerConfigurations$.pipe(
+		this.autoRegisterReducerActions$ = this.reducerConfigurations$.pipe(
 			tap((reducerConfigurations) => {
 				for (const reducerConfiguration of reducerConfigurations) {
-					this.#scope.registerAction(reducerConfiguration.action);
+					this.scope.registerAction(reducerConfiguration.action);
 				}
 			})
 		);
 
-		this.#sliceReducer$ = this.#reducerConfigurations$.pipe(
+		this.sliceReducer$ = this.reducerConfigurations$.pipe(
 			map(
 				(reducerConfigurations): PacketReducer<State, unknown> =>
 					(state, action) =>
@@ -417,20 +417,18 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 			shareReplay(1)
 		);
 
-		this.#sliceReducingActions$ = this.#reducerConfigurations$.pipe(
+		this.sliceReducingActions$ = this.reducerConfigurations$.pipe(
 			map((reducerConfigurations) => [
 				...new Set(reducerConfigurations.map((r) => r.action.type)),
 			]),
 			shareReplay(1)
 		);
 
-		this.#downStreamReducers$ = this.#slices$.pipe(
-			withLatestFrom(this.#sliceReducingActions$),
+		this.downStreamReducers$ = this.slices$.pipe(
+			withLatestFrom(this.sliceReducingActions$),
 			switchMap(([slices, sliceReducingActions]) => {
 				if (slices.length) {
-					return combineLatest(
-						slices.map((next) => next.slice.#downStreamReducers$)
-					).pipe(
+					return combineLatest(slices.map((next) => next.slice.downStreamReducers$)).pipe(
 						map((subSliceReducer) => [
 							...sliceReducingActions,
 							...subSliceReducer.flat(),
@@ -443,12 +441,12 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 			shareReplay(1) // computed from a behaviorSubject and another computed field
 		);
 
-		const slicesWithDownStreamReducers$ = this.#slices$.pipe(
+		const slicesWithDownStreamReducers$ = this.slices$.pipe(
 			switchMap((sliceRegistrations) => {
 				if (sliceRegistrations.length) {
 					return combineLatest(
 						sliceRegistrations.map((sliceRegistration) =>
-							sliceRegistration.slice.#downStreamReducers$.pipe(
+							sliceRegistration.slice.downStreamReducers$.pipe(
 								map((downStreamReducers) => ({
 									downStreamReducers,
 									sliceRegistration,
@@ -463,8 +461,8 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 			shareReplay(1) // computed from behaviorSubjects from a behaviorSubject
 		);
 
-		const schedulingDispatcher$ = this.#scope.schedulingDispatcher$.pipe(
-			ifLatestFrom(this.#downStreamReducers$, (downStreamReducers, actionPacket) =>
+		const schedulingDispatcher$ = this.scope.schedulingDispatcher$.pipe(
+			ifLatestFrom(this.downStreamReducers$, (downStreamReducers, actionPacket) =>
 				downStreamReducers.includes(actionPacket.type)
 			),
 			tap((actionPacket) => this.executeMetaPreReducers(actionPacket))
@@ -492,7 +490,7 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 			return slicesWithDownStreamReducers
 				.map(({ sliceRegistration, downStreamReducers }) => {
 					if (downStreamReducers.includes(actionType)) {
-						return sliceRegistration.slice.#pipeline.pipe(
+						return sliceRegistration.slice.pipeline.pipe(
 							map(
 								(snapshot) =>
 									({
@@ -524,8 +522,8 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 			})
 		);
 
-		this.#activePipeline = zippedDispatch.pipe(
-			withLatestFrom(this.#state$, this.#sliceReducer$),
+		this.activePipeline = zippedDispatch.pipe(
+			withLatestFrom(this.state$, this.sliceReducer$),
 			map(
 				([
 					{ actionPacket, sliceChanges },
@@ -565,12 +563,12 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 			),
 			tap((snapshot) => {
 				if (snapshot.prevState !== snapshot.nextState) {
-					this.#state$.next(snapshot.nextState);
+					this.state$.next(snapshot.nextState);
 				}
 			}),
 			catchError((error, pipeline$) => {
 				console.error(`${TINYSLICE_PREFIX} slice pipeline error \n`, error);
-				return this.#plugins$.pipe(
+				return this.plugins$.pipe(
 					take(1),
 					tap((plugins) => {
 						for (const plugin of plugins) {
@@ -582,8 +580,8 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 			})
 		) as Observable<ReduceActionSliceSnapshot<State>>;
 
-		this.#inactivePipeline = schedulingDispatcher$.pipe(
-			withLatestFrom(this.#state$),
+		this.inactivePipeline = schedulingDispatcher$.pipe(
+			withLatestFrom(this.state$),
 			map(([, state]) => {
 				return {
 					actionPacket: { type: 'paused', payload: undefined },
@@ -593,37 +591,37 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 			})
 		);
 
-		this.#pipeline = this.#pause$.pipe(
-			switchMap((paused) => (paused ? this.#inactivePipeline : this.#activePipeline)),
+		this.pipeline = this.pause$.pipe(
+			switchMap((paused) => (paused ? this.inactivePipeline : this.activePipeline)),
 			tap((snapshot) => this.executeMetaPostReducers(snapshot)),
 			share() // has to be shared because of child listeners
 		);
 
-		this.#plugins$ = new BehaviorSubject<TinySlicePlugin<State>[]>(this.#initialPlugins);
+		this.plugins$ = new BehaviorSubject<TinySlicePlugin<State>[]>(this.initialPlugins);
 
 		// Listens to the parent for changes to select itself from
-		this.#parentListener = this.#parentCoupling?.rawParentState.pipe(
+		this.parentListener = this.parentCoupling?.rawParentState.pipe(
 			skip(1),
 			finalize(() => this.complete()),
 			takeWhile((parentState) =>
-				this.#parentCoupling?.droppable
-					? hasKey(parentState, this.#parentCoupling?.key)
+				this.parentCoupling?.droppable
+					? hasKey(parentState, this.parentCoupling?.key)
 					: true
 			),
 			tap((parentState) => {
-				if (isNullish(parentState) && !this.#nullishParentPause$.value) {
-					this.#nullishParentPause$.next(true);
-				} else if (this.#nullishParentPause$.value) {
-					this.#nullishParentPause$.next(false);
+				if (isNullish(parentState) && !this.nullishParentPause$.value) {
+					this.nullishParentPause$.next(true);
+				} else if (this.nullishParentPause$.value) {
+					this.nullishParentPause$.next(false);
 				}
 			}),
 			filter((parentState) => isNonNullable(parentState)),
-			map((parentState) => this.#parentCoupling?.slicer.selector(parentState)),
+			map((parentState) => this.parentCoupling?.slicer.selector(parentState)),
 			distinctUntilChanged(),
-			tap((stateFromParent) => this.#state$.next(stateFromParent as State))
+			tap((stateFromParent) => this.state$.next(stateFromParent as State))
 		);
 
-		this.#autoRegisterPlugins$ = this.#plugins$.pipe(
+		this.autoRegisterPlugins$ = this.plugins$.pipe(
 			startWith([] as TinySlicePlugin<State>[]),
 			pairwise(),
 			tap(([previous, next]) => {
@@ -638,46 +636,46 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 			})
 		);
 
-		this.subscribe = this.#observableState$
+		this.subscribe = this.observableState$
 			.pipe(filter(isNonNullable))
-			.subscribe.bind(this.#observableState$);
+			.subscribe.bind(this.observableState$);
 
-		this.#scope.slices.set(this.#absolutePath, this);
+		this.scope.slices.set(this._absolutePath, this);
 
-		if (this.#parentCoupling) {
-			this.#parentCoupling.parentSlice.#registerSlice({
+		if (this.parentCoupling) {
+			this.parentCoupling.parentSlice.#registerSlice({
 				slice: this,
-				slicer: this.#parentCoupling.slicer,
-				initialState: this.#initialState,
-				key: this.#parentCoupling.key,
+				slicer: this.parentCoupling.slicer,
+				initialState: this.initialState,
+				key: this.parentCoupling.key,
 			});
 
-			this.#sink.add(this.#parentListener?.subscribe());
+			this.sink.add(this.parentListener?.subscribe());
 		}
 
-		this.#sink.add(this.#autoRegisterReducerActions$.subscribe());
-		this.#sink.add(this.#autoRegisterPlugins$.subscribe());
-		this.#sink.add(this.#pipeline.subscribe()); // Slices are hot!
+		this.sink.add(this.autoRegisterReducerActions$.subscribe());
+		this.sink.add(this.autoRegisterPlugins$.subscribe());
+		this.sink.add(this.pipeline.subscribe()); // Slices are hot!
 
 		// ? defineInternals call has to happen after this slice has been
 		// ? coupled to its parent
-		this.#internals = this.#defineInternals?.(this) ?? ({} as Internals);
+		this._internals = this.defineInternals?.(this) ?? ({} as Internals);
 	}
 
 	private executeMetaPreReducers(action: ActionPacket<unknown>) {
-		for (const plugin of this.#plugins$.value) {
-			if (!this.#options.parentCoupling) {
-				plugin.preRootReduce?.(this.#absolutePath, this.#state$.value, action);
+		for (const plugin of this.plugins$.value) {
+			if (!this.options.parentCoupling) {
+				plugin.preRootReduce?.(this._absolutePath, this.state$.value, action);
 			}
-			plugin.preReduce?.(this.#absolutePath, this.#state$.value, action);
+			plugin.preReduce?.(this._absolutePath, this.state$.value, action);
 		}
 	}
 
 	private executeMetaPostReducers<State>(snapshot: ReduceActionSliceSnapshot<State>) {
-		for (const plugin of this.#plugins$.value) {
-			plugin.postReduce?.(this.#absolutePath, snapshot);
-			if (!this.#options.parentCoupling) {
-				plugin.postRootReduce?.(this.#absolutePath, snapshot);
+		for (const plugin of this.plugins$.value) {
+			plugin.postReduce?.(this._absolutePath, snapshot);
+			if (!this.options.parentCoupling) {
+				plugin.postRootReduce?.(this._absolutePath, snapshot);
 			}
 		}
 	}
@@ -692,17 +690,17 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 	}
 
 	public get paused$(): Observable<boolean> {
-		return this.#pause$;
+		return this.pause$;
 	}
 
 	/**
 	 * Unpauses this slice and every child slice recursively
 	 */
 	public unpause(): void {
-		if (this.#manualPause$.value) {
-			this.#manualPause$.next(false);
+		if (this.manualPause$.value) {
+			this.manualPause$.next(false);
 		}
-		for (const subSlice of Object.values(this.#keyedSlices$.value)) {
+		for (const subSlice of Object.values(this.keyedSlices$.value)) {
 			subSlice.slice.unpause();
 		}
 	}
@@ -711,10 +709,10 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 	 * Pauses this slice and every child slice recursively
 	 */
 	public pause(): void {
-		if (!this.#manualPause$.value) {
-			this.#manualPause$.next(true);
+		if (!this.manualPause$.value) {
+			this.manualPause$.next(true);
 		}
-		for (const subSlice of Object.values(this.#keyedSlices$.value)) {
+		for (const subSlice of Object.values(this.keyedSlices$.value)) {
 			subSlice.slice.pause();
 		}
 	}
@@ -727,36 +725,36 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 		const pausablePacket$ = this.paused$.pipe(
 			switchMap((isPaused) => (isPaused ? NEVER : packet$))
 		);
-		const effectSubscription = this.#scope.createEffect(pausablePacket$);
-		this.#sink.add(effectSubscription);
+		const effectSubscription = this.scope.createEffect(pausablePacket$);
+		this.sink.add(effectSubscription);
 		return effectSubscription;
 	}
 
 	public setPlugins(plugins: TinySlicePlugin<State>[]): void {
-		this.#plugins$.next([...(this.#options.plugins ?? []), ...plugins]);
+		this.plugins$.next([...(this.options.plugins ?? []), ...plugins]);
 	}
 
 	public getPlugins(): TinySlicePlugin<State>[] {
-		return this.#plugins$.value;
+		return this.plugins$.value;
 	}
 
 	public addPlugin(...plugins: TinySlicePlugin<State>[]): void {
-		this.#plugins$.next([...this.#plugins$.value, ...plugins]);
+		this.plugins$.next([...this.plugins$.value, ...plugins]);
 	}
 
 	public getReducers(): ReducerConfiguration<State>[] {
-		return this.#reducerConfigurations$.value;
+		return this.reducerConfigurations$.value;
 	}
 
 	/**
 	 * This does not disable default redurces.
 	 */
 	public setReducers(reducers: ReducerConfiguration<State>[]): void {
-		this.#reducerConfigurations$.next([...this.#defaultReducerConfigurations, ...reducers]);
+		this.reducerConfigurations$.next([...this.defaultReducerConfigurations, ...reducers]);
 	}
 
 	public addReducers(reducers: ReducerConfiguration<State>[]): void {
-		this.#reducerConfigurations$.next([...this.#reducerConfigurations$.value, ...reducers]);
+		this.reducerConfigurations$.next([...this.reducerConfigurations$.value, ...reducers]);
 	}
 
 	static assembleAbsolutePath(parentAbsolutePath: string, segment: string): string {
@@ -769,7 +767,7 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 	): string {
 		if (parentCoupling) {
 			return Slice.assembleAbsolutePath(
-				parentCoupling.parentSlice.#absolutePath,
+				parentCoupling.parentSlice._absolutePath,
 				pathSegment
 			);
 		} else {
@@ -779,9 +777,9 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 
 	#registerPlugin(plugin: TinySlicePlugin<State>): TinySlicePlugin<State> {
 		plugin.register({
-			initialState: this.#state$.value,
-			state$: this.#pipeline,
-			stateInjector: (state: State) => this.#state$.next(state),
+			initialState: this.state$.value,
+			state$: this.pipeline,
+			stateInjector: (state: State) => this.state$.next(state),
 		});
 		plugin.start();
 		return plugin;
@@ -800,12 +798,12 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 	}
 
 	get value(): State {
-		return this.#state$.value;
+		return this.state$.value;
 	}
 
 	#isRootOrParentStateUndefined(): boolean {
-		return this.#parentCoupling
-			? isNullish(this.#parentCoupling.parentSlice.#state$.value)
+		return this.parentCoupling
+			? isNullish(this.parentCoupling.parentSlice.state$.value)
 			: false;
 	}
 
@@ -823,12 +821,12 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 	}
 
 	public createAction<Packet>(name: string, actionOptions?: ActionConfig): Action<Packet> {
-		const actionName = `${this.#absolutePath} ${name}`;
-		const action = this.#scope.createAction<Packet>(actionName, {
+		const actionName = `${this._absolutePath} ${name}`;
+		const action = this.scope.createAction<Packet>(actionName, {
 			...actionOptions,
 			pauseWhile: this.paused$,
 		});
-		this.#scopedActions.push(action as Action<unknown>);
+		this.scopedActions.push(action as Action<unknown>);
 		return action;
 	}
 
@@ -836,20 +834,20 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 		childSliceConstructOptions: ChildSliceConstructOptions<State, ChildState, ChildInternals>
 	): Slice<State, NonNullable<ChildState>, ChildInternals> {
 		const path = Slice.assembleAbsolutePath(
-			this.#absolutePath,
+			this._absolutePath,
 			childSliceConstructOptions.pathSegment.toString()
 		);
-		if (this.#scope.slices.has(path)) {
+		if (this.scope.slices.has(path)) {
 			// ? If this proves to be error prone just throw an error
 			// ? Double define should be disallowed anyway
-			return this.#scope.slices.get(path) as Slice<
+			return this.scope.slices.get(path) as Slice<
 				State,
 				NonNullable<ChildState>,
 				ChildInternals
 			>;
 		} else {
-			const initialStateFromParent: ChildState | undefined = this.#state$.value
-				? childSliceConstructOptions.slicer.selector(this.#state$.value)
+			const initialStateFromParent: ChildState | undefined = this.state$.value
+				? childSliceConstructOptions.slicer.selector(this.state$.value)
 				: undefined;
 
 			const initialState: ChildState =
@@ -858,16 +856,16 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 			return new Slice<State, ChildState, ChildInternals>({
 				...extractSliceOptions(childSliceConstructOptions),
 				plugins: [
-					...(this.#plugins$.value as unknown as TinySlicePlugin<ChildState>[]).filter(
+					...(this.plugins$.value as unknown as TinySlicePlugin<ChildState>[]).filter(
 						(plugin) => plugin.sliceOptions?.()?.passToChildren ?? false
 					),
 					...(childSliceConstructOptions.plugins ?? []),
 				],
-				scope: this.#scope,
+				scope: this.scope,
 				initialState,
 				parentCoupling: {
 					parentSlice: this as Slice<unknown, State, UnknownObject>,
-					rawParentState: this.#observableState$,
+					rawParentState: this.observableState$,
 					slicer: childSliceConstructOptions.slicer,
 					droppable: childSliceConstructOptions.droppable ?? false,
 					key: childSliceConstructOptions.key,
@@ -1012,8 +1010,8 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 		};
 
 		const has = (key: DiceKey) =>
-			this.#state$.value && typeof this.#state$.value === 'object'
-				? Object.keys(this.#state$.value).includes(key as string)
+			this.state$.value && typeof this.state$.value === 'object'
+				? Object.keys(this.state$.value).includes(key as string)
 				: false;
 		const set = (key: DiceKey, data: ChildState) => this.defineKeyAction.next({ key, data });
 		const remove = (key: DiceKey) => this.deleteKeyAction.next(key);
@@ -1080,9 +1078,9 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 	#registerSlice<ChildState, ChildInternals>(
 		sliceRegistration: SliceRegistration<State, ChildState, ChildInternals>
 	): void {
-		this.#keyedSlices$.next({
-			...this.#keyedSlices$.value,
-			[sliceRegistration.slice.#pathSegment]: sliceRegistration as SliceRegistration<
+		this.keyedSlices$.next({
+			...this.keyedSlices$.value,
+			[sliceRegistration.slice._pathSegment]: sliceRegistration as SliceRegistration<
 				State,
 				unknown,
 				never
@@ -1108,29 +1106,29 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 	 */
 	unregisterSlice(pathSegment: string): void {
 		const nextSlicesSet = {
-			...this.#keyedSlices$.value,
+			...this.keyedSlices$.value,
 		};
 		delete nextSlicesSet[pathSegment];
-		this.#keyedSlices$.next(nextSlicesSet);
+		this.keyedSlices$.next(nextSlicesSet);
 	}
 
 	/**
 	 * Tears down itself and anything below
 	 */
 	public complete(): void {
-		this.#manualPause$.complete();
-		this.#state$.complete();
-		this.#keyedSlices$.complete();
-		this.#plugins$.complete();
-		this.#reducerConfigurations$.complete();
+		this.manualPause$.complete();
+		this.state$.complete();
+		this.keyedSlices$.complete();
+		this.plugins$.complete();
+		this.reducerConfigurations$.complete();
 
-		this.#parentCoupling?.parentSlice?.unregisterSlice(this.pathSegment);
+		this.parentCoupling?.parentSlice?.unregisterSlice(this.pathSegment);
 
-		this.#scopedActions.forEach((scopedAction) => {
+		this.scopedActions.forEach((scopedAction) => {
 			scopedAction.complete();
 		});
-		this.#scope.slices.delete(this.#absolutePath);
-		this.#sink.unsubscribe();
+		this.scope.slices.delete(this._absolutePath);
+		this.sink.unsubscribe();
 	}
 
 	public asObservable(): Observable<State> {

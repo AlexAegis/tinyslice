@@ -21,20 +21,20 @@ import { RootSlice, RootSliceOptions, Slice } from './slice.class';
  * tick when an action is fired.
  */
 export class Scope {
-	readonly #schedulingDispatcher: Subject<ActionPacket<unknown>>;
-	readonly #actionMap = new Map<string, Action<unknown>>();
+	private readonly schedulingDispatcher: Subject<ActionPacket<unknown>>;
+	private readonly actionMap = new Map<string, Action<unknown>>();
 	public readonly schedulingDispatcher$: Observable<ActionPacket<unknown>>;
-	readonly #effectSubscriptions: Subscription;
-	readonly #stores: RootSlice<unknown, unknown>[];
+	private readonly effectSubscriptions: Subscription;
+	private readonly stores: RootSlice<unknown, unknown>[];
 
 	public readonly slices: Map<string, unknown>;
 
 	public constructor() {
-		this.#schedulingDispatcher = new Subject<ActionPacket<unknown>>();
-		this.schedulingDispatcher$ = this.#schedulingDispatcher.asObservable();
-		this.#actionMap = new Map<string, Action<unknown>>();
-		this.#effectSubscriptions = new Subscription();
-		this.#stores = [];
+		this.schedulingDispatcher = new Subject<ActionPacket<unknown>>();
+		this.schedulingDispatcher$ = this.schedulingDispatcher.asObservable();
+		this.actionMap = new Map<string, Action<unknown>>();
+		this.effectSubscriptions = new Subscription();
+		this.stores = [];
 		this.slices = new Map<string, unknown>();
 	}
 
@@ -42,8 +42,8 @@ export class Scope {
 		type: string,
 		config?: Partial<ActionConfig>
 	): Action<Payload> {
-		if (this.#actionMap.has(type)) {
-			return this.#actionMap.get(type) as Action<Payload>;
+		if (this.actionMap.has(type)) {
+			return this.actionMap.get(type) as Action<Payload>;
 		} else {
 			return new Action<Payload>(type, config).register(this);
 		}
@@ -68,10 +68,10 @@ export class Scope {
 	public createEffect<Output>(action: Observable<Output | ActionPacket>): Subscription {
 		const source = scheduled(action, asapScheduler).pipe(
 			tap((packet) => {
-				if (isActionPacket(packet, this.#actionMap)) {
+				if (isActionPacket(packet, this.actionMap)) {
 					// Passing it directly to the dispatcher as-is instead of
 					// going through the Action itself to avoid infinite loops.
-					this.#schedulingDispatcher.next(packet);
+					this.schedulingDispatcher.next(packet);
 				}
 			}),
 			catchError((error, pipeline$) => {
@@ -85,7 +85,7 @@ export class Scope {
 		);
 
 		const effectSubscription = source.subscribe();
-		this.#effectSubscriptions.add(effectSubscription);
+		this.effectSubscriptions.add(effectSubscription);
 		return effectSubscription;
 	}
 
@@ -93,24 +93,24 @@ export class Scope {
 	 * Only used for cleanup
 	 */
 	public registerRootSlice(store: RootSlice<unknown, unknown>): void {
-		this.#stores.push(store);
+		this.stores.push(store);
 	}
 
 	public registerAction<Payload>(
 		action: Action<Payload>,
 		registerFromAction = false
 	): Subscription | undefined {
-		if (this.#actionMap.has(action.type)) {
+		if (this.actionMap.has(action.type)) {
 			return;
 		}
 
-		this.#actionMap.set(action.type, action as Action<unknown>);
+		this.actionMap.set(action.type, action as Action<unknown>);
 
 		const subscription = action.listen$
 			.pipe(
 				map((payload) => action.makePacket(payload)),
-				finalize(() => this.#actionMap.delete(action.type)),
-				tap((next) => this.#schedulingDispatcher.next(next))
+				finalize(() => this.actionMap.delete(action.type)),
+				tap((next) => this.schedulingDispatcher.next(next))
 			)
 			.subscribe();
 		action.registrations.add(subscription);
@@ -125,11 +125,11 @@ export class Scope {
 	public listen$<T extends readonly unknown[]>(
 		...actions: [...ActionTuple<T>]
 	): Observable<ActionPacket<T[number]>> {
-		return this.#schedulingDispatcher.pipe(Action.makeFilter(...actions));
+		return this.schedulingDispatcher.pipe(Action.makeFilter(...actions));
 	}
 
 	public listenAll$(): Observable<ActionPacket<unknown>> {
-		return this.#schedulingDispatcher.asObservable();
+		return this.schedulingDispatcher.asObservable();
 	}
 
 	public isRegistered<Payload>(action?: Action<Payload> | string): boolean {
@@ -142,18 +142,18 @@ export class Scope {
 		} else {
 			type = action.type;
 		}
-		return this.#actionMap.has(type);
+		return this.actionMap.has(type);
 	}
 
 	get closed(): boolean {
-		return this.#schedulingDispatcher.closed;
+		return this.schedulingDispatcher.closed;
 	}
 
 	public complete(): void {
-		this.#actionMap.forEach((action) => action.complete());
-		this.#actionMap.clear();
-		this.#effectSubscriptions.unsubscribe();
-		this.#schedulingDispatcher.complete();
-		this.#stores.forEach((store) => store.complete());
+		this.actionMap.forEach((action) => action.complete());
+		this.actionMap.clear();
+		this.effectSubscriptions.unsubscribe();
+		this.schedulingDispatcher.complete();
+		this.stores.forEach((store) => store.complete());
 	}
 }

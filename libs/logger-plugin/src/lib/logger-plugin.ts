@@ -108,11 +108,11 @@ export interface LoggerPluginOptions {
 export class TinySliceLoggerPlugin<State> implements TinySlicePlugin<State> {
 	private options: LoggerPluginOptions;
 
-	#first = false;
-	#enabled = false;
-	#lastTimer: string | undefined = undefined;
+	private first = false;
+	private enabled = false;
+	private lastTimer: string | undefined = undefined;
 
-	#pluginOptions: TinySlicePluginSliceOptions = {
+	private pluginOptions: TinySlicePluginSliceOptions = {
 		passToChildren: true,
 	};
 
@@ -139,12 +139,12 @@ export class TinySliceLoggerPlugin<State> implements TinySlicePlugin<State> {
 	}
 
 	sliceOptions(): TinySlicePluginSliceOptions {
-		return this.#pluginOptions;
+		return this.pluginOptions;
 	}
 
 	preRootReduce(absolutePath: string, _state: unknown, action: ActionPacket<unknown>): void {
-		this.#first = true;
-		if (this.#enabled && !this.isIgnored(absolutePath, action)) {
+		this.first = true;
+		if (this.enabled && !this.isIgnored(absolutePath, action)) {
 			console.time('entire reduce took');
 			if (this.options.disableGrouping) {
 				console.log(...colorizeLogString(action.type));
@@ -155,15 +155,15 @@ export class TinySliceLoggerPlugin<State> implements TinySlicePlugin<State> {
 	}
 
 	preReduce(absolutePath: string, _state: unknown, action: ActionPacket<unknown>): void {
-		if (this.#enabled && !this.options.onlyRoot && !this.isIgnored(absolutePath, action)) {
-			this.#lastTimer = `${absolutePath} reduce took`;
-			console.time(this.#lastTimer);
+		if (this.enabled && !this.options.onlyRoot && !this.isIgnored(absolutePath, action)) {
+			this.lastTimer = `${absolutePath} reduce took`;
+			console.time(this.lastTimer);
 		}
 	}
 
 	postReduce(absolutePath: string, snapshot: ReduceActionSliceSnapshot<unknown>): void {
 		if (
-			this.#enabled &&
+			this.enabled &&
 			!this.options.onlyRoot &&
 			!this.isIgnored(absolutePath, snapshot.actionPacket)
 		) {
@@ -173,8 +173,8 @@ export class TinySliceLoggerPlugin<State> implements TinySlicePlugin<State> {
 				if (this.options.disableGrouping) {
 					console.log(`%c${absolutePath}`, logCss);
 				} else {
-					if (this.#first) {
-						this.#first = false;
+					if (this.first) {
+						this.first = false;
 						console.group(`%c${absolutePath}`, logCss);
 					} else {
 						console.groupCollapsed(`%c${absolutePath}`, logCss);
@@ -194,7 +194,7 @@ export class TinySliceLoggerPlugin<State> implements TinySlicePlugin<State> {
 	}
 
 	postRootReduce(absolutePath: string, snapshot: ReduceActionSliceSnapshot<unknown>): void {
-		if (this.#enabled && !this.isIgnored(absolutePath, snapshot.actionPacket)) {
+		if (this.enabled && !this.isIgnored(absolutePath, snapshot.actionPacket)) {
 			console.timeEnd('entire reduce took');
 			if (!this.options.disableGrouping) {
 				console.groupEnd();
@@ -203,18 +203,18 @@ export class TinySliceLoggerPlugin<State> implements TinySlicePlugin<State> {
 	}
 
 	start(): void {
-		this.#enabled = true;
+		this.enabled = true;
 		return undefined;
 	}
 
 	stop(): void {
 		if (!this.options.disableGrouping) {
-			if (this.#lastTimer) {
-				console.timeEnd(this.#lastTimer);
+			if (this.lastTimer) {
+				console.timeEnd(this.lastTimer);
 			}
 			console.groupEnd();
 		}
-		this.#enabled = false;
+		this.enabled = false;
 		return undefined;
 	}
 

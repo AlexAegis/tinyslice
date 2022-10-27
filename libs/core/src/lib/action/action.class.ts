@@ -25,7 +25,7 @@ export type ActionDispatch = () => void;
  * TODO: .and method to chain actions for multireducers and multieffects
  */
 export class Action<Payload = void> extends Subject<Payload> {
-	#dispatchSubscription?: Subscription;
+	private dispatchSubscription?: Subscription;
 
 	private config: ActionConfig;
 
@@ -45,10 +45,10 @@ export class Action<Payload = void> extends Subject<Payload> {
 	 * This won't receive actions from effects
 	 */
 	public get listen$(): Observable<Payload> {
-		return this.#actionPipeline;
+		return this.actionPipeline;
 	}
 
-	#actionPipeline: Observable<Payload>;
+	private actionPipeline: Observable<Payload>;
 
 	//	override subscribe;
 
@@ -64,16 +64,16 @@ export class Action<Payload = void> extends Subject<Payload> {
 			...config,
 		};
 
-		this.#actionPipeline = this;
+		this.actionPipeline = this;
 
 		if (isNonNullable(this.config.pauseWhile)) {
-			this.#actionPipeline = this.#actionPipeline.pipe(
+			this.actionPipeline = this.actionPipeline.pipe(
 				ifLatestFrom(this.config.pauseWhile, (paused) => !paused)
 			);
 		}
 
 		if (isNonNullable(this.config.throttleTime)) {
-			this.#actionPipeline = this.#actionPipeline.pipe(
+			this.actionPipeline = this.actionPipeline.pipe(
 				throttleTime(this.config.throttleTime, asyncScheduler, {
 					leading: true,
 					trailing: true,
@@ -86,12 +86,12 @@ export class Action<Payload = void> extends Subject<Payload> {
 
 	public register(scope: Scope): this {
 		this.scope = scope;
-		this.#dispatchSubscription = this.scope.registerAction(this, true);
+		this.dispatchSubscription = this.scope.registerAction(this, true);
 		return this;
 	}
 
 	public unregister(): void {
-		this.#dispatchSubscription?.unsubscribe();
+		this.dispatchSubscription?.unsubscribe();
 	}
 
 	public makePacket(payload: Payload): ActionPacket<Payload> {
