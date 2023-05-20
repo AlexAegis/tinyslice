@@ -1,0 +1,208 @@
+{
+	"$schema": "https://turborepo.org/schema.json?mark=managed-by-autotool",
+	"pipeline": {
+		"prebuild_": {
+			"env": ["TARGET_ENV"],
+			"dependsOn": [],
+			"inputs": ["**/*", "!src/**/*.{spec,test}.{ts,js}"],
+			"outputs": ["dist/**"],
+			"outputMode": "new-only"
+		},
+		"//#prebuild_": {
+			"env": ["TARGET_ENV"],
+			"outputs": ["dist/**"],
+			"dependsOn": [],
+			"outputMode": "new-only"
+		},
+		"build-lib_": {
+			"env": ["TARGET_ENV"],
+			"dependsOn": ["^prebuild_", "^build-lib_"],
+			"inputs": ["**/*", "!src/**/*.spec.{ts,js,tsx,jsx}"],
+			"outputs": ["dist/**"],
+			"outputMode": "new-only"
+		},
+		"build-app_": {
+			"env": ["TARGET_ENV", "BASE_HREF"],
+			"dependsOn": ["^prebuild_", "^build-lib_"],
+			"inputs": ["**/*", "!src/**/*.spec.{ts,js,tsx,jsx}"],
+			"outputs": ["dist/**"],
+			"outputMode": "new-only"
+		},
+		"ce_": {
+			"outputs": [],
+			"dependsOn": [
+				"lint_",
+				"build-app_",
+				"build-lib_",
+				"test_",
+				"typedoc_",
+				"publint_",
+				"//#typedoc_",
+				"//#lint_"
+			],
+			"outputMode": "new-only"
+		},
+		"//#lint_": {
+			"outputs": [],
+			"dependsOn": [
+				"//#lint:es_",
+				"//#lint:depcheck_",
+				"//#lint:tsc_",
+				"//#lint:md_",
+				"//#lint:format_"
+			],
+			"outputMode": "new-only"
+		},
+		"lint_": {
+			"outputs": [],
+			"dependsOn": [
+				"lint:es_",
+				"lint:depcheck_",
+				"lint:tsc_",
+				"lint:svelte_",
+				"lint:style:css_",
+				"lint:style:scss_",
+				"lint:style:html_",
+				"lint:md_",
+				"lint:format_"
+			],
+			"outputMode": "new-only"
+		},
+		"lint:es_": {
+			"dependsOn": [],
+			"outputMode": "new-only"
+		},
+		"//#lint:es_": {
+			"dependsOn": [],
+			"outputs": [],
+			"outputMode": "new-only"
+		},
+		"lint:depcheck_": {
+			"outputs": [],
+			"dependsOn": [],
+			"outputMode": "new-only"
+		},
+		"//#lint:depcheck_": {
+			"dependsOn": [],
+			"outputs": [],
+			"outputMode": "new-only"
+		},
+		"lint:tsc_": {
+			"dependsOn": [],
+			"outputs": [],
+			"outputMode": "new-only"
+		},
+		"//#lint:tsc_": {
+			"dependsOn": [],
+			"outputs": [],
+			"outputMode": "new-only"
+		},
+		"lint:svelte_": {
+			"outputs": [],
+			"dependsOn": [],
+			"outputMode": "new-only"
+		},
+		"//#lint:svelte_": {
+			"dependsOn": [],
+			"outputs": [],
+			"outputMode": "new-only"
+		},
+		"lint:style_": {
+			"dependsOn": ["lint:style:css_", "lint:style:scss_", "lint:style:html_"],
+			"outputs": [],
+			"outputMode": "new-only"
+		},
+		"lint:style:require:build-lib_": {
+			"env": [],
+			"dependsOn": ["build-lib_"],
+			"outputs": [],
+			"outputMode": "new-only"
+		},
+		"lint:style:css_": {
+			"dependsOn": ["^lint:style:require:build-lib_", "lint:style:require:build-lib_"],
+			"inputs": [".stylelint*", "**/*.css"],
+			"outputs": [".cache/stylelintcache-css"],
+			"outputMode": "new-only"
+		},
+		"lint:style:scss_": {
+			"dependsOn": ["^lint:style:require:build-lib_", "lint:style:require:build-lib_"],
+			"inputs": [".stylelint*", "**/*.scss", "**/*.sass"],
+			"outputs": [".cache/stylelintcache-scss"],
+			"outputMode": "new-only"
+		},
+		"lint:style:html_": {
+			"dependsOn": ["^lint:style:require:build-lib_", "lint:style:require:build-lib_"],
+			"inputs": [
+				".stylelint*",
+				"**/*.html",
+				"**/*.svelte",
+				"**/*.vue",
+				"**/*.astro",
+				"**/*.xml",
+				"**/*.php"
+			],
+			"outputs": [".cache/stylelintcache-html"],
+			"outputMode": "new-only"
+		},
+		"lint:md_": {
+			"dependsOn": [],
+			"inputs": ["package.json", "**/*.md"],
+			"outputs": [],
+			"outputMode": "new-only"
+		},
+		"//#lint:md_": {
+			"dependsOn": [],
+			"inputs": ["package.json", "**/*.md"],
+			"outputs": [],
+			"outputMode": "new-only"
+		},
+		"publint_": {
+			"dependsOn": ["build-lib_"],
+			"inputs": ["dist/**/*"],
+			"outputs": [],
+			"outputMode": "new-only"
+		},
+		"lint:format_": {
+			"env": [],
+			"dependsOn": [],
+			"outputs": [],
+			"outputMode": "new-only"
+		},
+		"//#lint:format_": {
+			"env": [],
+			"dependsOn": [],
+			"outputs": [],
+			"outputMode": "new-only"
+		},
+		"typedoc_": {
+			"dependsOn": [],
+			"inputs": ["**/*.ts"],
+			"outputs": [".cache/typedoc/**"],
+			"outputMode": "new-only"
+		},
+		"//#typedoc_": {
+			"dependsOn": [],
+			"inputs": ["**/*.ts"],
+			"outputs": [".cache/typedoc/**"],
+			"outputMode": "new-only"
+		},
+		"test_": {
+			"env": ["VITEST"],
+			"dependsOn": ["^build-lib_", "^test:require:build-lib_", "test:require:build-lib_"],
+			"outputs": ["coverage/**"],
+			"outputMode": "new-only"
+		},
+		"test:require:build-lib_": {
+			"env": [],
+			"dependsOn": ["build-lib_"],
+			"outputs": [],
+			"outputMode": "new-only"
+		},
+		"start": {
+			"cache": false
+		},
+		"dev": {
+			"cache": false
+		}
+	}
+}

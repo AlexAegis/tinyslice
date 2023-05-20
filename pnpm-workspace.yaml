@@ -1,0 +1,6 @@
+# managed-by-autotool
+packages:
+  - 'packages/*'
+  - 'apps/*'
+  - 'libs/*'
+link-workspace-packages: 'deep'

@@ -1,0 +1,10 @@
+{
+	"$schema": "https://json.schemastore.org/tsconfig?mark=managed-by-autotool",
+	"extends": "@alexaegis/ts/base",
+	"compilerOptions": {
+		"rootDir": ".",
+		"outDir": "dist/out-tsc"
+	},
+	"include": [".*", "*.json", "**/*.json"],
+	"exclude": ["node_modules", "dist", "coverage", "packages", "apps", "libs", "solutions"]
+}

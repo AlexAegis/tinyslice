@@ -8,8 +8,7 @@
 Reactive state management
 
 Check out the example projects in this repository and my
-[Minesweeper clone](https://github.com/AlexAegis/minesweeper) build
-using this.
+[Minesweeper clone](https://github.com/AlexAegis/minesweeper) build using this.
 
 ```ts
 import { Scope } from '@tinyslice/core';

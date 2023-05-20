@@ -1,0 +1,87 @@
+{
+	"name": "@tinyslice/core",
+	"description": "Reactive state management",
+	"version": "0.7.0",
+	"license": "MIT",
+	"private": false,
+	"archetype": {
+		"platform": "node",
+		"language": "ts",
+		"kind": "lib"
+	},
+	"keywords": [
+		"actions",
+		"core",
+		"cqrs",
+		"effects",
+		"javascript",
+		"js",
+		"managed-by-autotool",
+		"reactive",
+		"redux",
+		"rxjs",
+		"state-management",
+		"tinyslice",
+		"ts",
+		"typescript"
+	],
+	"author": {
+		"email": "alexaegis@gmail.com",
+		"name": "AlexAegis",
+		"url": "https://www.github.com/AlexAegis"
+	},
+	"homepage": "https://www.github.com/AlexAegis/tinyslice#readme",
+	"repository": "github:AlexAegis/tinyslice",
+	"bugs": {
+		"url": "https://www.github.com/AlexAegis/tinyslice/issues"
+	},
+	"type": "module",
+	"scripts": {
+		"build": "turbo run build-lib_ --concurrency 16 --cache-dir .cache/turbo --filter @tinyslice/core",
+		"build-lib_": "vite build",
+		"lint:depcheck": "turbo run lint:depcheck_ --concurrency 6 --cache-dir .cache/turbo --filter @tinyslice/core",
+		"lint:depcheck_": "depcheck",
+		"lint:es": "turbo run lint:es_ --concurrency 16 --cache-dir .cache/turbo --filter @tinyslice/core",
+		"lint:es_": "eslint --max-warnings=0 --fix --no-error-on-unmatched-pattern .",
+		"lint:format": "turbo run lint:format_ --concurrency 16 --cache-dir .cache/turbo --filter @tinyslice/core",
+		"lint:format_": "prettier --check .",
+		"lint:md": "turbo run lint:md_ --concurrency 16 --cache-dir .cache/turbo --filter @tinyslice/core",
+		"lint:md_": "remark --frail --no-stdout --silently-ignore *.md docs/**/*.md",
+		"lint:tsc": "turbo run lint:tsc_ --concurrency 16 --cache-dir .cache/turbo --filter @tinyslice/core",
+		"lint:tsc_": "tsc --noEmit",
+		"publint": "turbo run publint_ --concurrency 16 --cache-dir .cache/turbo --filter @tinyslice/core",
+		"publint_": "publint dist",
+		"_postinstall": "husky install",
+		"format": "prettier --write .",
+		"ncu": "ncu -u",
+		"postpublish": "pinst --enable",
+		"prepublish": "pinst --disable",
+		"test": "turbo run test_ --concurrency 16 --cache-dir .cache/turbo --filter @tinyslice/core",
+		"test_": "vitest --passWithNoTests --coverage --run",
+		"test:watch": "vitest --passWithNoTests --coverage"
+	},
+	"exports": {
+		".": {
+			"types": "./src/index.ts",
+			"import": "./dist/index.js",
+			"require": "./dist/index.cjs"
+		},
+		"./readme": "./readme.md"
+	},
+	"dependencies": {
+		"@alexaegis/common": "^0.2.0"
+	},
+	"peerDependencies": {
+		"rxjs": "^7.5.6"
+	},
+	"devDependencies": {
+		"@alexaegis/eslint-config-vitest": "^0.3.0",
+		"@alexaegis/ts": "^0.3.0",
+		"@alexaegis/vite": "^0.3.0",
+		"@alexaegis/vitest": "^0.3.0",
+		"@types/node": "^20.2.1",
+		"publint": "^0.1.12",
+		"vite": "^4.3.8",
+		"vitest": "^0.31.1"
+	}
+}

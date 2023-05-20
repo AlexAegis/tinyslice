@@ -1,5 +1,5 @@
 {
-	"$schema": "../../node_modules/nx/schemas/project-schema.json",
+	"$schema": "https://raw.githubusercontent.com/nrwl/nx/master/packages/next/src/generators/application/schema.json",
 	"projectType": "application",
 	"sourceRoot": "apps/angular/src",
 	"prefix": "tinyslice",
@@ -12,7 +12,7 @@
 				"index": "apps/angular/src/index.html",
 				"main": "apps/angular/src/main.ts",
 				"polyfills": "apps/angular/src/polyfills.ts",
-				"tsConfig": "apps/angular/tsconfig.app.json",
+				"tsConfig": "apps/angular/tsconfig.json",
 				"assets": ["apps/angular/src/favicon.ico", "apps/angular/src/assets"],
 				"styles": [
 					"node_modules/ng-zorro-antd/ng-zorro-antd.min.css",

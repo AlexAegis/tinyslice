@@ -1,0 +1,56 @@
+{
+	"name": "@tinyslice/angular-example",
+	"version": "0.7.0",
+	"archetype": {
+		"platform": "web",
+		"framework": "angular",
+		"language": "ts",
+		"kind": "app"
+	},
+	"keywords": [
+		"managed-by-autotool",
+		"svelte"
+	],
+	"type": "module",
+	"scripts": {
+		"build": "turbo run build-app_ --concurrency 16 --cache-dir .cache/turbo --filter @tinyslice/angular-example",
+		"build-app_": "vite build",
+		"lint:depcheck": "turbo run lint:depcheck_ --concurrency 16 --cache-dir .cache/turbo --filter @tinyslice/angular-example",
+		"lint:depcheck_": "depcheck",
+		"lint:es": "turbo run lint:es_ --concurrency 16 --cache-dir .cache/turbo --filter @tinyslice/angular-example",
+		"lint:es_": "eslint --max-warnings=0 --fix --no-error-on-unmatched-pattern .",
+		"lint:format": "turbo run lint:format_ --concurrency 16 --cache-dir .cache/turbo --filter @tinyslice/angular-example",
+		"lint:format_": "prettier --check .",
+		"lint:md": "turbo run lint:md_ --concurrency 16 --cache-dir .cache/turbo --filter @tinyslice/angular-example",
+		"lint:md_": "remark --frail --no-stdout --silently-ignore *.md docs/**/*.md",
+		"lint:style": "turbo run lint:style_ --concurrency 16 --cache-dir .cache/turbo --filter @tinyslice/angular-example",
+		"lint:style:css": "turbo run lint:style:css_ --concurrency 16 --cache-dir .cache/turbo --filter @tinyslice/angular-example",
+		"lint:style:css_": "stylelint --cache true --cache-strategy content --cache-location .cache/stylelintcache-css --allow-empty-input **/*.css",
+		"lint:style:html": "turbo run lint:style:html_ --concurrency 16 --cache-dir .cache/turbo --filter @tinyslice/angular-example",
+		"lint:style:html_": "stylelint --customSyntax=postcss-html --cache true --cache-strategy content --cache-location .cache/stylelintcache-html --allow-empty-input **/*.html ",
+		"lint:style:scss": "turbo run lint:style:scss_ --concurrency 16 --cache-dir .cache/turbo --filter @tinyslice/angular-example",
+		"lint:style:scss_": "stylelint --customSyntax=postcss-scss --cache true --cache-strategy content --cache-location .cache/stylelintcache-scss --allow-empty-input **/*.scss",
+		"lint:tsc": "turbo run lint:tsc_ --concurrency 16 --cache-dir .cache/turbo --filter @tinyslice/angular-example",
+		"lint:tsc_": "tsc --noEmit",
+		"dev": "concurrently npm:watch-deps npm:start",
+		"format": "prettier --write .",
+		"start": "TARGET_ENV='local' vite",
+		"test": "turbo run test_ --concurrency 16 --cache-dir .cache/turbo --filter @tinyslice/angular-example",
+		"test_": "vitest --passWithNoTests --coverage --run",
+		"test:watch": "vitest --passWithNoTests --coverage",
+		"watch-deps": "TARGET_ENV='local' nodemon --config ../../node_modules/@alexaegis/autotool-plugin-vite/static/nodemon.json --watch ./node_modules/**/src/**/* --ext ts,tsx,mts,cts,svelte,js,jsx,mjs,cjs,json --ignore dist --exec 'turbo run build-lib_ --concurrency 16 --cache-dir .cache/turbo --filter @tinyslice/angular-example'"
+	},
+	"dependencies": {},
+	"devDependencies": {
+		"@alexaegis/eslint-config-vitest": "^0.3.0",
+		"@alexaegis/stylelint-config": "^0.3.0",
+		"@alexaegis/ts": "^0.3.0",
+		"@alexaegis/vite": "^0.3.0",
+		"@alexaegis/vitest": "^0.3.0",
+		"concurrently": "^8.0.1",
+		"nodemon": "^2.0.22",
+		"stylelint": "^15.6.2",
+		"vite": "^4.3.8",
+		"vitest": "^0.31.1"
+	}
+}

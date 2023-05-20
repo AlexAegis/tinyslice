@@ -1,10 +1,15 @@
+// managed-by-autotool
 {
 	"recommendations": [
-		"esbenp.prettier-vscode",
-		"editorconfig.editorconfig",
-		"angular.ng-template",
-		"nrwl.angular-console",
+		"bierner.markdown-mermaid",
+		"bpruitt-goddard.mermaid-markdown-syntax-highlighting",
 		"dbaeumer.vscode-eslint",
-		"firsttris.vscode-jest-runner"
+		"editorconfig.editorconfig",
+		"esbenp.prettier-vscode",
+		"Gruntfuggly.todo-tree",
+		"mhutchie.git-graph",
+		"svelte.svelte-vscode",
+		"github.vscode-github-actions",
+		"unifiedjs.vscode-remark"
 	]
 }
