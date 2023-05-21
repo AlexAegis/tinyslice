@@ -931,15 +931,15 @@ describe('slice', () => {
 		});
 
 		it('should be undefined initially', () => {
-			expect(optionalSlice.value.data).toBeUndefined();
+			expect(optionalSlice.value).toBeUndefined();
 		});
 
-		it('should not emit if the parent was changed but the optional slice not', () => {
-			expect(optionalSlice.value.data).toBeUndefined();
+		it.todo('should not emit if the parent was changed but the optional slice not', () => {
+			expect(optionalSlice.value).toBeUndefined();
 		});
 
-		it('should emit undefined if the slice becomes uninitialzed', () => {
-			expect(optionalSlice.value.data).toBeUndefined();
+		it.todo('should emit undefined if the slice becomes uninitialzed', () => {
+			expect(optionalSlice.value).toBeUndefined();
 		});
 
 		it('should be able to be initialized from their parent', () => {

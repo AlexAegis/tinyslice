@@ -357,6 +357,7 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 			`${TINYSLICE_DEFAULT_PREFIX} define key`
 		);
 
+		console.log('this.initialState', this.initialState);
 		this.state$ = new BehaviorSubject<State>(this.initialState);
 		this.observableState$ = this.state$.pipe(distinctUntilChanged());
 

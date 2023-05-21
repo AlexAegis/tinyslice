@@ -36,14 +36,6 @@
 		"node": ">=18.0.0",
 		"pnpm": ">=8.0.0"
 	},
-	"workspaces": [
-		"examples/angular",
-		"examples/svelte",
-		"libs/angular",
-		"libs/core",
-		"libs/devtools-plugin",
-		"libs/hydration-plugin"
-	],
 	"scripts": {
 		"build": "turbo run build-lib_ build-app_ --concurrency 16 --cache-dir .cache/turbo",
 		"build-app": "turbo run build-app_ --concurrency 16 --cache-dir .cache/turbo",
