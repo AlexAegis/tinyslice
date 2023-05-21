@@ -1,9 +1,9 @@
-import { isNonNullable } from './non-nullable.function';
+import { isNotNullish } from '@alexaegis/common';
 
 export const hasKey = <T>(parent: T, key: string | number | symbol | undefined): boolean => {
 	return (
-		isNonNullable(key) &&
-		isNonNullable(parent) &&
+		isNotNullish(key) &&
+		isNotNullish(parent) &&
 		typeof parent === 'object' &&
 		Object.hasOwn(parent, key)
 	);

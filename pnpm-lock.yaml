@@ -233,8 +233,8 @@ importers:
         specifier: ^0.2.0
         version: 0.2.0
       rxjs:
-        specifier: ^7.5.6
-        version: 7.8.0
+        specifier: ^7.8.1
+        version: 7.8.1
     devDependencies:
       '@alexaegis/eslint-config-vitest':
         specifier: ^0.3.0
@@ -267,8 +267,8 @@ importers:
         specifier: ^0.7.0
         version: link:../core
       rxjs:
-        specifier: ^7.5.6
-        version: 7.8.0
+        specifier: ^7.8.1
+        version: 7.8.1
     devDependencies:
       '@alexaegis/eslint-config-vitest':
         specifier: ^0.3.0
@@ -303,12 +303,15 @@ importers:
 
   packages/hydration-plugin:
     dependencies:
+      '@alexaegis/common':
+        specifier: ^0.2.0
+        version: 0.2.0
       '@tinyslice/core':
         specifier: ^0.7.0
         version: link:../core
       rxjs:
-        specifier: ^7.5.6
-        version: 7.8.0
+        specifier: ^7.8.1
+        version: 7.8.1
     devDependencies:
       '@alexaegis/eslint-config-vitest':
         specifier: ^0.3.0
@@ -343,12 +346,15 @@ importers:
 
   packages/logger-plugin:
     dependencies:
+      '@alexaegis/common':
+        specifier: ^0.2.0
+        version: 0.2.0
       '@tinyslice/core':
         specifier: ^0.7.0
         version: link:../core
       rxjs:
-        specifier: ^7.5.6
-        version: 7.8.0
+        specifier: ^7.8.1
+        version: 7.8.1
     devDependencies:
       '@alexaegis/eslint-config-vitest':
         specifier: ^0.3.0
@@ -384,17 +390,23 @@ importers:
   packages/ngx:
     dependencies:
       '@angular/common':
-        specifier: ^13.3.0
-        version: 13.3.0(@angular/core@13.3.0)(rxjs@7.8.0)
+        specifier: ^16.0.2
+        version: 16.0.2(@angular/core@16.0.2)(rxjs@7.8.1)
+      '@angular/compiler':
+        specifier: ^16.0.2
+        version: 16.0.2(@angular/core@16.0.2)
       '@angular/core':
-        specifier: ^13.3.0
-        version: 13.3.0(rxjs@7.8.0)(zone.js@0.11.8)
+        specifier: ^16.0.2
+        version: 16.0.2(rxjs@7.8.1)(zone.js@0.13.0)
       '@tinyslice/core':
         specifier: ^0.7.0
         version: link:../core
       rxjs:
-        specifier: ^7.5.6
-        version: 7.8.0
+        specifier: ^7.8.1
+        version: 7.8.1
+      tslib:
+        specifier: ^2.5.2
+        version: 2.5.2
     devDependencies:
       '@alexaegis/eslint-config-vitest':
         specifier: ^0.3.0
@@ -869,7 +881,7 @@ packages:
       '@alexaegis/common': 0.1.8
       '@alexaegis/coverage-tools': 0.1.8
       '@alexaegis/workspace-tools': 0.1.8
-      glob: 10.2.5
+      glob: 10.2.6
       js-yaml: 4.1.0
     dev: true
 
@@ -1020,28 +1032,41 @@ packages:
       '@jridgewell/trace-mapping': 0.3.18
     dev: true
 
-  /@angular/common@13.3.0(@angular/core@13.3.0)(rxjs@7.8.0):
-    resolution: {integrity: sha512-yl09TWBmz++Z3MKjzZIwU2wZHiedCn1DjGILjjNXegHFOfINRHiqLhHca4kGWFcTsdvcuEhd9Hk9JATqi45rjg==}
-    engines: {node: ^12.20.0 || ^14.15.0 || >=16.10.0}
+  /@angular/common@16.0.2(@angular/core@16.0.2)(rxjs@7.8.1):
+    resolution: {integrity: sha512-nCuDnsHNmC5ouQWTKtUaI8HG4gEzBJW94uf0kBfYP6SEENDMybATBTvWWTnuqSTDolyYSDkgvV0tKRb87SBykg==}
+    engines: {node: ^16.14.0 || >=18.10.0}
     peerDependencies:
-      '@angular/core': 13.3.0
+      '@angular/core': 16.0.2
       rxjs: ^6.5.3 || ^7.4.0
     dependencies:
-      '@angular/core': 13.3.0(rxjs@7.8.0)(zone.js@0.11.8)
-      rxjs: 7.8.0
+      '@angular/core': 16.0.2(rxjs@7.8.1)(zone.js@0.13.0)
+      rxjs: 7.8.1
       tslib: 2.5.2
     dev: false
 
-  /@angular/core@13.3.0(rxjs@7.8.0)(zone.js@0.11.8):
-    resolution: {integrity: sha512-ZnuIMEK8YFBtthNqrxapYolMp6qRy4Yp/VG+M11YNiuBp/BoYYDjTaknwO8vu36Cn6372zWjcibsknkZMjdBkg==}
-    engines: {node: ^12.20.0 || ^14.15.0 || >=16.10.0}
+  /@angular/compiler@16.0.2(@angular/core@16.0.2):
+    resolution: {integrity: sha512-TQqrMvMgsuRmAycL893i4sRFm8a8IHp+L1vdDYmETyADAYHSKO45+7kTISrqtNDhCGOzvE6vsz1hPj43y3gGog==}
+    engines: {node: ^16.14.0 || >=18.10.0}
+    peerDependencies:
+      '@angular/core': 16.0.2
+    peerDependenciesMeta:
+      '@angular/core':
+        optional: true
+    dependencies:
+      '@angular/core': 16.0.2(rxjs@7.8.1)(zone.js@0.13.0)
+      tslib: 2.5.2
+    dev: false
+
+  /@angular/core@16.0.2(rxjs@7.8.1)(zone.js@0.13.0):
+    resolution: {integrity: sha512-uPa2A+nVqwljDepahMn2ndgWg/a14VnTqgunXJP9q/Us98I/YGdryake4aTfXHUAdLON/R9IzomiXeFDYp5cJQ==}
+    engines: {node: ^16.14.0 || >=18.10.0}
     peerDependencies:
       rxjs: ^6.5.3 || ^7.4.0
-      zone.js: ~0.11.4
+      zone.js: ~0.13.0
     dependencies:
-      rxjs: 7.8.0
+      rxjs: 7.8.1
       tslib: 2.5.2
-      zone.js: 0.11.8
+      zone.js: 0.13.0
     dev: false
 
   /@babel/code-frame@7.21.4:
@@ -1878,8 +1903,8 @@ packages:
     engines: {node: ^14.17.0 || ^16.13.0 || >=18.0.0}
     dependencies:
       '@npmcli/name-from-folder': 2.0.0
-      glob: 10.2.5
-      minimatch: 9.0.0
+      glob: 10.2.6
+      minimatch: 9.0.1
       read-package-json-fast: 3.0.2
     dev: true
 
@@ -2145,7 +2170,7 @@ packages:
     engines: {node: ^14.17.0 || ^16.13.0 || >=18.0.0}
     dependencies:
       '@tufjs/canonical-json': 1.0.0
-      minimatch: 9.0.0
+      minimatch: 9.0.1
     dev: true
 
   /@types/argparse@1.0.38:
@@ -2807,7 +2832,7 @@ packages:
       '@alexaegis/logging': 0.1.8
       '@alexaegis/workspace-tools': 0.1.8
       autotool-plugin: 0.0.4
-      minimatch: 9.0.0
+      minimatch: 9.0.1
     dev: true
 
   /autotool-plugin@0.0.4:
@@ -3010,7 +3035,7 @@ packages:
     dependencies:
       '@npmcli/fs': 3.1.0
       fs-minipass: 3.0.2
-      glob: 10.2.5
+      glob: 10.2.6
       lru-cache: 7.18.3
       minipass: 5.0.0
       minipass-collect: 1.0.2
@@ -4929,14 +4954,14 @@ packages:
       is-glob: 4.0.3
     dev: true
 
-  /glob@10.2.5:
-    resolution: {integrity: sha512-Gj+dFYPZ5hc5dazjXzB0iHg2jKWJZYMjITXYPBRQ/xc2Buw7H0BINknRTwURJ6IC6MEFpYbLvtgVb3qD+DwyuA==}
+  /glob@10.2.6:
+    resolution: {integrity: sha512-U/rnDpXJGF414QQQZv5uVsabTVxMSwzS5CH0p3DRCIV6ownl4f7PzGnkGmvlum2wB+9RlJWJZ6ACU1INnBqiPA==}
     engines: {node: '>=16 || 14 >=14.17'}
     hasBin: true
     dependencies:
       foreground-child: 3.1.1
-      jackspeak: 2.2.0
-      minimatch: 9.0.0
+      jackspeak: 2.2.1
+      minimatch: 9.0.1
       minipass: 6.0.2
       path-scurry: 1.9.2
     dev: true
@@ -5295,7 +5320,7 @@ packages:
     resolution: {integrity: sha512-C7FfFoTA+bI10qfeydT8aZbvr91vAEU+2W5BZUlzPec47oNb07SsOfwYrtxuvOYdUApPP/Qlh4DtAO51Ekk2QA==}
     engines: {node: ^14.17.0 || ^16.13.0 || >=18.0.0}
     dependencies:
-      minimatch: 9.0.0
+      minimatch: 9.0.1
     dev: true
 
   /ignore@5.2.4:
@@ -5700,8 +5725,8 @@ packages:
       istanbul-lib-report: 3.0.0
     dev: true
 
-  /jackspeak@2.2.0:
-    resolution: {integrity: sha512-r5XBrqIJfwRIjRt/Xr5fv9Wh09qyhHfKnYddDlpM+ibRR20qrYActpCAgU6U+d53EOEjzkvxPMVHSlgR7leXrQ==}
+  /jackspeak@2.2.1:
+    resolution: {integrity: sha512-MXbxovZ/Pm42f6cDIDkl3xpwv1AGwObKwfmjs2nQePiy85tP3fatofl3FC1aBsOtP/6fq5SbtgHwWcMsLP+bDw==}
     engines: {node: '>=14'}
     dependencies:
       '@isaacs/cliui': 8.0.2
@@ -6773,8 +6798,8 @@ packages:
       brace-expansion: 2.0.1
     dev: true
 
-  /minimatch@9.0.0:
-    resolution: {integrity: sha512-0jJj8AvgKqWN05mrwuqi8QYKx1WmYSUoKSxu5Qhs9prezTz10sxAHGNZe9J9cqIJzta8DWsleh2KaVaLl6Ru2w==}
+  /minimatch@9.0.1:
+    resolution: {integrity: sha512-0jWhJpD/MdhPXwPuiRkCbfYfSKp2qnn2eOc279qI7f+osl/l+prKSrvhg157zSYvx/1nmgn2NqdT6k2Z7zSH9w==}
     engines: {node: '>=16 || 14 >=14.17'}
     dependencies:
       brace-expansion: 2.0.1
@@ -7097,7 +7122,7 @@ packages:
       json-parse-helpfulerror: 1.0.3
       jsonlines: 0.1.1
       lodash: 4.17.21
-      minimatch: 9.0.0
+      minimatch: 9.0.1
       p-map: 4.0.0
       pacote: 15.1.1
       parse-github-url: 1.0.2
@@ -7862,7 +7887,7 @@ packages:
     resolution: {integrity: sha512-4QbpReW4kxFgeBQ0vPAqh2y8sXEB3D4t3jsXbJKIhBiF80KT6XRo45reqwtftju5J6ru1ax06A2Gb/wM1qCOEQ==}
     engines: {node: ^14.17.0 || ^16.13.0 || >=18.0.0}
     dependencies:
-      glob: 10.2.5
+      glob: 10.2.6
       json-parse-even-better-errors: 3.0.0
       normalize-package-data: 5.0.0
       npm-normalize-package-bin: 3.0.1
@@ -8848,7 +8873,7 @@ packages:
     engines: {node: '>=14'}
     hasBin: true
     dependencies:
-      glob: 10.2.5
+      glob: 10.2.6
     dev: true
 
   /rollup@3.22.0:
@@ -8879,13 +8904,13 @@ packages:
   /rxjs@7.8.0:
     resolution: {integrity: sha512-F2+gxDshqmIub1KdvZkaEfGDwLNpPvk9Fs6LD/MyQxNgMds/WH9OdDDXOmxUZpME+iSK3rQCctkL0DYyytUqMg==}
     dependencies:
-      tslib: 2.5.0
+      tslib: 2.5.2
+    dev: true
 
   /rxjs@7.8.1:
     resolution: {integrity: sha512-AA3TVj+0A2iuIoQkWEK/tqFjBq2j+6PO6Y0zJcvzLAFhEFIO3HL0vls9hWLncZbAAbK0mar7oZ4V079I/qPMxg==}
     dependencies:
       tslib: 2.5.2
-    dev: true
 
   /sade@1.8.1:
     resolution: {integrity: sha512-xal3CZX1Xlo/k4ApwCFrHVACi9fBqJ7V+mwhBsuf/1IOKbBy098Fex+Wa/5QMubw09pSZ/u8EY8PWgevJsXp1A==}
@@ -9917,9 +9942,6 @@ packages:
     resolution: {integrity: sha512-Xni35NKzjgMrwevysHTCArtLDpPvye8zV/0E4EyYn43P7/7qvQwPh9BGkHewbMulVntbigmcT7rdX3BNo9wRJg==}
     dev: true
 
-  /tslib@2.5.0:
-    resolution: {integrity: sha512-336iVw3rtn2BUK7ORdIAHTyxHGRIHVReokCR3XjbckJMK7ms8FysBfhLR8IXnAgy7T0PTPNBWKiH514FOW/WSg==}
-
   /tslib@2.5.2:
     resolution: {integrity: sha512-5svOrSA2w3iGFDs1HibEVBGbDrAY82bFQ3HZ3ixB+88nsbsWQoKqDRb5UBYAUPEzbBn6dAp5gRNXglySbx1MlA==}
 
@@ -10084,7 +10106,7 @@ packages:
     dependencies:
       lunr: 2.3.9
       marked: 4.3.0
-      minimatch: 9.0.0
+      minimatch: 9.0.1
       shiki: 0.14.2
       typescript: 5.0.4
     dev: true
@@ -11004,8 +11026,8 @@ packages:
       commander: 9.5.0
     dev: true
 
-  /zone.js@0.11.8:
-    resolution: {integrity: sha512-82bctBg2hKcEJ21humWIkXRlLBBmrc3nN7DFh5LGGhcyycO2S7FN8NmdvlcKaGFDNVL4/9kFLmwmInTavdJERA==}
+  /zone.js@0.13.0:
+    resolution: {integrity: sha512-7m3hNNyswsdoDobCkYNAy5WiUulkMd3+fWaGT9ij6iq3Zr/IwJo4RMCYPSDjT+r7tnPErmY9sZpKhWQ8S5k6XQ==}
     dependencies:
       tslib: 2.5.2
     dev: false

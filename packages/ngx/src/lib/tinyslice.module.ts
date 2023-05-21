@@ -3,20 +3,20 @@ import {
 	ApplicationRef,
 	Inject,
 	InjectionToken,
-	ModuleWithProviders,
 	NgModule,
 	Optional,
-	Provider,
 	Type,
+	type ModuleWithProviders,
+	type Provider,
 } from '@angular/core';
 import {
-	ReducerConfiguration,
-	RootSlice,
 	Scope,
 	Slice,
-	SliceOptions,
-	TinySlicePlugin,
-	TinySlicePluginHooks,
+	type ReducerConfiguration,
+	type RootSlice,
+	type SliceOptions,
+	type TinySlicePlugin,
+	type TinySlicePluginHooks,
 } from '@tinyslice/core';
 import { Subscription } from 'rxjs';
 import {
@@ -27,13 +27,12 @@ import {
 
 export class TinySliceAngularPlugin<State = unknown> implements TinySlicePlugin<State> {
 	private hooks!: TinySlicePluginHooks<State>;
-	private initialState!: string;
 	private sink = new Subscription();
 
 	constructor(private readonly application: ApplicationRef) {}
+
 	register = (hooks: TinySlicePluginHooks<State>): void => {
 		this.hooks = hooks;
-		this.initialState = JSON.stringify(hooks.initialState);
 	};
 
 	onError = (error: unknown): void => {
@@ -52,6 +51,7 @@ export class TinySliceAngularPlugin<State = unknown> implements TinySlicePlugin<
 		this.sink.unsubscribe();
 	};
 }
+
 @NgModule({
 	imports: [CommonModule],
 })
@@ -66,6 +66,8 @@ export class TinySliceModule {
 		if (this.rootModuleIndicators.length > 1) {
 			throw new Error('More than 1 TinySlice root modules were created!');
 		}
+
+		console.log(this._effectServices);
 	}
 
 	public static forRoot<RootState = unknown>(
@@ -89,9 +91,9 @@ export class TinySliceModule {
 				{
 					provide: ROOT_STORE,
 					useFactory: (scope: Scope, application: ApplicationRef) => {
-						storeOptions?.plugins?.forEach((plugin) =>
-							plugin.registerAdditionalTrigger?.(() => application.tick())
-						);
+						if (storeOptions?.plugins)
+							for (const plugin of storeOptions.plugins)
+								plugin.registerAdditionalTrigger?.(() => application.tick());
 
 						return scope.createRootSlice<RootState>(initialState, storeOptions);
 					},
@@ -131,7 +133,7 @@ export class TinySliceModule {
 				{
 					provide: featureToken,
 					useFactory: (rootStore: RootSlice<unknown>) =>
-						rootStore.addSlice<State, string, string>(key, initialState, { reducers }),
+						rootStore.addSlice<State, string>(key, initialState, { reducers }),
 					deps: [ROOT_STORE],
 				},
 				{

@@ -9,11 +9,11 @@ import {
 	Subscription,
 	tap,
 } from 'rxjs';
-import type { ActionConfig } from '../action/action-config.interface';
-import { isActionPacket, type ActionPacket } from '../action/action-packet.interface';
-import { Action, type ActionTuple } from '../action/action.class';
-import { TINYSLICE_PREFIX } from '../helper';
-import { Slice, type RootSlice, type RootSliceOptions } from './slice.class';
+import type { ActionConfig } from '../action/action-config.interface.js';
+import { isActionPacket, type ActionPacket } from '../action/action-packet.interface.js';
+import { Action, type ActionTuple } from '../action/action.class.js';
+import { TINYSLICE_PREFIX } from '../helper/index.js';
+import { Slice, type RootSlice, type RootSliceOptions } from './slice.class.js';
 
 /**
  * Defines a state scope on which actions act upon. The state machine is
@@ -134,8 +134,7 @@ export class Scope {
 		if (!action) {
 			return false;
 		}
-		let type: string;
-		type = typeof action === 'string' ? action : action.type;
+		const type = typeof action === 'string' ? action : action.type;
 		return this.actionMap.has(type);
 	}
 
@@ -144,10 +143,14 @@ export class Scope {
 	}
 
 	public complete(): void {
-		for (const action of this.actionMap) action.complete();
+		for (const [, action] of this.actionMap) {
+			action.complete();
+		}
 		this.actionMap.clear();
 		this.effectSubscriptions.unsubscribe();
 		this.schedulingDispatcher.complete();
-		for (const store of this.stores) store.complete();
+		for (const store of this.stores) {
+			store.complete();
+		}
 	}
 }

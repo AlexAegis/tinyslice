@@ -1,6 +1,6 @@
 import { Observable } from 'rxjs';
-import { ActionPacket } from '../action';
-import { ReduceActionSliceSnapshot } from '../store/reducer.type';
+import type { ActionPacket } from '../action/index.js';
+import type { ReduceActionSliceSnapshot } from '../store/reducer.type.js';
 
 export interface TinySlicePluginHooks<State> {
 	state$: Observable<ReduceActionSliceSnapshot<State>>;
@@ -18,8 +18,8 @@ export interface TinySlicePlugin<State> {
 	 */
 	register: (hooks: TinySlicePluginHooks<State>) => void;
 	onError?: (error: unknown) => void;
-	preRootReduce?: (absolutePath: string, state: unknown, action: ActionPacket<unknown>) => void;
-	preReduce?: (absolutePath: string, state: unknown, action: ActionPacket<unknown>) => void;
+	preRootReduce?: (absolutePath: string, state: unknown, action: ActionPacket) => void;
+	preReduce?: (absolutePath: string, state: unknown, action: ActionPacket) => void;
 	postReduce?: (absolutePath: string, snapshot: ReduceActionSliceSnapshot<unknown>) => void;
 	postRootReduce?: (absolutePath: string, snapshot: ReduceActionSliceSnapshot<unknown>) => void;
 	start: () => void;

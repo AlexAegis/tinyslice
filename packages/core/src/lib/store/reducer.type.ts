@@ -1,6 +1,6 @@
 import { isNotNullish } from '@alexaegis/common';
-import type { ActionPacket } from '../action/action-packet.interface';
-import { Action } from '../action/action.class';
+import type { ActionPacket } from '../action/action-packet.interface.js';
+import { Action } from '../action/action.class.js';
 
 export interface InitialSliceSnapshot<State> {
 	nextState: State;
@@ -20,8 +20,8 @@ export const isReduceActionSliceSnapshot = <State>(
 	isNotNullish((t as ReduceActionSliceSnapshot<State>).actionPacket);
 
 export interface MetaReducer {
-	preRootReduce: (absolutePath: string, state: unknown, action: ActionPacket<unknown>) => void;
-	preReduce: (absolutePath: string, state: unknown, action: ActionPacket<unknown>) => void;
+	preRootReduce: (absolutePath: string, state: unknown, action: ActionPacket) => void;
+	preReduce: (absolutePath: string, state: unknown, action: ActionPacket) => void;
 	postReduce: MetaSnapshotReducer;
 	postRootReduce: MetaSnapshotReducer;
 }

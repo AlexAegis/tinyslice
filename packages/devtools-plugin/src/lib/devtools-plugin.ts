@@ -1,18 +1,24 @@
-import { ActionPacket, TinySlicePlugin, TinySlicePluginHooks } from '@tinyslice/core';
+import type {
+	ActionPacket,
+	ReduceActionSliceSnapshot,
+	TinySlicePlugin,
+	TinySlicePluginHooks,
+} from '@tinyslice/core';
 import { Subscription, tap } from 'rxjs';
-import {
+import type {
+	ActionLike,
 	GlobalReduxDevtools,
 	ReduxDevtoolsExtension,
 	ReduxDevtoolsExtensionConfig,
 	ReduxDevtoolsExtensionConnection,
-} from './redux-devtools.type';
+} from './redux-devtools.type.js';
 
 export const DEFAULT_DEVTOOLS_OPTIONS: Partial<ReduxDevtoolsExtensionConfig> = {
 	name: 'TinySlice',
 };
 
-const jsonUndefinedReplacer = <T>(_key: string, value: T) =>
-	typeof value === 'undefined' ? null : value;
+// eslint-disable-next-line unicorn/no-null
+const jsonUndefinedReplacer = <T>(_key: string, value: T) => (value === undefined ? null : value);
 
 const normalizeUndefined = <T>(obj: T): T => {
 	const stringified = JSON.stringify(obj, jsonUndefinedReplacer);
@@ -26,8 +32,8 @@ const normalizeUndefined = <T>(obj: T): T => {
  * normalized to null
  */
 export class TinySliceDevtoolPlugin<State = unknown> implements TinySlicePlugin<State> {
-	private extension?: ReduxDevtoolsExtension<State>;
-	private extensionConnection?: ReduxDevtoolsExtensionConnection<State>;
+	private extension?: ReduxDevtoolsExtension<State> | undefined;
+	private extensionConnection?: ReduxDevtoolsExtensionConnection<State> | undefined;
 	private sink = new Subscription();
 	private unsubscribeStateInjector?: () => void;
 
@@ -37,7 +43,7 @@ export class TinySliceDevtoolPlugin<State = unknown> implements TinySlicePlugin<
 	private initialState!: string;
 
 	private actionId = 0;
-	private actions: Record<number, ActionPacket<unknown>> = {};
+	private actions: Record<number, ActionPacket> = {};
 	private actionsTurnedOff = new Set<number>();
 
 	private additionalTriggers: (() => void)[] = [];
@@ -60,18 +66,19 @@ export class TinySliceDevtoolPlugin<State = unknown> implements TinySlicePlugin<
 	};
 
 	private connect(connection: ReduxDevtoolsExtensionConnection<State>): void {
-		this.lastState = this.initialState ? JSON.parse(this.initialState) : undefined;
+		this.lastState = this.initialState ? (JSON.parse(this.initialState) as State) : undefined;
 		this.committedState = this.initialState;
 		connection.init(this.lastState);
 
 		this.sink.add(
 			this.hooks.state$
 				.pipe(
-					tap(({ actionPacket: action, nextState }) => {
+					tap<ReduceActionSliceSnapshot<State>>(({ actionPacket, nextState }) => {
 						this.lastState = normalizeUndefined(nextState);
-						this.actions[this.actionId] = action;
+
+						this.actions[this.actionId] = actionPacket ;
 						this.actionId += 1;
-						connection.send(action, this.lastState);
+						connection.send(actionPacket as ActionLike, this.lastState);
 					})
 				)
 				.subscribe()
@@ -79,51 +86,75 @@ export class TinySliceDevtoolPlugin<State = unknown> implements TinySlicePlugin<
 
 		this.unsubscribeStateInjector = connection.subscribe((message) => {
 			if (message.type === 'DISPATCH') {
-				if (message.payload?.type === 'JUMP_TO_ACTION') {
-					this.hooks.stateInjector(JSON.parse(message.state) as State);
-				} else if (message.payload?.type === 'COMMIT') {
-					console.log('COMMIT', this.lastState);
-					if (this.lastState) {
-						connection.init(this.lastState);
-						this.committedState = JSON.stringify(this.lastState);
-					} else {
-						connection.error('Nothing to commit');
+				switch (message.payload?.type) {
+					case 'JUMP_TO_ACTION': {
+						this.hooks.stateInjector(JSON.parse(message.state) as State);
+
+						break;
 					}
-				} else if (message.payload?.type === 'ROLLBACK') {
-					if (this.committedState) {
-						const parsedCommittedState = JSON.parse(this.committedState) as State;
-						connection.init(parsedCommittedState);
-						this.hooks.stateInjector(parsedCommittedState);
-					} else {
-						connection.error('No commit to rollback to');
-					}
-				} else if (message.payload?.type === 'RESET') {
-					const initialState = JSON.parse(this.initialState) as State;
-					this.hooks.stateInjector(initialState);
-					connection.init(initialState);
-				} else if (message.payload?.type === 'IMPORT_STATE') {
-					const computedStates = message.payload.nextLiftedState.computedStates;
-					const actions = [...Object.values(message.payload.nextLiftedState.actionsById)];
-					const lastState = computedStates[actions.length - 1].state;
-					actions.forEach((action, index) => {
-						const state = computedStates[index];
-						if (action.action.type === '@@INIT') {
-							connection.init(state.state);
+					case 'COMMIT': {
+						console.log('COMMIT', this.lastState);
+						if (this.lastState) {
+							connection.init(this.lastState);
+							this.committedState = JSON.stringify(this.lastState);
 						} else {
-							connection.send(action.action, state.state);
+							connection.error('Nothing to commit');
 						}
-					});
-					this.hooks.stateInjector(lastState);
-				} else if (message.payload?.type === 'TOGGLE_ACTION') {
-					if (this.actionsTurnedOff.has(message.payload.id)) {
-						this.actionsTurnedOff.delete(message.payload.id);
-					} else {
-						this.actionsTurnedOff.add(message.payload.id);
+
+						break;
 					}
+					case 'ROLLBACK': {
+						if (this.committedState) {
+							const parsedCommittedState = JSON.parse(this.committedState) as State;
+							connection.init(parsedCommittedState);
+							this.hooks.stateInjector(parsedCommittedState);
+						} else {
+							connection.error('No commit to rollback to');
+						}
+
+						break;
+					}
+					case 'RESET': {
+						const initialState = JSON.parse(this.initialState) as State;
+						this.hooks.stateInjector(initialState);
+						connection.init(initialState);
+
+						break;
+					}
+					case 'IMPORT_STATE': {
+						const computedStates = message.payload.nextLiftedState.computedStates;
+						const actions = Object.values(message.payload.nextLiftedState.actionsById);
+						const lastState = computedStates[actions.length - 1]?.state;
+						for (const [index, action] of actions.entries()) {
+							const state = computedStates[index];
+							if (state) {
+								if (action.action.type === '@@INIT') {
+									connection.init(state.state);
+								} else {
+									connection.send(action.action, state.state);
+								}
+							}
+						}
+						if (lastState) {
+							this.hooks.stateInjector(lastState);
+						}
+
+						break;
+					}
+					case 'TOGGLE_ACTION': {
+						if (this.actionsTurnedOff.has(message.payload.id)) {
+							this.actionsTurnedOff.delete(message.payload.id);
+						} else {
+							this.actionsTurnedOff.add(message.payload.id);
+						}
+
+						break;
+					}
+					// No default
 				}
 			}
 
-			this.additionalTriggers.forEach((trigger) => trigger());
+			for (const trigger of this.additionalTriggers) trigger();
 		});
 	}
 
@@ -156,6 +187,6 @@ export class TinySliceDevtoolPlugin<State = unknown> implements TinySlicePlugin<
 	}
 
 	static getExtension<State>(): ReduxDevtoolsExtension<State> | undefined {
-		return (globalThis as unknown as GlobalReduxDevtools<State>)?.__REDUX_DEVTOOLS_EXTENSION__;
+		return (globalThis as unknown as GlobalReduxDevtools<State>).__REDUX_DEVTOOLS_EXTENSION__;
 	}
 }

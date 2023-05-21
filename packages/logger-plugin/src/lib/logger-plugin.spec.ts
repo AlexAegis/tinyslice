@@ -1,4 +1,5 @@
-import { TinySliceLoggerPlugin } from './logger-plugin';
+import { describe, expect, it } from 'vitest';
+import { TinySliceLoggerPlugin } from './logger-plugin.js';
 
 describe('TinySliceLoggerPlugin', () => {
 	it('should work', () => {

@@ -1,4 +1,4 @@
-import { isNonNullable } from '../helper/non-nullable.function.js';
+import { isNotNullish } from '@alexaegis/common';
 import type { Action } from './action.class.js';
 
 export interface ActionPacket<Payload = unknown> {
@@ -16,7 +16,7 @@ export const isActionPacket = <P>(
 ): actionPacket is ActionPacket<P> => {
 	return (
 		actionPacket !== undefined &&
-		isNonNullable((actionPacket as ActionPacket).type) &&
+		isNotNullish((actionPacket as ActionPacket).type) &&
 		(registeredInActionMap?.has((actionPacket as ActionPacket).type) ?? true)
 	);
 };

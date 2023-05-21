@@ -1,10 +1,11 @@
+import { isNotNullish } from '@alexaegis/common';
 import type { ReduceActionSliceSnapshot } from '@tinyslice/core';
 import {
-	ActionPacket,
 	TINYSLICE_PREFIX,
-	TinySlicePlugin,
-	TinySlicePluginHooks,
-	TinySlicePluginSliceOptions,
+	type ActionPacket,
+	type TinySlicePlugin,
+	type TinySlicePluginHooks,
+	type TinySlicePluginSliceOptions,
 } from '@tinyslice/core';
 
 const brightFgColor = '#ffe36a';
@@ -36,13 +37,13 @@ const getMessageCss = (message: string, isInternal: boolean): string => {
 const bracketMatcher = /\[[^\]]*]/g;
 
 const separateMessage = (message: string): string[] => {
-	const a = message.split(bracketMatcher) ?? []; // Removes delimiters
+	const a = message.split(bracketMatcher); // Removes delimiters
 	const b = message.match(bracketMatcher) ?? []; // Removed delimiters
 	const result = [a[0]];
 	for (let i = 1; i < a.length; i++) {
 		result.push(b[i - 1], a[i]);
 	}
-	return result.filter((a) => !!a);
+	return result.filter(isNotNullish);
 };
 
 export const colorizeLogString = (message: string): string[] => {
@@ -122,7 +123,7 @@ export class TinySliceLoggerPlugin<State> implements TinySlicePlugin<State> {
 		};
 	}
 
-	private isIgnored(path: string, actionPacket: ActionPacket<unknown>): boolean {
+	private isIgnored(path: string, actionPacket: ActionPacket): boolean {
 		return (
 			this.options.ignorePaths.some((pathIgnore) =>
 				typeof pathIgnore === 'string'
@@ -141,7 +142,7 @@ export class TinySliceLoggerPlugin<State> implements TinySlicePlugin<State> {
 		return this.pluginOptions;
 	}
 
-	preRootReduce(absolutePath: string, _state: unknown, action: ActionPacket<unknown>): void {
+	preRootReduce(absolutePath: string, _state: unknown, action: ActionPacket): void {
 		this.first = true;
 		if (this.enabled && !this.isIgnored(absolutePath, action)) {
 			console.time('entire reduce took');
@@ -153,7 +154,7 @@ export class TinySliceLoggerPlugin<State> implements TinySlicePlugin<State> {
 		}
 	}
 
-	preReduce(absolutePath: string, _state: unknown, action: ActionPacket<unknown>): void {
+	preReduce(absolutePath: string, _state: unknown, action: ActionPacket): void {
 		if (this.enabled && !this.options.onlyRoot && !this.isIgnored(absolutePath, action)) {
 			this.lastTimer = `${absolutePath} reduce took`;
 			console.time(this.lastTimer);

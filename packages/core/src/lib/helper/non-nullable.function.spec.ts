@@ -1,23 +1,25 @@
-import { isNonNullable } from './non-nullable.function';
+import { isNotNullish } from '@alexaegis/common';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 describe('nonNullable', () => {
 	let optionalFoo: string | undefined | null;
 
-	const fun = jest.fn();
+	const fun = vi.fn();
 
 	it('should not call the function if the field is undefined', () => {
 		optionalFoo = undefined;
 
-		if (isNonNullable(optionalFoo)) {
+		if (isNotNullish(optionalFoo)) {
 			fun();
 		}
 		expect(fun).not.toBeCalled();
 	});
 
 	it('should not call the function if the field is null', () => {
+		// eslint-disable-next-line unicorn/no-null
 		optionalFoo = null;
 
-		if (isNonNullable(optionalFoo)) {
+		if (isNotNullish(optionalFoo)) {
 			fun();
 		}
 		expect(fun).not.toBeCalled();
@@ -26,11 +28,13 @@ describe('nonNullable', () => {
 	it('should call the function if the field is not nullish', () => {
 		optionalFoo = 'foo';
 
-		if (isNonNullable(optionalFoo)) {
+		if (isNotNullish(optionalFoo)) {
 			fun();
 		}
 		expect(fun).toBeCalled();
 	});
 
-	afterEach(() => jest.resetAllMocks());
+	afterEach(() => {
+		vi.resetAllMocks();
+	});
 });

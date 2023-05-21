@@ -38,7 +38,6 @@
 	"config": {
 		"engine-strict": true
 	},
-	"main": "src/index.js",
 	"scripts": {
 		"build": "turbo run build-lib_ --concurrency 16 --cache-dir .cache/turbo --filter @tinyslice/ngx",
 		"build-lib_": "vite build",
@@ -70,13 +69,21 @@
 		"test_": "vitest --passWithNoTests --coverage --run",
 		"test:watch": "vitest --passWithNoTests --coverage"
 	},
-	"dependencies": {
-		"@tinyslice/core": "^0.7.0"
+	"exports": {
+		".": {
+			"types": "./src/index.ts",
+			"import": "./dist/index.js",
+			"require": "./dist/index.cjs"
+		},
+		"./readme": "./readme.md"
 	},
-	"peerDependencies": {
-		"@angular/common": "^13.3.0",
-		"@angular/core": "^13.3.0",
-		"rxjs": "^7.5.6"
+	"dependencies": {
+		"@angular/common": "^16.0.2",
+		"@angular/compiler": "^16.0.2",
+		"@angular/core": "^16.0.2",
+		"@tinyslice/core": "^0.7.0",
+		"rxjs": "^7.8.1",
+		"tslib": "^2.5.2"
 	},
 	"devDependencies": {
 		"@alexaegis/eslint-config-vitest": "^0.3.0",

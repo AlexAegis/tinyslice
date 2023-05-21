@@ -1,1 +1,1 @@
-export * from './tinyslice-plugin.interface';
+export * from './tinyslice-plugin.interface.js';

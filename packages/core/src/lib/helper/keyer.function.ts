@@ -6,11 +6,11 @@ export const getObjectKeys: GetKeys<Record<string | number, unknown>, string> = 
 ): string[] => Object.keys(state);
 export const getObjectKeysAsNumbers: GetKeys<Record<number, unknown>, number> = (
 	state: Record<number, unknown>
-): number[] => Object.keys(state).map((key) => parseInt(key, 10));
+): number[] => Object.keys(state).map((key) => Number.parseInt(key, 10));
 
 export const getNextNumberLikeStringKey: GetNext<`${number}`> = (keys: `${number}`[]) =>
 	(
-		keys.map((key) => parseInt(key, 10)).reduce((a, b) => (a > b ? a : b), 0) + 1
+		keys.map((key) => Number.parseInt(key, 10)).reduce((a, b) => (a > b ? a : b), 0) + 1
 	).toString() as `${number}`;
 
 export const getNextLargestNumber: GetNext<number> = (keys: number[]): number =>
@@ -24,7 +24,7 @@ export const getNextSmallestNumber: GetNext<number> = (keys: number[]): number =
 			return i + 1;
 		}
 	}
-	return sortedKeys[sortedKeys.length - 1] + 1;
+	return (sortedKeys.at(-1) ?? 0) + 1;
 };
 
 export enum PremadeGetNext {

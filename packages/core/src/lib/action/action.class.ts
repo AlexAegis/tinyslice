@@ -10,8 +10,8 @@ import {
 	type MonoTypeOperatorFunction,
 } from 'rxjs';
 import { ifLatestFrom } from '../helper/index.js';
-import type { Scope } from '../store';
-import type { ActionReducer, ReducerConfiguration } from '../store/reducer.type';
+import type { Scope } from '../store/index.js';
+import type { ActionReducer, ReducerConfiguration } from '../store/reducer.type.js';
 import { DEFAULT_ACTION_CONFIG, type ActionConfig } from './action-config.interface.js';
 import { type ActionPacket } from './action-packet.interface.js';
 
@@ -26,7 +26,7 @@ export type ActionDispatch = () => void;
  * TODO: .and method to chain actions for multireducers and multieffects
  */
 export class Action<Payload = void> extends Subject<Payload> {
-	private dispatchSubscription?: Subscription;
+	private dispatchSubscription?: Subscription | undefined;
 
 	private config: ActionConfig;
 

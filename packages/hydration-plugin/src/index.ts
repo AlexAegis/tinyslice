@@ -1,1 +1,1 @@
-export * from './lib/hydration-plugin';
+export * from './lib/hydration-plugin.js';

@@ -37,18 +37,18 @@ import {
 	updateObject,
 	type GetNext,
 	type NextKeyStrategy,
-} from '../helper';
-import type { TinySlicePlugin } from '../plugins';
-import type { Merger } from './merger.type';
+} from '../helper/index.js';
+import type { TinySlicePlugin } from '../plugins/index.js';
+import type { Merger } from './merger.type.js';
 import type {
 	MetaReducer,
 	PacketReducer,
 	ReduceActionSliceSnapshot,
 	ReducerConfiguration,
-} from './reducer.type';
-import { Scope } from './scope.class';
-import type { Selector } from './selector.type';
-import type { StrictRuntimeChecks } from './strict-runtime-checks.interface';
+} from './reducer.type.js';
+import { Scope } from './scope.class.js';
+import type { Selector } from './selector.type.js';
+import type { StrictRuntimeChecks } from './strict-runtime-checks.interface.js';
 
 export type ObjectKey = string | number | symbol;
 export type UnknownObject<T = unknown> = Record<ObjectKey, T>;
@@ -122,7 +122,7 @@ export interface SliceOptions<ParentState, State, Internals> {
 	 * ? Setting the passed slices Internal generic to unknown is crucial for
 	 * ? type inference to work
 	 */
-	defineInternals?: (slice: Slice<ParentState, State>) => Internals;
+	defineInternals?: ((slice: Slice<ParentState, State>) => Internals) | undefined;
 }
 
 export interface RootSliceOptions<State, Internals> extends SliceOptions<never, State, Internals> {
@@ -173,7 +173,7 @@ const extractSliceOptions = <ParentState, State, Internals>(
 
 export interface ChildSliceConstructOptions<ParentState, State, Internals>
 	extends SliceOptions<ParentState, State, Internals> {
-	initialState?: State;
+	initialState?: State | undefined;
 	/**
 	 * Marks if a slice should be dropped when its key is dropped from its
 	 * parent. It's generally only safe to do with dynamic slices (dices)
@@ -366,6 +366,7 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 			this.deleteKeyAction.reduce((state, payload) => {
 				if (typeof state === 'object') {
 					const nextState = { ...state };
+					// eslint-disable-next-line @typescript-eslint/no-dynamic-delete
 					delete (nextState as State)[payload as keyof State];
 					return nextState;
 				} else {
@@ -397,7 +398,7 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 
 		this.sliceReducer$ = this.reducerConfigurations$.pipe(
 			map(
-				(reducerConfigurations): PacketReducer<State, unknown> =>
+				(reducerConfigurations): PacketReducer<State> =>
 					(state, action) =>
 						action
 							? reducerConfigurations
@@ -516,7 +517,7 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 					prevState,
 					sliceReducer,
 				]): ReduceActionSliceSnapshot<State> => {
-					if (this.#isRootOrParentStateUndefined()) {
+					if (this.isRootOrParentStateUndefined()) {
 						return {
 							actionPacket,
 							prevState,
@@ -564,7 +565,7 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 					switchMap(() => pipeline$)
 				);
 			})
-		) as Observable<ReduceActionSliceSnapshot<State>>;
+		);
 
 		this.inactivePipeline = schedulingDispatcher$.pipe(
 			withLatestFrom(this.state$),
@@ -615,7 +616,7 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 				}
 				// Start what's new
 				for (const plugin of next.filter((plugin) => !previous.includes(plugin))) {
-					this.#registerPlugin(plugin);
+					this.registerPlugin(plugin);
 				}
 			})
 		);
@@ -627,7 +628,7 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 		this.scope.slices.set(this._absolutePath, this);
 
 		if (this.parentCoupling) {
-			this.parentCoupling.parentSlice.#registerSlice({
+			this.parentCoupling.parentSlice.registerSlice({
 				slice: this,
 				slicer: this.parentCoupling.slicer,
 				initialState: this.initialState,
@@ -754,7 +755,7 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 			: pathSegment;
 	}
 
-	#registerPlugin(plugin: TinySlicePlugin<State>): TinySlicePlugin<State> {
+	private registerPlugin(plugin: TinySlicePlugin<State>): TinySlicePlugin<State> {
 		plugin.register({
 			initialState: this.state$.value,
 			state$: this.pipeline,
@@ -780,7 +781,7 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 		return this.state$.value;
 	}
 
-	#isRootOrParentStateUndefined(): boolean {
+	private isRootOrParentStateUndefined(): boolean {
 		return this.parentCoupling
 			? isNullish(this.parentCoupling.parentSlice.state$.value)
 			: false;
@@ -809,7 +810,7 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 		return action;
 	}
 
-	#slice<ChildState, ChildInternals>(
+	private sliceInternal<ChildState, ChildInternals>(
 		childSliceConstructOptions: ChildSliceConstructOptions<State, ChildState, ChildInternals>
 	): Slice<State, NonNullable<ChildState>, ChildInternals> {
 		const path = Slice.assembleAbsolutePath(
@@ -846,7 +847,7 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 					parentSlice: this as Slice<unknown, State, UnknownObject>,
 					rawParentState: this.observableState$,
 					slicer: childSliceConstructOptions.slicer,
-					droppable: childSliceConstructOptions.droppable ?? false,
+					droppable: childSliceConstructOptions.droppable,
 					key: childSliceConstructOptions.key,
 				},
 				pathSegment: childSliceConstructOptions.pathSegment,
@@ -862,7 +863,7 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 		merger: Merger<State, ChildState>,
 		sliceOptions?: SliceOptions<State, ChildState, ChildInternals>
 	): Slice<State, NonNullable<ChildState>, ChildInternals> {
-		return this.#slice({
+		return this.sliceInternal({
 			...sliceOptions,
 			initialState: undefined,
 			droppable: false,
@@ -880,7 +881,7 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 		sliceOptions?: SliceOptions<State, NonNullable<State[ChildStateKey]>, ChildInternals>
 	): Slice<State, NonNullable<State[ChildStateKey]>, ChildInternals> {
 		const slicer = normalizeSliceDirection<State, NonNullable<State[ChildStateKey]>>(key);
-		return this.#slice({
+		return this.sliceInternal({
 			...sliceOptions,
 			pathSegment: key.toString(),
 			slicer,
@@ -901,7 +902,7 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 		sliceOptions?: SliceOptions<State, ChildState, ChildInternals>
 	): Slice<State & Record<AdditionalKey, ChildState>, NonNullable<ChildState>, ChildInternals> {
 		const slicer = normalizeSliceDirection<State, ChildState>(key);
-		return this.#slice({
+		return this.sliceInternal({
 			...sliceOptions,
 			initialState,
 			pathSegment: key.toString(),
@@ -974,7 +975,7 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 
 		const get = (key: DiceKey) => {
 			const slicer = normalizeSliceDirection<State, ChildState>(key);
-			return this.#slice({
+			return this.sliceInternal({
 				...sliceOptions,
 				initialState,
 				pathSegment: key.toString(),
@@ -1054,7 +1055,7 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 		};
 	}
 
-	#registerSlice<ChildState, ChildInternals>(
+	private registerSlice<ChildState, ChildInternals>(
 		sliceRegistration: SliceRegistration<State, ChildState, ChildInternals>
 	): void {
 		this.keyedSlices$.next({
@@ -1087,6 +1088,7 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 		const nextSlicesSet = {
 			...this.keyedSlices$.value,
 		};
+		// eslint-disable-next-line @typescript-eslint/no-dynamic-delete
 		delete nextSlicesSet[pathSegment];
 		this.keyedSlices$.next(nextSlicesSet);
 	}

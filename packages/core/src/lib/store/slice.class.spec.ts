@@ -1,12 +1,14 @@
-import { finalize, map, Observer, Subject, Subscription, tap } from 'rxjs';
-import { Action } from '../action';
-import { Scope } from './scope.class';
-import { RootSlice, Slice } from './slice.class';
+import { Subject, Subscription, finalize, map, tap, type Observer } from 'rxjs';
+import type { SpyInstance } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { Action } from '../action/index.js';
+import { Scope } from './scope.class.js';
+import { Slice, type RootSlice } from './slice.class.js';
 
 const createMockObserver = <T>(): Observer<T> => ({
-	next: jest.fn(),
-	complete: jest.fn(),
-	error: jest.fn(),
+	next: vi.fn(),
+	complete: vi.fn(),
+	error: vi.fn(),
 });
 
 function timeout(ms: number): Promise<unknown> {
@@ -30,7 +32,9 @@ describe('slice', () => {
 		scope = new Scope();
 	});
 
-	afterEach(() => jest.clearAllMocks());
+	afterEach(() => {
+		vi.clearAllMocks();
+	});
 	afterEach(() => sink.unsubscribe());
 
 	describe('effects', () => {
@@ -72,14 +76,14 @@ describe('slice', () => {
 		const barScopeEffectObserver: Observer<number> = createMockObserver();
 		const borScopeEffectObserver: Observer<number> = createMockObserver();
 
-		const rootReducerSpy = jest.fn((state, _action) => state);
-		const fooReducerSpy = jest.fn((state, _action) => state);
-		const barReducerSpy = jest.fn((state, _action) => state);
-		const borReducerSpy = jest.fn((state, _action) => state);
+		const rootReducerSpy = vi.fn<[RootState, unknown], RootState>((state, _action) => state);
+		const fooReducerSpy = vi.fn<[FooState, unknown], FooState>((state, _action) => state);
+		const barReducerSpy = vi.fn<[number, unknown], number>((state, _action) => state);
+		const borReducerSpy = vi.fn<[string, unknown], string>((state, _action) => state);
 
 		let testAction: Action<number>;
 		let auxillaryTestAction: Action<number>;
-		const barAuxillaryReducerSpy = jest.fn((_state, action) => action);
+		const barAuxillaryReducerSpy = vi.fn<[number, number], number>((_state, action) => action);
 
 		beforeEach(() => {
 			effectSource = new Subject<number>();
@@ -298,7 +302,7 @@ describe('slice', () => {
 
 		it('should complete scoped actions', () => {
 			const action = borSlice.createAction('test');
-			const actionCompleteSpy = jest.spyOn(action, 'complete');
+			const actionCompleteSpy = vi.spyOn(action, 'complete');
 			borSlice.complete();
 			expect(actionCompleteSpy).toBeCalled();
 		});
@@ -533,9 +537,9 @@ describe('slice', () => {
 		const fooSliceObserver: Observer<FooState> = createMockObserver();
 		const barSliceObserver: Observer<string> = createMockObserver();
 
-		let testAction!: Action<void>;
+		let testAction!: Action;
 
-		const reducerSpy = jest.fn<void, [string, string]>();
+		const reducerSpy = vi.fn<[string, string], unknown>();
 
 		beforeEach(() => {
 			testAction = scope.createAction('test');
@@ -618,12 +622,12 @@ describe('slice', () => {
 			[FOO_SLICE_NAME]: 'a',
 		};
 
-		let errorTestAction: Action<void>;
+		let errorTestAction: Action;
 		const testError = new Error('error from test action');
 
 		const rootObserver: Observer<RootState> = createMockObserver();
 
-		let consoleErrorSpy: jest.SpyInstance;
+		let consoleErrorSpy: SpyInstance;
 
 		beforeEach(() => {
 			errorTestAction = scope.createAction('error test action');
@@ -635,7 +639,7 @@ describe('slice', () => {
 				],
 			});
 
-			consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => undefined);
+			consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
 
 			sink.add(rootSlice.subscribe(rootObserver));
 		});
@@ -927,15 +931,15 @@ describe('slice', () => {
 		});
 
 		it('should be undefined initially', () => {
-			expect(optionalSlice.value?.data).toBeUndefined();
+			expect(optionalSlice.value.data).toBeUndefined();
 		});
 
 		it('should not emit if the parent was changed but the optional slice not', () => {
-			expect(optionalSlice.value?.data).toBeUndefined();
+			expect(optionalSlice.value.data).toBeUndefined();
 		});
 
 		it('should emit undefined if the slice becomes uninitialzed', () => {
-			expect(optionalSlice.value?.data).toBeUndefined();
+			expect(optionalSlice.value.data).toBeUndefined();
 		});
 
 		it('should be able to be initialized from their parent', () => {

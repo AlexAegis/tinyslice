@@ -1,22 +1,18 @@
+import { isNotNullish } from '@alexaegis/common';
 import {
-	isNonNullable,
-	ReduceActionSliceSnapshot,
-	TinySlicePlugin,
-	TinySlicePluginHooks,
 	TINYSLICE_PREFIX,
+	type ReduceActionSliceSnapshot,
+	type TinySlicePlugin,
+	type TinySlicePluginHooks,
 } from '@tinyslice/core';
-import { debounceTime, Observable, Subscription, tap } from 'rxjs';
+import { Observable, Subscription, debounceTime, tap } from 'rxjs';
 
 export const DEFAULT_OPTIONS: HydrationPluginOptions<unknown, unknown> = {
 	trimmer: (state) => state,
 	migrations: [],
 	getter: (key) => {
 		const persistedState = localStorage.getItem(key);
-		if (persistedState) {
-			return JSON.parse(persistedState);
-		} else {
-			return undefined;
-		}
+		return persistedState ? (JSON.parse(persistedState) as unknown) : undefined;
 	},
 	setter: (key, state) => {
 		const serializedState = JSON.stringify(state);
@@ -59,7 +55,7 @@ export class TinySliceHydrationPlugin<State, SavedState extends State = State>
 	private hooks!: TinySlicePluginHooks<State>;
 	private additionalTriggers: (() => void)[] = [];
 
-	private pipeline?: Observable<ReduceActionSliceSnapshot<State>>;
+	private pipeline?: Observable<ReduceActionSliceSnapshot<State>> | undefined;
 
 	constructor(
 		private readonly localStorageKey: string,
@@ -78,7 +74,7 @@ export class TinySliceHydrationPlugin<State, SavedState extends State = State>
 			const getter = migration.getter ?? this.options.getter;
 			const stateToBeMigrated = getter(migration.fromKey);
 
-			if (isNonNullable(stateToBeMigrated)) {
+			if (isNotNullish(stateToBeMigrated)) {
 				console.group(
 					`${TINYSLICE_PREFIX} Running migration from ${migration.fromKey} to ${migration.toKey}`
 				);

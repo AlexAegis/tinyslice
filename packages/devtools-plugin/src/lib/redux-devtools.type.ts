@@ -182,10 +182,10 @@ export interface ReduxDevtoolsExtensionConfig {
 	};
 }
 
-export type SerializationOptions = {
+export interface SerializationOptions {
 	options?: unknown;
 	replacer?: (key: string, value: unknown) => void;
 	reviver?: (key: string, value: unknown) => void;
 	immutable?: boolean;
-	refs?: Array<unknown>;
-};
+	refs?: unknown[];
+}
