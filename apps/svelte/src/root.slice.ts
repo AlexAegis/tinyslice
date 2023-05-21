@@ -2,12 +2,11 @@ import { Scope } from '@tinyslice/core';
 import { TinySliceHydrationPlugin } from '@tinyslice/hydration-plugin';
 import packageJson from '../../../package.json';
 
-import { tap } from 'rxjs';
+import { switchMap, tap } from 'rxjs';
 
-const PACKAGE_NAME_AND_VERSION = `${packageJson?.displayName ?? 'app'} (${
-	packageJson?.version ?? '0.0.0'
-})`;
+const PACKAGE_NAME_AND_VERSION = `${packageJson.displayName} (${packageJson.version})`;
 
+// TODO delete
 type CarbonTheme = 'white' | 'g10' | 'g80' | 'g90' | 'g100';
 
 export const scope = new Scope();
@@ -38,23 +37,21 @@ scope.createEffect(
 
 scope.createEffect(
 	debug$.pipe(
-		tap((debug) => {
+		switchMap(async (debug) => {
 			if (debug) {
-				rootSlice.loadAndSetPlugins(
-					() =>
-						import('@tinyslice/devtools-plugin').then(
-							(plugin) =>
-								new plugin.TinySliceDevtoolPlugin({
-									name: PACKAGE_NAME_AND_VERSION,
-								})
-						),
-					() =>
-						import('@tinyslice/logger-plugin').then(
-							(plugin) =>
-								new plugin.TinySliceLoggerPlugin({
-									onlyTimers: true,
-								})
-						)
+				await rootSlice.loadAndSetPlugins(
+					async () => {
+						const plugin = await import('@tinyslice/devtools-plugin');
+						return new plugin.TinySliceDevtoolPlugin({
+							name: PACKAGE_NAME_AND_VERSION,
+						});
+					},
+					async () => {
+						const plugin = await import('@tinyslice/logger-plugin');
+						return new plugin.TinySliceLoggerPlugin({
+							onlyTimers: true,
+						});
+					}
 				);
 			} else {
 				rootSlice.setPlugins([]);

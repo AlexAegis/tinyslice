@@ -70,15 +70,11 @@
 		"release:major": "commit-and-tag-version --sign --commit-all --release-as major",
 		"release:minor": "commit-and-tag-version --sign --commit-all --release-as minor",
 		"release:patch": "commit-and-tag-version --sign --commit-all --release-as patch",
-		"serve": "nx serve",
-		"serve:angular": "nx run angular:serve",
-		"serve:svelte": "nx run svelte:serve",
 		"setup-all": "setup-prettier && setup-editorconfig && setup-husky && setup-git && setup-commitlint && setup-eslint && setup-github && setup-ts && setup-remark && setup-standard-version && setup-stylelint && setup-depcheck && setup-turbo && setup-vite && setup-vitest && setup-workspace",
-		"start": "nx run svelte:serve",
+		"start": "turbo run start --filter @tinyslice/svelte-example",
 		"test": "turbo run test_ --concurrency 16 --cache-dir .cache/turbo",
 		"test:jest": "jest --passWithNoTests",
-		"typedoc": "turbo run typedoc_ --concurrency 16 --cache-dir .cache/turbo",
-		"update": "nx migrate latest"
+		"typedoc": "turbo run typedoc_ --concurrency 16 --cache-dir .cache/turbo"
 	},
 	"dependencies": {},
 	"devDependencies": {

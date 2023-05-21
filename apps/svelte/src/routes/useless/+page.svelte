@@ -11,15 +11,15 @@
 
 <div class="mousemovetest">
 	<h1>
-		<span class="strikethrought" class:nonstrikethrought={$isOn$}>Working</span>
+		<span class="strikethrought" class:nonstrikethrought="{$isOn$}">Working</span>
 		Useless Machine
 	</h1>
 
 	{#if $isOn$}
-		<Button on:click={() => isOn$.set(false)}>Turn off!</Button>
+		<Button on:click="{() => isOn$.set(false)}">Turn off!</Button>
 		<span>Can't see me!</span>
 	{:else}
-		<Button on:click={() => isOn$.set(true)}>Turn on!</Button>
+		<Button on:click="{() => isOn$.set(true)}">Turn on!</Button>
 	{/if}
 
 	<p>
