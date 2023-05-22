@@ -1,37 +1,40 @@
 <script lang="ts">
-	import {
-		Column,
-		Grid,
-		ListItem,
-		Row,
-		TextInput,
-		UnorderedList,
-	} from 'carbon-components-svelte';
-	import { messageActions, messageHistory$, messageSlice } from './message.slice';
+	import { messageActions, messageHistory$, messageSlice } from './message.slice.js';
 </script>
 
-<h1>Messages</h1>
+<section>
+	<h1>Messages</h1>
 
-<Grid>
-	<Row>
-		<Column>
-			<TextInput
-				type="text"
-				on:input={(event) => messageActions.sendMessage.next(event.detail)}
-			/>
-		</Column>
-	</Row>
-	<Row>
-		<Column>
-			<span>
-				Last message {$messageSlice.lastMessage}
-			</span>
-		</Column>
-	</Row>
-</Grid>
+	<div>
+		<input
+			class="input"
+			type="text"
+			on:input="{(event) => messageActions.sendMessage.next(event)}"
+		/>
+	</div>
 
-<UnorderedList>
-	{#each $messageHistory$ as message}
-		<ListItem>{message}</ListItem>
-	{/each}
-</UnorderedList>
+	<div>
+		<span>
+			Last message {$messageSlice.lastMessage}
+		</span>
+	</div>
+
+	<ol>
+		{#each $messageHistory$ as message}
+			<li>{message}</li>
+		{/each}
+	</ol>
+</section>
+
+<style>
+	section {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 1em;
+	}
+
+	ol,
+	h1 {
+		grid-column: -1 / 1;
+	}
+</style>

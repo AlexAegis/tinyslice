@@ -1,6 +1,5 @@
 <script lang="ts">
 	import type { DicedSliceChild } from '@tinyslice/core';
-	import { Button } from 'carbon-components-svelte';
 	import type { pieDicer } from './deepdish.slice';
 
 	export let pieSlice$: DicedSliceChild<typeof pieDicer>;
@@ -21,15 +20,27 @@
 <span>
 	<h4>Sauce: {$sauce$}</h4>
 
-	<Button on:click={addSauce}>Add Sauce</Button>
-	<Button on:click={() => pieActions.clearSauce.next()}>Clear Sauce</Button>
+	<button type="button" class="btn variant-filled" on:click="{addSauce}">Add Sauce</button>
+	<button
+		type="button"
+		class="btn variant-filled"
+		on:click="{() => pieActions.clearSauce.next(undefined)}"
+	>
+		Clear Sauce
+	</button>
 </span>
 
 <span>
 	<h4 title="It's under the sauce">Cheese: {$cheese$}</h4>
 
-	<Button on:click={addCheese}>Add Cheese</Button>
-	<Button on:click={() => pieActions.clearCheese.next()}>Clear Cheese</Button>
+	<button type="button" class="btn variant-filled" on:click="{addCheese}"> Add Cheese </button>
+	<button
+		type="button"
+		class="btn variant-filled"
+		on:click="{() => pieActions.clearCheese.next(undefined)}"
+	>
+		Clear Cheese
+	</button>
 </span>
 
 <style>

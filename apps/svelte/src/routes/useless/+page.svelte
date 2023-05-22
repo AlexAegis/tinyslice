@@ -1,8 +1,7 @@
 <script lang="ts">
-	import { Button } from 'carbon-components-svelte';
 	import { onDestroy } from 'svelte';
 
-	import { isOn$ } from './useless.slice';
+	import { isOn$ } from './useless.slice.js';
 
 	const subscription = isOn$.subscribe((isOn) => console.log('isOn?', isOn));
 
@@ -16,10 +15,14 @@
 	</h1>
 
 	{#if $isOn$}
-		<Button on:click="{() => isOn$.set(false)}">Turn off!</Button>
+		<button type="button" class="btn variant-filled" on:click="{() => isOn$.set(false)}">
+			Turn off!
+		</button>
 		<span>Can't see me!</span>
 	{:else}
-		<Button on:click="{() => isOn$.set(true)}">Turn on!</Button>
+		<button type="button" class="btn variant-filled" on:click="{() => isOn$.set(true)}">
+			Turn on!
+		</button>
 	{/if}
 
 	<p>

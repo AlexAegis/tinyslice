@@ -1,47 +1,64 @@
 <script lang="ts">
-	import { Button } from 'carbon-components-svelte';
 	import { Observer } from 'svelte-rxjs-observer';
 
-	import { count$, counterActions, counterSlice } from './counter.slice';
+	import { count$, counterActions, counterSlice } from './counter.slice.js';
 </script>
 
-<div class="counterExample">
-	<h1>Counter: {$count$}</h1>
+<div class="counter-example">
+	<h1 class="h1">Counter: {$count$}</h1>
 	<div>
-		<Button on:click={() => counterActions.increment.next(1)}>Add 1</Button>
-		<Button on:click={() => counterActions.decrement.next(1)}>Sub 1</Button>
+		<button
+			type="button"
+			class="btn variant-filled"
+			on:click="{() => counterActions.increment.next(1)}"
+		>
+			Add 1
+		</button>
+		<button
+			type="button"
+			class="btn variant-filled"
+			on:click="{() => counterActions.decrement.next(1)}"
+		>
+			Sub 1
+		</button>
 	</div>
-	<div class="internalCounter">
+	<div class="internal-counter m-12">
 		<div>
 			<div>
-				<Observer observable={counterSlice.internals.internalCounter$} let:next>
+				<Observer observable="{counterSlice.internals.internalCounter$}" let:next>
 					internalCounter: {JSON.stringify(next)}
 				</Observer>
 			</div>
 			<div>
-				<Button
-					on:click={() =>
+				<button
+					type="button"
+					class="btn variant-filled"
+					on:click="{() =>
 						counterSlice.internals.internalCount$.set(
 							counterSlice.internals.internalCount$.value + 1
-						)}>Add 1</Button
+						)}">Add 1</button
 				>
-				<Button
-					on:click={() =>
+				<button
+					type="button"
+					class="btn variant-filled"
+					on:click="{() =>
 						counterSlice.internals.internalCount$.set(
 							counterSlice.internals.internalCount$.value - 1
-						)}>Sub 1</Button
+						)}"
 				>
+					Sub 1
+				</button>
 			</div>
 		</div>
 		<div>
 			internalCount:
-			<Observer observable={counterSlice.internals.internalCount$} let:next>
+			<Observer observable="{counterSlice.internals.internalCount$}" let:next>
 				value: {next}
 			</Observer>
 		</div>
 		<div>
 			internalDirectCounter:
-			<Observer observable={counterSlice.internals.internalDirectCounter$} let:next>
+			<Observer observable="{counterSlice.internals.internalDirectCounter$}" let:next>
 				value: {next}
 			</Observer>
 		</div>
@@ -49,40 +66,50 @@
 		<div>
 			<div>
 				internalNullableCounter:
-				<Observer observable={counterSlice.internals.internalNullableCounter$} let:next>
+				<Observer observable="{counterSlice.internals.internalNullableCounter$}" let:next>
 					value: {JSON.stringify(next)}
 				</Observer>
 			</div>
 			<div>
-				<Button
-					on:click={() =>
-						counterSlice.internals.internalNullableCounter$.set({ internalCount: 1 })}
+				<button
+					type="button"
+					class="btn variant-filled"
+					on:click="{() =>
+						counterSlice.internals.internalNullableCounter$.set({ internalCount: 1 })}"
 				>
 					Set Nullable
-				</Button>
-				<Button
-					on:click={() => counterSlice.internals.internalNullableCounter$.set(undefined)}
+				</button>
+				<button
+					type="button"
+					class="btn variant-filled"
+					on:click="{() =>
+						counterSlice.internals.internalNullableCounter$.set(undefined)}"
 				>
 					Unset Nullable
-				</Button>
+				</button>
 
 				<Observer
-					observable={counterSlice.internals.internalNullableCounter$.paused$}
+					observable="{counterSlice.internals.internalNullableCounter$.paused$}"
 					let:next
 				>
 					{#if next}
-						<Button
-							on:click={() =>
-								counterSlice.internals.internalNullableCounter$.unpause()}
+						<button
+							type="button"
+							class="btn variant-filled"
+							on:click="{() =>
+								counterSlice.internals.internalNullableCounter$.unpause()}"
 						>
 							Unpause Nullable
-						</Button>
+						</button>
 					{:else}
-						<Button
-							on:click={() => counterSlice.internals.internalNullableCounter$.pause()}
+						<button
+							type="button"
+							class="btn variant-filled"
+							on:click="{() =>
+								counterSlice.internals.internalNullableCounter$.pause()}"
 						>
 							Pause Nullable
-						</Button>
+						</button>
 					{/if}
 				</Observer>
 			</div>
@@ -92,27 +119,29 @@
 			<div>
 				internalNullableCounterCount:
 				<Observer
-					observable={counterSlice.internals.internalNullableCounterCount$}
+					observable="{counterSlice.internals.internalNullableCounterCount$}"
 					let:next
 				>
 					value: {JSON.stringify(next)}
 				</Observer>
 
-				<Button
-					on:click={() =>
+				<button
+					type="button"
+					class="btn variant-filled"
+					on:click="{() =>
 						counterSlice.internals.internalNullableCounterCount$.set(
 							counterSlice.internals.internalNullableCounterCount$.value + 1
-						)}
+						)}"
 				>
 					Increment internalNullableCounterCount
-				</Button>
+				</button>
 			</div>
 		</div>
 	</div>
 </div>
 
 <style>
-	.counterExample {
+	.counter-example {
 		display: flex;
 		flex-direction: column;
 		gap: 2em;
@@ -124,7 +153,7 @@
 		gap: 2em;
 	}
 
-	.internalCounter {
+	.internal-counter {
 		margin-top: 2em;
 		display: flex;
 		flex-direction: column;

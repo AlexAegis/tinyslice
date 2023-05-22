@@ -1,5 +1,6 @@
+import { browser } from '$app/environment';
 import { fromEvent, map, withLatestFrom } from 'rxjs';
-import { rootSlice } from '../../root.slice';
+import { rootSlice } from '../../root.slice.js';
 
 export interface MouseMoveState {
 	position: { x: number; y: number };
@@ -25,17 +26,19 @@ export const listenThrottled$ = mouseMoveSlice$.slice('listenThrottled');
 
 export const positionPrint$ = position$.pipe(map(({ x, y }) => `x:${x}, y:${y}`));
 
-mouseMoveSlice$.createEffect(
-	fromEvent(document, 'mousemove').pipe(
-		map((event) => ({
-			x: (event as MouseEvent).clientX,
-			y: (event as MouseEvent).clientY,
-		})),
-		withLatestFrom(listenThrottled$),
-		map(([packet, listenThrottled]) =>
-			listenThrottled
-				? mouseMoveActions.move.makePacket(packet)
-				: position$.setAction.makePacket(packet)
+if (browser) {
+	mouseMoveSlice$.createEffect(
+		fromEvent(document, 'mousemove').pipe(
+			map((event) => ({
+				x: (event as MouseEvent).clientX,
+				y: (event as MouseEvent).clientY,
+			})),
+			withLatestFrom(listenThrottled$),
+			map(([packet, listenThrottled]) =>
+				listenThrottled
+					? mouseMoveActions.move.makePacket(packet)
+					: position$.setAction.makePacket(packet)
+			)
 		)
-	)
-);
+	);
+}

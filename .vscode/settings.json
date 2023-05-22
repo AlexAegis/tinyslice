@@ -1,9 +1,49 @@
+// managed-by-autotool
 {
-	"deno.enable": false,
-	"deno.lint": false,
-	"editor.formatOnSave": true,
+	"[html]": {
+		"editor.defaultFormatter": "esbenp.prettier-vscode"
+	},
+	"[javascript]": {
+		"editor.defaultFormatter": "esbenp.prettier-vscode"
+	},
+	"[json]": {
+		"editor.defaultFormatter": "vscode.json-language-features"
+	},
+	"[jsonc]": {
+		"editor.defaultFormatter": "esbenp.prettier-vscode"
+	},
+	"[markdown]": {
+		"editor.defaultFormatter": "unifiedjs.vscode-remark"
+	},
+	"[python]": {
+		"editor.defaultFormatter": "ms-python.python"
+	},
+	"[rust]": {
+		"editor.defaultFormatter": "rust-lang.rust-analyzer"
+	},
+	"[svelte]": {
+		"editor.defaultFormatter": "svelte.svelte-vscode"
+	},
+	"[typescript]": {
+		"editor.defaultFormatter": "esbenp.prettier-vscode"
+	},
 	"editor.autoIndent": "full",
-	"editor.tabCompletion": "off",
+	"editor.codeActionsOnSave": {
+		"source.fixAll": true,
+		"source.fixAll.eslint": true,
+		"source.fixAll.stylelint": true,
+		"source.organizeImports": true
+	},
+	"editor.defaultFormatter": "esbenp.prettier-vscode",
+	"editor.fontLigatures": true,
+	"editor.formatOnSave": true,
+	"editor.mouseWheelZoom": true,
+	"editor.quickSuggestions": {
+		"comments": false,
+		"other": true,
+		"strings": false
+	},
+	"editor.quickSuggestionsDelay": 0,
 	"editor.rulers": [
 		{
 			"color": "#bdbdbd11",
@@ -14,40 +54,57 @@
 			"column": 100
 		}
 	],
-	"editor.quickSuggestionsDelay": 0,
-	"editor.quickSuggestions": {
-		"other": true,
-		"comments": false,
-		"strings": false
-	},
-	"editor.wordBasedSuggestions": true,
-	"editor.suggest.localityBonus": true,
 	"editor.snippetSuggestions": "bottom",
-	"editor.codeActionsOnSave": {
-		"source.fixAll": true,
-		"source.organizeImports": true,
-		// For ESLint
-		"source.fixAll.eslint": true,
-		// For Stylelint
-		"source.fixAll.stylelint": true
-	},
-	"editor.fontLigatures": true,
-	"editor.mouseWheelZoom": true,
-	"files.exclude": {
-		"**/.git": true,
-		"**/.DS_Store": true
+	"editor.suggest.localityBonus": true,
+	"editor.tabSize": 4,
+	"editor.useTabStops": true,
+	"editor.wordBasedSuggestions": true,
+	"eslint.validate": ["javascript", "javascriptreact", "typescript", "typescriptreact", "svelte"],
+	"explorer.fileNesting.enabled": true,
+	"explorer.fileNesting.patterns": {
+		"*.js": "${capture}*",
+		"*.json": "${capture}*",
+		"*.jsx": "${capture}*",
+		"*.ts": "${capture}*",
+		"*.tsx": "${capture}*",
+		".eslintrc.*": ".eslintignore",
+		".gitignore": ".gitattributes",
+		".prettierrc.*": ".prettierignore",
+		".stylelintrc.*": ".stylelintignore"
 	},
 	"files.associations": {
-		"*.json": "jsonc"
+		"*.json": "jsonc",
+		".stylelintrc": "jsonc"
 	},
-	"terminal.integrated.windowsEnableConpty": true,
-	"liveServer.settings.multiRootWorkspaceName": "starter-stack",
-	"prettier.prettierPath": "node_modules/prettier",
+	"files.exclude": {
+		"**/.DS_Store": true,
+		"**/.git": true
+	},
 	"json.schemas": [
 		{
 			"fileMatch": ["typedoc.json"],
 			"url": "https://json.schemastore.org/typedoc"
 		}
 	],
-	"jestrunner.runOptions": ["--coverage"]
+	"todo-tree.regex.regex": "(//|#|<!--|;|/\\*|^|^\\s*(-|\\d+.))\\s*($TAGS)",
+	"stylelint.enable": true,
+	"stylelint.packageManager": "pnpm",
+	"stylelint.validate": [
+		"css",
+		"scss",
+		"postcss",
+		"sass",
+		"html",
+		"svelte",
+		"vue",
+		"astro",
+		"xml",
+		"php"
+	],
+	"svelte.enable-ts-plugin": true,
+	"liveServer.settings.root": "/apps/svelte/build",
+	"liveServer.settings.file": "index.html",
+	"terminal.integrated.windowsEnableConpty": true,
+	"vitest.commandLine": "npx vitest --coverage",
+	"vitest.enable": true
 }

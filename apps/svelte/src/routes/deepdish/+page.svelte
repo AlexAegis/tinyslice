@@ -1,34 +1,46 @@
 <script lang="ts">
-	import { Button } from 'carbon-components-svelte';
 	import type { Observable } from 'rxjs';
-	import { pieDicer } from './deepdish.slice';
+	import { pieDicer } from './deepdish.slice.js';
 	import Pie from './pie.svelte';
 	let keys$: Observable<string[]> = pieDicer.keys$;
 </script>
 
-<div class="deepDishExample">
+<div class="deep-dish-example">
 	<h1>Deep Dish</h1>
 
 	<ul class="rows">
 		{#each $keys$ as key (key)}
 			<li class="row">
 				<h2>{key}</h2>
-				<Pie pieSlice$={pieDicer.get(key)} />
-				<Button class="delete" kind="danger" on:click={() => pieDicer.remove(key)}
-					>Remove Slice</Button
+				<Pie pieSlice$="{pieDicer.get(key)}" />
+				<button
+					type="button"
+					class="delete btn variant-filled"
+					kind="danger"
+					on:click="{() => pieDicer.remove(key)}"
 				>
+					Remove Slice
+				</button>
 			</li>
 		{/each}
 	</ul>
 
 	<div class="controls">
-		<Button on:click={() => pieDicer.add({ cheese: 0, sauce: 0 })}>Add Slice</Button>
-		<Button on:click={() => pieDicer.create()}>Create Slice</Button>
+		<button
+			type="button"
+			class="btn variant-filled"
+			on:click="{() => pieDicer.add({ cheese: 0, sauce: 0 })}"
+		>
+			Add Slice
+		</button>
+		<button type="button" class="btn variant-filled" on:click="{() => pieDicer.create()}">
+			Create Slice
+		</button>
 	</div>
 </div>
 
 <style>
-	.deepDishExample {
+	.deep-dish-example {
 		display: flex;
 		flex-direction: column;
 		gap: 1em;

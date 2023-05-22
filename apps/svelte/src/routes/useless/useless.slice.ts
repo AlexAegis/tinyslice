@@ -1,5 +1,5 @@
 import { filter, map } from 'rxjs';
-import { rootSlice, scope } from '../../root.slice';
+import { rootSlice, scope } from '../../root.slice.js';
 
 export interface UselessState {
 	isOn: boolean;

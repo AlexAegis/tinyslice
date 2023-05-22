@@ -131,7 +131,9 @@ export class TinySliceHydrationPlugin<State, SavedState extends State = State>
 	};
 
 	start = (): void => {
-		if (this.pipeline) this.sink.add(this.pipeline.subscribe());
+		if (this.pipeline) {
+			this.sink.add(this.pipeline.subscribe());
+		}
 	};
 
 	stop = (): void => {

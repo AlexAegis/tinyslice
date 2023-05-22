@@ -1,4 +1,4 @@
-import { rootSlice } from '../../root.slice';
+import { rootSlice } from '../../root.slice.js';
 
 export interface BoxState {
 	count: number;
@@ -24,11 +24,13 @@ const pies$ = deepdishSlice$.slice('pies');
 export const pieDicer = pies$.dice({ cheese: -1, sauce: -1 } as PieState, {
 	getAllKeys: (state) => Object.keys(state),
 	getNextKey: (keys) =>
-		(keys.map((key) => parseInt(key, 10)).reduce((a, b) => (a > b ? a : b), 0) + 1).toString(),
+		(
+			keys.map((key) => Number.parseInt(key, 10)).reduce((a, b) => (a > b ? a : b), 0) + 1
+		).toString(),
 	defineInternals: (slice) => {
 		const pieActions = {
-			clearCheese: slice.createAction<void>('clear cheese'),
-			clearSauce: slice.createAction<void>('clear sauce', { throttleTime: 300 }),
+			clearCheese: slice.createAction('clear cheese'),
+			clearSauce: slice.createAction('clear sauce', { throttleTime: 300 }),
 		};
 
 		const cheese$ = slice.slice('cheese', {

@@ -1,4 +1,4 @@
-import { rootSlice, scope } from '../../root.slice';
+import { rootSlice, scope } from '../../root.slice.js';
 
 export const counterActions = {
 	increment: scope.createAction<number>('[Count] increment'),
