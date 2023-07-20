@@ -35,7 +35,9 @@ describe('slice', () => {
 	afterEach(() => {
 		vi.clearAllMocks();
 	});
-	afterEach(() => sink.unsubscribe());
+	afterEach(() => {
+		sink.unsubscribe();
+	});
 
 	describe('effects', () => {
 		interface RootState {
@@ -118,40 +120,40 @@ describe('slice', () => {
 
 			scope.createEffect(
 				auxillaryTestAction.pipe(
-					map((payload) => auxillaryTestAction.makePacket(payload + 1))
-				)
+					map((payload) => auxillaryTestAction.makePacket(payload + 1)),
+				),
 			);
 
 			rootSlice.createEffect(
 				effectSource.pipe(
 					tap(rootScopeEffectObserver.next),
 					finalize(rootScopeEffectObserver.complete),
-					map((n) => testAction.makePacket(n))
-				)
+					map((n) => testAction.makePacket(n)),
+				),
 			);
 
 			fooSlice.createEffect(
 				effectSource.pipe(
 					tap(fooScopeEffectObserver.next),
 					finalize(fooScopeEffectObserver.complete),
-					map((n) => testAction.makePacket(n))
-				)
+					map((n) => testAction.makePacket(n)),
+				),
 			);
 
 			barSlice.createEffect(
 				effectSource.pipe(
 					tap(barScopeEffectObserver.next),
 					finalize(barScopeEffectObserver.complete),
-					map((n) => testAction.makePacket(n))
-				)
+					map((n) => testAction.makePacket(n)),
+				),
 			);
 
 			borSlice.createEffect(
 				effectSource.pipe(
 					tap(borScopeEffectObserver.next),
 					finalize(borScopeEffectObserver.complete),
-					map((n) => testAction.makePacket(n))
-				)
+					map((n) => testAction.makePacket(n)),
+				),
 			);
 		});
 
@@ -746,7 +748,7 @@ describe('slice', () => {
 				expect(berSliceObserver.next).toHaveBeenLastCalledWith(initialBerSlice);
 				expect(zedSliceObserver.next).toHaveBeenLastCalledWith(initialZedSlice);
 				expect(unchangingSliceObserver.next).toHaveBeenLastCalledWith(
-					initialUnchangingSlice
+					initialUnchangingSlice,
 				);
 
 				expect(rootObserver.next).toHaveBeenCalledTimes(2);
@@ -775,7 +777,7 @@ describe('slice', () => {
 				expect(berSliceObserver.next).toHaveBeenLastCalledWith(nextBerSlice);
 				expect(zedSliceObserver.next).toHaveBeenLastCalledWith(initialZedSlice);
 				expect(unchangingSliceObserver.next).toHaveBeenLastCalledWith(
-					initialUnchangingSlice
+					initialUnchangingSlice,
 				);
 
 				expect(rootObserver.next).toHaveBeenCalledTimes(2);
@@ -903,10 +905,10 @@ describe('slice', () => {
 
 		beforeEach(() => {
 			externalOptionalSliceSetAction = scope.createAction<DeepOptionalSlice>(
-				'setOptionalSliceExternal'
+				'setOptionalSliceExternal',
 			);
 			externalOptionalInnerSliceSetAction = scope.createAction<string>(
-				'setOptionalInnerSliceExternal'
+				'setOptionalInnerSliceExternal',
 			);
 
 			rootSlice = scope.createRootSlice(initialRootSlice);
@@ -949,7 +951,7 @@ describe('slice', () => {
 
 			expect(optionalSliceObserver.next).toHaveBeenLastCalledWith(definedOptionalSlice);
 			expect(optionalInnerSliceObserver.next).toHaveBeenLastCalledWith(
-				definedOptionalInnerSlice
+				definedOptionalInnerSlice,
 			);
 		});
 
@@ -964,7 +966,7 @@ describe('slice', () => {
 			expect(rootObserver.next).toHaveBeenLastCalledWith(definedRootSlice);
 			expect(optionalSliceObserver.next).toHaveBeenLastCalledWith(definedOptionalSlice);
 			expect(optionalInnerSliceObserver.next).toHaveBeenLastCalledWith(
-				definedOptionalInnerSlice
+				definedOptionalInnerSlice,
 			);
 			expect(rootObserver.next).toHaveBeenCalledTimes(2);
 			expect(optionalSliceObserver.next).toHaveBeenCalledTimes(2);
@@ -981,7 +983,7 @@ describe('slice', () => {
 			externalOptionalSliceSetAction.next(definedOptionalSlice);
 			expect(optionalSliceObserver.next).toHaveBeenLastCalledWith(definedOptionalSlice);
 			expect(optionalInnerSliceObserver.next).toHaveBeenLastCalledWith(
-				definedOptionalInnerSlice
+				definedOptionalInnerSlice,
 			);
 			expect(rootObserver.next).toHaveBeenCalledTimes(2);
 			expect(optionalSliceObserver.next).toHaveBeenCalledTimes(2);
@@ -1016,7 +1018,7 @@ describe('slice', () => {
 			expect(rootObserver.next).toHaveBeenLastCalledWith(definedRootSlice);
 			expect(optionalSliceObserver.next).toHaveBeenLastCalledWith(definedOptionalSlice);
 			expect(optionalInnerSliceObserver.next).toHaveBeenLastCalledWith(
-				definedOptionalInnerSlice
+				definedOptionalInnerSlice,
 			);
 			expect(rootObserver.next).toHaveBeenCalledTimes(2);
 			expect(optionalSliceObserver.next).toHaveBeenCalledTimes(2);
@@ -1026,7 +1028,7 @@ describe('slice', () => {
 			expect(rootObserver.next).toHaveBeenLastCalledWith(initialRootSlice);
 			expect(optionalSliceObserver.next).toHaveBeenLastCalledWith(undefined);
 			expect(optionalInnerSliceObserver.next).toHaveBeenLastCalledWith(
-				definedOptionalInnerSlice
+				definedOptionalInnerSlice,
 			); // does not emit again
 			expect(rootObserver.next).toHaveBeenCalledTimes(3);
 			expect(optionalSliceObserver.next).toHaveBeenCalledTimes(3);

@@ -7,7 +7,7 @@ on:
     branches: '**'
 
 env:
-  PAGES_DEPLOY_ARTIFACT_DIR: 'build'
+  PAGES_DEPLOY_ARTIFACT_DIR: 'apps/svelte/build'
   PAGES_DEPLOY_ARTIFACT_BUILDING_JOB: 'build'
   TURBO_TOKEN: ${{ secrets.VERCEL_TOKEN }}
   TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
@@ -29,7 +29,7 @@ jobs:
     strategy:
       matrix:
         node-version: [18.x]
-        lint-kind: [tsc, es, format, md, style, svelte, depcheck]
+        lint-kind: [tsc, es, md, format, style, svelte, depcheck]
     steps:
       - name: checkout
         uses: actions/checkout@v3
@@ -166,8 +166,6 @@ jobs:
         run: pnpm install
       - name: test
         run: pnpm run test
-      - name: merge lcov reports
-        run: pnpm run merge-coverage
       - name: upload coverage result to codacy
         uses: codacy/codacy-coverage-reporter-action@v1
         with:
@@ -241,6 +239,8 @@ jobs:
         env:
           BASE_HREF: '/${{ github.event.repository.name }}/'
         run: pnpm run build
+      - name: publint
+        run: pnpm run publint
       - name: prepare pages (use index.html as 404.html)
         if: |
           env.PAGES_DEPLOY_ARTIFACT_BUILDING_JOB == 'build' &&
@@ -282,17 +282,31 @@ jobs:
         if: |
           env.PAGES_DEPLOY_ARTIFACT_DIR != '' &&
           env.PAGES_DEPLOY_ARTIFACT_DIR != null
+  collect:
+    runs-on: ubuntu-latest
+    outputs:
+      non_published_packages:
+        ${{ steps.collect_packages.outputs.non_published_packages }}
+    steps:
+      - name: checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 1
+      - name: collect public packages
+        id: collect_packages
+        uses: AlexAegis/collect-public-packages@v1
   release:
-    name: release
-    if:
+    name: |
+      release ${{ matrix.package.package_name }}@${{ matrix.package.package_version }}
+    if: |
+      needs.collect.outputs.non_published_packages &&
       github.ref_name == github.event.repository.default_branch &&
       github.event_name != 'pull_request'
     runs-on: ubuntu-latest
-    needs: [build, test, lint, typedoc]
+    needs: [collect, build, test, lint, typedoc]
     strategy:
       matrix:
-        artifact:
-          ['core', 'devtools-plugin', 'hydration-plugin', 'logger-plugin']
+        package: ${{ fromJSON(needs.collect.outputs.non_published_packages) }}
     steps:
       - name: checkout
         uses: actions/checkout@v3
@@ -309,28 +323,9 @@ jobs:
         id: pnpm-cache
         run: |
           echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
-      - name: get package name
-        id: packageName
-        uses: notiz-dev/github-action-json-property@release
-        with:
-          path: 'packages/${{ matrix.artifact }}/package.json'
-          prop_path: 'name'
-      - name: get package version
-        id: packageVersion
-        uses: notiz-dev/github-action-json-property@release
-        with:
-          path: 'packages/${{ matrix.artifact }}/package.json'
-          prop_path: 'version'
-      - name: |
-          Check if ${{steps.packageName.outputs.prop}}@${{steps.packageVersion.outputs.prop}} is already deployed
-        run: |
-          IS_ON_NPM=$(if [ ! -z "$(npm view ${{steps.packageName.outputs.prop}}@${{steps.packageVersion.outputs.prop}}  2> /dev/null)" ]; then echo 'true'; else echo 'false'; fi)
-          echo "IS_ON_NPM=$IS_ON_NPM" >> $GITHUB_ENV
-          echo "was ${{steps.packageName.outputs.prop}}@${{steps.packageVersion.outputs.prop}} already on npm: $IS_ON_NPM"
       - name: cache
         id: cache
         uses: actions/cache@v3
-        if: env.IS_ON_NPM != 'true'
         with:
           path: |
             ${{ steps.pnpm-cache.outputs.STORE_PATH }}
@@ -339,23 +334,20 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-
       - name: install
-        if: env.IS_ON_NPM != 'true'
         run: pnpm install
       - name: |
-          build ${{steps.packageName.outputs.prop}}@${{steps.packageVersion.outputs.prop}}
-        if: env.IS_ON_NPM != 'true'
+          build ${{ matrix.package.package_name }}@${{ matrix.package.package_version }}
         run: |
-          npx turbo run build-lib_ --filter="${{ matrix.artifact }}" --concurrency 16 --cache-dir=.cache/turbo
+          npx turbo run build-lib_ --filter="${{ matrix.package.package_name }}" --concurrency 16 --cache-dir=.cache/turbo
       - name: |
-          publint ${{steps.packageName.outputs.prop}}@${{steps.packageVersion.outputs.prop}}
-        if: env.IS_ON_NPM != 'true'
+          publint ${{ matrix.package.package_name }}@${{ matrix.package.package_version }}
         run: |
-          npx turbo run publint_ --filter="${{ matrix.artifact }}" --concurrency 16 --cache-dir=.cache/turbo
+          npx turbo run publint_ --filter="${{ matrix.package.package_name }}" --concurrency 16 --cache-dir=.cache/turbo
       - name: |
-          release ${{steps.packageName.outputs.prop}}@${{steps.packageVersion.outputs.prop}} on npm
-        if: env.IS_ON_NPM != 'true'
+          release ${{ matrix.package.package_name }}@${{ matrix.package.package_version }} on npm
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: pnpm publish packages/${{ matrix.artifact }}/dist/ --access public
+        run: |
+          pnpm publish --access public --provenance ${{ matrix.package.package_path_from_root_package }}/dist/

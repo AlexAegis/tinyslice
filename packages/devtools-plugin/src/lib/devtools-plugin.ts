@@ -18,7 +18,7 @@ export const DEFAULT_DEVTOOLS_OPTIONS: Partial<ReduxDevtoolsExtensionConfig> = {
 };
 
 // eslint-disable-next-line unicorn/no-null
-const jsonUndefinedReplacer = <T>(_key: string, value: T) => (value === undefined ? null : value);
+const jsonUndefinedReplacer = <T>(_key: string, value: T) => value ?? null;
 
 const normalizeUndefined = <T>(obj: T): T => {
 	const stringified = JSON.stringify(obj, jsonUndefinedReplacer);
@@ -76,12 +76,12 @@ export class TinySliceDevtoolPlugin<State = unknown> implements TinySlicePlugin<
 					tap<ReduceActionSliceSnapshot<State>>(({ actionPacket, nextState }) => {
 						this.lastState = normalizeUndefined(nextState);
 
-						this.actions[this.actionId] = actionPacket ;
+						this.actions[this.actionId] = actionPacket;
 						this.actionId += 1;
 						connection.send(actionPacket as ActionLike, this.lastState);
-					})
+					}),
 				)
-				.subscribe()
+				.subscribe(),
 		);
 
 		this.unsubscribeStateInjector = connection.subscribe((message) => {

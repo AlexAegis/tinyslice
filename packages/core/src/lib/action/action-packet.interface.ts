@@ -11,8 +11,8 @@ export type ActionPacketTuple<T> = {
 };
 
 export const isActionPacket = <P>(
-	actionPacket?: unknown | undefined,
-	registeredInActionMap?: Map<string, Action<unknown>>
+	actionPacket?: unknown,
+	registeredInActionMap?: Map<string, Action<unknown>>,
 ): actionPacket is ActionPacket<P> => {
 	return (
 		actionPacket !== undefined &&

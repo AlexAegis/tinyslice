@@ -1,5 +1,7 @@
 <script lang="ts">
 	import { messageActions, messageHistory$, messageSlice } from './message.slice.js';
+
+	let value: string;
 </script>
 
 <section>
@@ -9,7 +11,8 @@
 		<input
 			class="input"
 			type="text"
-			on:input="{(event) => messageActions.sendMessage.next(event)}"
+			bind:value
+			on:input="{() => messageActions.sendMessage.next(value)}"
 		/>
 	</div>
 

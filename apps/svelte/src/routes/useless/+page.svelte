@@ -3,9 +3,13 @@
 
 	import { isOn$ } from './useless.slice.js';
 
-	const subscription = isOn$.subscribe((isOn) => console.log('isOn?', isOn));
+	const subscription = isOn$.subscribe((isOn) => {
+		console.log('isOn?', isOn);
+	});
 
-	onDestroy(() => subscription.unsubscribe());
+	onDestroy(() => {
+		subscription.unsubscribe();
+	});
 </script>
 
 <div class="mousemovetest">

@@ -46,7 +46,7 @@ import type {
 	ReduceActionSliceSnapshot,
 	ReducerConfiguration,
 } from './reducer.type.js';
-import { Scope } from './scope.class.js';
+import type { Scope } from './scope.class.js';
 import type { Selector } from './selector.type.js';
 import type { StrictRuntimeChecks } from './strict-runtime-checks.interface.js';
 
@@ -59,7 +59,7 @@ export interface DicedSlice<
 	ChildState,
 	ParentInternals,
 	ChildInternals,
-	DiceKey extends ObjectKey
+	DiceKey extends ObjectKey,
 > {
 	slice: Slice<unknown, State & Record<DiceKey, ChildState>, ParentInternals>;
 	keys: () => DiceKey[];
@@ -75,10 +75,10 @@ export interface DicedSlice<
 	getNextKey: () => DiceKey;
 	has: (key: DiceKey) => boolean;
 	get: (
-		key: DiceKey
+		key: DiceKey,
 	) => Slice<State & Record<DiceKey, ChildState>, NonNullable<ChildState>, ChildInternals>;
 	selectOnceDefined: (
-		key: DiceKey
+		key: DiceKey,
 	) => Promise<
 		Slice<State & Record<DiceKey, ChildState>, NonNullable<ChildState>, ChildInternals>
 	>;
@@ -154,14 +154,14 @@ export interface PremadeDiceConstructOptions<
 	State,
 	ChildState,
 	Internals,
-	ChildInternals
+	ChildInternals,
 > extends SliceOptions<State, ChildState, ChildInternals> {
 	getNextKeyStrategy?: NextKeyStrategy;
 	dicedSliceOptions?: SliceOptions<ParentState, State, Internals>;
 }
 
 const extractSliceOptions = <ParentState, State, Internals>(
-	constructOptions?: SliceOptions<ParentState, State, Internals>
+	constructOptions?: SliceOptions<ParentState, State, Internals>,
 ): SliceOptions<ParentState, State, Internals> => {
 	return {
 		defineInternals: constructOptions?.defineInternals,
@@ -207,7 +207,7 @@ export type SliceDirection<ParentState, State> =
 	| SelectSlicer<ParentState, State>;
 
 export const normalizeSliceDirection = <ParentState, State>(
-	sliceDirection: SliceDirection<ParentState, State>
+	sliceDirection: SliceDirection<ParentState, State>,
 ): SelectSlicer<ParentState, State> => {
 	if (typeof sliceDirection === 'object') {
 		return sliceDirection;
@@ -341,7 +341,7 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 		this.nullishParentPause$ = new BehaviorSubject(false);
 		this.manualPause$ = new BehaviorSubject(false);
 		this.pause$ = combineLatest([this.nullishParentPause$, this.manualPause$]).pipe(
-			map(([nullishParentPause, manualPause]) => nullishParentPause || manualPause)
+			map(([nullishParentPause, manualPause]) => nullishParentPause || manualPause),
 		);
 
 		this._absolutePath = Slice.calculateAbsolutePath(this.parentCoupling, this._pathSegment);
@@ -350,11 +350,11 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 		this.updateAction = this.createAction<Partial<State>>(`${TINYSLICE_DEFAULT_PREFIX} update`);
 
 		this.deleteKeyAction = this.createAction<ObjectKey>(
-			`${TINYSLICE_DEFAULT_PREFIX} delete key`
+			`${TINYSLICE_DEFAULT_PREFIX} delete key`,
 		);
 
 		this.defineKeyAction = this.createAction<{ key: ObjectKey; data: unknown }>(
-			`${TINYSLICE_DEFAULT_PREFIX} define key`
+			`${TINYSLICE_DEFAULT_PREFIX} define key`,
 		);
 
 		this.state$ = new BehaviorSubject<State>(this.initialState);
@@ -393,7 +393,7 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 				for (const reducerConfiguration of reducerConfigurations) {
 					this.scope.registerAction(reducerConfiguration.action);
 				}
-			})
+			}),
 		);
 
 		this.sliceReducer$ = this.reducerConfigurations$.pipe(
@@ -405,18 +405,18 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 									.filter((rc) => rc.action.type === action.type)
 									.reduce(
 										(acc, { packetReducer }) => packetReducer(acc, action),
-										state
+										state,
 									)
-							: state
+							: state,
 			),
-			shareReplay(1)
+			shareReplay(1),
 		);
 
 		this.sliceReducingActions$ = this.reducerConfigurations$.pipe(
 			map((reducerConfigurations) => [
 				...new Set(reducerConfigurations.map((r) => r.action.type)),
 			]),
-			shareReplay(1)
+			shareReplay(1),
 		);
 
 		this.downStreamReducers$ = this.slices$.pipe(
@@ -427,11 +427,11 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 							map((subSliceReducer) => [
 								...sliceReducingActions,
 								...subSliceReducer.flat(),
-							])
+							]),
 					  )
 					: of(sliceReducingActions);
 			}),
-			shareReplay(1) // computed from a behaviorSubject and another computed field
+			shareReplay(1), // computed from a behaviorSubject and another computed field
 		);
 
 		const slicesWithDownStreamReducers$ = this.slices$.pipe(
@@ -443,20 +443,22 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 									map((downStreamReducers) => ({
 										downStreamReducers,
 										sliceRegistration,
-									}))
-								)
-							)
+									})),
+								),
+							),
 					  )
 					: of([]);
 			}),
-			shareReplay(1) // computed from behaviorSubjects from a behaviorSubject
+			shareReplay(1), // computed from behaviorSubjects from a behaviorSubject
 		);
 
 		const schedulingDispatcher$ = this.scope.schedulingDispatcher$.pipe(
 			ifLatestFrom(this.downStreamReducers$, (downStreamReducers, actionPacket) =>
-				downStreamReducers.includes(actionPacket.type)
+				downStreamReducers.includes(actionPacket.type),
 			),
-			tap((actionPacket) => this.executeMetaPreReducers(actionPacket))
+			tap((actionPacket) => {
+				this.executeMetaPreReducers(actionPacket);
+			}),
 		);
 
 		const dispatchAndSlices$ = schedulingDispatcher$.pipe(
@@ -466,9 +468,9 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 					map((slicesWithDownStreamReducers) => ({
 						actionPacket,
 						slicesWithDownStreamReducers,
-					}))
-				)
-			)
+					})),
+				),
+			),
 		);
 
 		const filterSliceRegistrationBasedOnActionTypeSupport = (
@@ -476,7 +478,7 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 				downStreamReducers: string[];
 				sliceRegistration: SliceRegistration<State, unknown, Internals>;
 			}[],
-			actionType: string
+			actionType: string,
 		) => {
 			return slicesWithDownStreamReducers
 				.map(({ sliceRegistration, downStreamReducers }) => {
@@ -487,8 +489,8 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 										({
 											snapshot,
 											sliceRegistration,
-										} as SliceChange<State>)
-								)
+										}) as SliceChange<State>,
+								),
 						  )
 						: undefined;
 				})
@@ -499,14 +501,14 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 			switchMap(({ slicesWithDownStreamReducers, actionPacket }) => {
 				const neededChildSlices = filterSliceRegistrationBasedOnActionTypeSupport(
 					slicesWithDownStreamReducers,
-					actionPacket.type
+					actionPacket.type,
 				);
 				return neededChildSlices.length > 0
 					? zip(neededChildSlices).pipe(
-							map((sliceChanges) => ({ sliceChanges, actionPacket }))
+							map((sliceChanges) => ({ sliceChanges, actionPacket })),
 					  )
 					: of({ sliceChanges: [], actionPacket });
-			})
+			}),
 		);
 
 		this.activePipeline = zippedDispatch.pipe(
@@ -530,15 +532,15 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 							.filter(
 								(sliceChange) =>
 									sliceChange.snapshot.prevState !==
-									sliceChange.snapshot.nextState
+									sliceChange.snapshot.nextState,
 							)
 							.reduce(
 								(prevState, sliceChange) =>
 									sliceChange.sliceRegistration.slicer.merger(
 										prevState,
-										sliceChange.snapshot.nextState
+										sliceChange.snapshot.nextState,
 									),
-								prevState
+								prevState,
 							) ?? prevState;
 
 					return {
@@ -546,7 +548,7 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 						prevState,
 						nextState: sliceReducer(nextState, actionPacket),
 					};
-				}
+				},
 			),
 			tap((snapshot) => {
 				if (snapshot.prevState !== snapshot.nextState) {
@@ -562,9 +564,9 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 							plugin.onError?.(error);
 						}
 					}),
-					switchMap(() => pipeline$)
+					switchMap(() => pipeline$),
 				);
-			})
+			}),
 		);
 
 		this.inactivePipeline = schedulingDispatcher$.pipe(
@@ -575,13 +577,15 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 					prevState: state,
 					nextState: state,
 				} as ReduceActionSliceSnapshot<State>;
-			})
+			}),
 		);
 
 		this.pipeline = this.pause$.pipe(
 			switchMap((paused) => (paused ? this.inactivePipeline : this.activePipeline)),
-			tap((snapshot) => this.executeMetaPostReducers(snapshot)),
-			share() // has to be shared because of child listeners
+			tap((snapshot) => {
+				this.executeMetaPostReducers(snapshot);
+			}),
+			share(), // has to be shared because of child listeners
 		);
 
 		this.plugins$ = new BehaviorSubject<TinySlicePlugin<State>[]>(this.initialPlugins);
@@ -589,9 +593,13 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 		// Listens to the parent for changes to select itself from
 		this.parentListener = this.parentCoupling?.rawParentState.pipe(
 			skip(1),
-			finalize(() => this.complete()),
+			finalize(() => {
+				this.complete();
+			}),
 			takeWhile((parentState) =>
-				this.parentCoupling?.droppable ? hasKey(parentState, this.parentCoupling.key) : true
+				this.parentCoupling?.droppable
+					? hasKey(parentState, this.parentCoupling.key)
+					: true,
 			),
 			tap((parentState) => {
 				if (isNullish(parentState) && !this.nullishParentPause$.value) {
@@ -603,7 +611,9 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 			filter(isNotNullish),
 			map((parentState) => this.parentCoupling?.slicer.selector(parentState)),
 			distinctUntilChanged(),
-			tap((stateFromParent) => this.state$.next(stateFromParent as State))
+			tap((stateFromParent) => {
+				this.state$.next(stateFromParent as State);
+			}),
 		);
 
 		this.autoRegisterPlugins$ = this.plugins$.pipe(
@@ -618,7 +628,7 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 				for (const plugin of next.filter((plugin) => !previous.includes(plugin))) {
 					this.registerPlugin(plugin);
 				}
-			})
+			}),
 		);
 
 		this.subscribe = this.observableState$
@@ -708,7 +718,7 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 	 */
 	public createEffect<Output>(packet$: Observable<Output | ActionPacket>): Subscription {
 		const pausablePacket$ = this.paused$.pipe(
-			switchMap((isPaused) => (isPaused ? NEVER : packet$))
+			switchMap((isPaused) => (isPaused ? NEVER : packet$)),
 		);
 		const effectSubscription = this.scope.createEffect(pausablePacket$);
 		this.sink.add(effectSubscription);
@@ -748,7 +758,7 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 
 	private static calculateAbsolutePath<ParentState, State>(
 		parentCoupling: SliceCoupling<ParentState, State> | undefined,
-		pathSegment: string
+		pathSegment: string,
 	): string {
 		return parentCoupling
 			? Slice.assembleAbsolutePath(parentCoupling.parentSlice._absolutePath, pathSegment)
@@ -759,7 +769,9 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 		plugin.register({
 			initialState: this.state$.value,
 			state$: this.pipeline,
-			stateInjector: (state: State) => this.state$.next(state),
+			stateInjector: (state: State) => {
+				this.state$.next(state);
+			},
 		});
 		plugin.start();
 		return plugin;
@@ -790,7 +802,7 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 	public static createRootSlice<State, Internals>(
 		scope: Scope,
 		initialState: State,
-		sliceOptions?: RootSliceOptions<State, Internals>
+		sliceOptions?: RootSliceOptions<State, Internals>,
 	): RootSlice<State, Internals> {
 		return new Slice({
 			...extractSliceOptions(sliceOptions),
@@ -811,11 +823,11 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 	}
 
 	private sliceInternal<ChildState, ChildInternals>(
-		childSliceConstructOptions: ChildSliceConstructOptions<State, ChildState, ChildInternals>
+		childSliceConstructOptions: ChildSliceConstructOptions<State, ChildState, ChildInternals>,
 	): Slice<State, NonNullable<ChildState>, ChildInternals> {
 		const path = Slice.assembleAbsolutePath(
 			this._absolutePath,
-			childSliceConstructOptions.pathSegment.toString()
+			childSliceConstructOptions.pathSegment.toString(),
 		);
 		if (this.scope.slices.has(path)) {
 			// ? If this proves to be error prone just throw an error
@@ -837,7 +849,7 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 				...extractSliceOptions(childSliceConstructOptions),
 				plugins: [
 					...(this.plugins$.value as unknown as TinySlicePlugin<ChildState>[]).filter(
-						(plugin) => plugin.sliceOptions?.()?.passToChildren ?? false
+						(plugin) => plugin.sliceOptions?.()?.passToChildren ?? false,
 					),
 					...(childSliceConstructOptions.plugins ?? []),
 				],
@@ -861,7 +873,7 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 	public sliceSelect<ChildState extends State[keyof State], ChildInternals = unknown>(
 		selector: Selector<State, ChildState>,
 		merger: Merger<State, ChildState>,
-		sliceOptions?: SliceOptions<State, ChildState, ChildInternals>
+		sliceOptions?: SliceOptions<State, ChildState, ChildInternals>,
 	): Slice<State, NonNullable<ChildState>, ChildInternals> {
 		return this.sliceInternal({
 			...sliceOptions,
@@ -878,7 +890,7 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 
 	public slice<ChildStateKey extends keyof State, ChildInternals>(
 		key: ChildStateKey,
-		sliceOptions?: SliceOptions<State, NonNullable<State[ChildStateKey]>, ChildInternals>
+		sliceOptions?: SliceOptions<State, NonNullable<State[ChildStateKey]>, ChildInternals>,
 	): Slice<State, NonNullable<State[ChildStateKey]>, ChildInternals> {
 		const slicer = normalizeSliceDirection<State, NonNullable<State[ChildStateKey]>>(key);
 		return this.sliceInternal({
@@ -899,7 +911,7 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 	public addSlice<ChildState, ChildInternals, AdditionalKey extends ObjectKey = string>(
 		key: AdditionalKey,
 		initialState: ChildState,
-		sliceOptions?: SliceOptions<State, ChildState, ChildInternals>
+		sliceOptions?: SliceOptions<State, ChildState, ChildInternals>,
 	): Slice<State & Record<AdditionalKey, ChildState>, NonNullable<ChildState>, ChildInternals> {
 		const slicer = normalizeSliceDirection<State, ChildState>(key);
 		return this.sliceInternal({
@@ -932,7 +944,7 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 		ChildState,
 		DicedInternals,
 		ChildInternals,
-		DiceState extends Record<number, ChildState>
+		DiceState extends Record<number, ChildState>,
 	>(
 		key: Key extends keyof State ? never : Key,
 		initialState: ChildState,
@@ -942,7 +954,7 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 			ChildState,
 			DicedInternals,
 			ChildInternals
-		>
+		>,
 	): DicedSlice<State, ChildState, DicedInternals, ChildInternals, number> {
 		return this.addSlice(key, {} as DiceState, diceConstructOptions.dicedSliceOptions).dice(
 			initialState,
@@ -950,7 +962,7 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 				...diceConstructOptions,
 				getAllKeys: getObjectKeysAsNumbers,
 				getNextKey: getNextKeyStrategy(diceConstructOptions.getNextKeyStrategy),
-			}
+			},
 		);
 	}
 
@@ -969,7 +981,7 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 	 */
 	public dice<ChildState, ChildInternals, DiceKey extends ObjectKey>(
 		initialState: ChildState,
-		diceConstructOptions: DiceConstructOptions<State, ChildState, ChildInternals, DiceKey>
+		diceConstructOptions: DiceConstructOptions<State, ChildState, ChildInternals, DiceKey>,
 	): DicedSlice<State, ChildState, Internals, ChildInternals, DiceKey> {
 		const sliceOptions = extractSliceOptions(diceConstructOptions);
 
@@ -993,20 +1005,28 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 			this.state$.value && typeof this.state$.value === 'object'
 				? Object.keys(this.state$.value).includes(key as string)
 				: false;
-		const set = (key: DiceKey, data: ChildState) => this.defineKeyAction.next({ key, data });
-		const remove = (key: DiceKey) => this.deleteKeyAction.next(key);
+		const set = (key: DiceKey, data: ChildState) => {
+			this.defineKeyAction.next({ key, data });
+		};
+		const remove = (key: DiceKey) => {
+			this.deleteKeyAction.next(key);
+		};
 		const keys = () => diceConstructOptions.getAllKeys(this.value);
 		const getNextKey = () => diceConstructOptions.getNextKey(keys());
-		const add = (data: ChildState) => this.defineKeyAction.next({ key: getNextKey(), data });
-		const create = () => this.defineKeyAction.next({ key: getNextKey(), data: undefined });
+		const add = (data: ChildState) => {
+			this.defineKeyAction.next({ key: getNextKey(), data });
+		};
+		const create = () => {
+			this.defineKeyAction.next({ key: getNextKey(), data: undefined });
+		};
 
 		const keys$ = this.pipe(
 			map((state) => diceConstructOptions.getAllKeys(state)),
-			distinctUntilChanged(fastArrayComparator)
+			distinctUntilChanged(fastArrayComparator),
 		);
 		const items$ = keys$.pipe(
 			map((keys) => keys.map((key) => get(key))),
-			switchMap((slices) => (slices.length > 0 ? combineLatest(slices) : of([])))
+			switchMap((slices) => (slices.length > 0 ? combineLatest(slices) : of([]))),
 		);
 		const count$ = keys$.pipe(map((keys) => keys.length));
 		const some$ = (predicate: (item: ChildState) => boolean) =>
@@ -1026,14 +1046,14 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 									State,
 									NonNullable<State[keyof State]>,
 									ChildInternals
-								>
+								>,
 							) as unknown as Slice<
 								State & Record<DiceKey, ChildState>,
 								NonNullable<ChildState>,
 								ChildInternals
-							>
-					)
-				)
+							>,
+					),
+				),
 			);
 
 		return {
@@ -1056,7 +1076,7 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 	}
 
 	private registerSlice<ChildState, ChildInternals>(
-		sliceRegistration: SliceRegistration<State, ChildState, ChildInternals>
+		sliceRegistration: SliceRegistration<State, ChildState, ChildInternals>,
 	): void {
 		this.keyedSlices$.next({
 			...this.keyedSlices$.value,
@@ -1074,8 +1094,8 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 			this.setAction.next(
 				sliceRegistration.slicer.merger(
 					this.value,
-					sliceRegistration.initialState as ChildState
-				)
+					sliceRegistration.initialState as ChildState,
+				),
 			);
 		}
 	}

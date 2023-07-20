@@ -15,6 +15,6 @@ export const isOn$ = uselessSlice$.slice('isOn');
 scope.createEffect(
 	isOn$.pipe(
 		filter((isOn) => isOn),
-		map(() => isOn$.setAction.makePacket(false))
-	)
+		map(() => isOn$.setAction.makePacket(false)),
+	),
 );

@@ -7,5 +7,5 @@ export type Merger<Slice, SubSlice> = (slice: Slice, subSlice: SubSlice) => Slic
 export type DiceMerger<Slice, SubSlice, SliceKey> = (
 	state: Slice,
 	subSlice: SubSlice,
-	key: SliceKey
+	key: SliceKey,
 ) => Slice;

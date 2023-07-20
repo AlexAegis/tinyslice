@@ -1,0 +1,5 @@
+{
+	"$schema": "https://json.schemastore.org/typings?mark=managed-by-autotool",
+	"ignores": ["tailwindcss", "eslint*", "@alexaegis/*", "autoprefixer"],
+	"skip-missing": true
+}

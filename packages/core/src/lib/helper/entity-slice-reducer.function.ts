@@ -5,15 +5,15 @@ export const entitySliceReducerWithPrecompute = <
 	Key extends keyof State,
 	Entity extends State[Key],
 	Payload,
-	Precomputed
+	Precomputed,
 >(
 	precompute: (state: State, payload: Payload) => Precomputed,
 	entityReducer: (
 		key: Key,
 		entity: Entity,
 		payload: Payload,
-		precomputed: Precomputed
-	) => Entity | undefined
+		precomputed: Precomputed,
+	) => Entity | undefined,
 ): ActionReducer<State, Payload> => {
 	return (state, payload) => {
 		const precomputed = precompute(state, payload);
@@ -30,7 +30,7 @@ export const entitySliceReducerWithPrecompute = <
 				return acc;
 			},
 			// eslint-disable-next-line @typescript-eslint/prefer-reduce-type-parameter
-			{} as State
+			{} as State,
 		);
 	};
 };
@@ -39,9 +39,9 @@ export const entitySliceReducer = <
 	State extends Record<Key, Entity>,
 	Key extends keyof State,
 	Entity extends State[Key],
-	Payload
+	Payload,
 >(
-	entityReducer: (key: Key, entity: Entity, payload: Payload) => Entity | undefined
+	entityReducer: (key: Key, entity: Entity, payload: Payload) => Entity | undefined,
 ): ActionReducer<State, Payload> => {
 	return (state, payload) =>
 		(Object.entries<Entity>(state) as [Key, Entity][]).reduce<State>(
@@ -50,6 +50,6 @@ export const entitySliceReducer = <
 				return acc;
 			},
 			// eslint-disable-next-line @typescript-eslint/prefer-reduce-type-parameter
-			{} as State
+			{} as State,
 		);
 };

@@ -128,12 +128,12 @@ export class TinySliceLoggerPlugin<State> implements TinySlicePlugin<State> {
 			this.options.ignorePaths.some((pathIgnore) =>
 				typeof pathIgnore === 'string'
 					? path.startsWith(pathIgnore) || actionPacket.type.startsWith(pathIgnore)
-					: pathIgnore.test(path)
+					: pathIgnore.test(path),
 			) ||
 			this.options.ignoreActions.some((actionIgnore) =>
 				typeof actionIgnore === 'string'
 					? actionIgnore === actionPacket.type
-					: actionIgnore.test(actionPacket.type)
+					: actionIgnore.test(actionPacket.type),
 			)
 		);
 	}

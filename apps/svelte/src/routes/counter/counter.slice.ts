@@ -28,7 +28,7 @@ export const counterSlice = rootSlice.addSlice('counter', { count: 0 } as Counte
 
 		const internalNullableCounter$ = c.addSlice(
 			'internalNullableCounter',
-			undefined as { internalCount: number } | undefined
+			undefined as { internalCount: number } | undefined,
 		);
 
 		//	const set() => internalNullableCounter$.set(undefined as unknown as { internalCount: number })

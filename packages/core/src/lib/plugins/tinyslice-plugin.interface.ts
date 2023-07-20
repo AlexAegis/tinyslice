@@ -1,4 +1,4 @@
-import { Observable } from 'rxjs';
+import type { Observable } from 'rxjs';
 import type { ActionPacket } from '../action/index.js';
 import type { ReduceActionSliceSnapshot } from '../store/reducer.type.js';
 

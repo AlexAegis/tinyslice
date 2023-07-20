@@ -35,7 +35,7 @@
 					class="btn variant-filled"
 					on:click="{() =>
 						counterSlice.internals.internalCount$.set(
-							counterSlice.internals.internalCount$.value + 1
+							counterSlice.internals.internalCount$.value + 1,
 						)}">Add 1</button
 				>
 				<button
@@ -43,7 +43,7 @@
 					class="btn variant-filled"
 					on:click="{() =>
 						counterSlice.internals.internalCount$.set(
-							counterSlice.internals.internalCount$.value - 1
+							counterSlice.internals.internalCount$.value - 1,
 						)}"
 				>
 					Sub 1
@@ -130,7 +130,7 @@
 					class="btn variant-filled"
 					on:click="{() =>
 						counterSlice.internals.internalNullableCounterCount$.set(
-							counterSlice.internals.internalNullableCounterCount$.value + 1
+							counterSlice.internals.internalNullableCounterCount$.value + 1,
 						)}"
 				>
 					Increment internalNullableCounterCount

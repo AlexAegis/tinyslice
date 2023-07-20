@@ -18,7 +18,9 @@ export const DEFAULT_OPTIONS: HydrationPluginOptions<unknown, unknown> = {
 		const serializedState = JSON.stringify(state);
 		localStorage.setItem(key, serializedState);
 	},
-	remover: (key) => localStorage.removeItem(key),
+	remover: (key) => {
+		localStorage.removeItem(key);
+	},
 	debounceTime: 100,
 };
 
@@ -59,7 +61,7 @@ export class TinySliceHydrationPlugin<State, SavedState extends State = State>
 
 	constructor(
 		private readonly localStorageKey: string,
-		options?: Partial<HydrationPluginOptions<State, SavedState>>
+		options?: Partial<HydrationPluginOptions<State, SavedState>>,
 	) {
 		this.options = {
 			...(DEFAULT_OPTIONS as HydrationPluginOptions<State, SavedState>),
@@ -76,7 +78,7 @@ export class TinySliceHydrationPlugin<State, SavedState extends State = State>
 
 			if (isNotNullish(stateToBeMigrated)) {
 				console.group(
-					`${TINYSLICE_PREFIX} Running migration from ${migration.fromKey} to ${migration.toKey}`
+					`${TINYSLICE_PREFIX} Running migration from ${migration.fromKey} to ${migration.toKey}`,
 				);
 				console.log('Migrating', stateToBeMigrated);
 				try {
@@ -127,7 +129,11 @@ export class TinySliceHydrationPlugin<State, SavedState extends State = State>
 		if (this.options.debounceTime) {
 			this.pipeline = this.pipeline.pipe(debounceTime(this.options.debounceTime));
 		}
-		this.pipeline = this.pipeline.pipe(tap((state) => this.persist(state.nextState)));
+		this.pipeline = this.pipeline.pipe(
+			tap((state) => {
+				this.persist(state.nextState);
+			}),
+		);
 	};
 
 	start = (): void => {

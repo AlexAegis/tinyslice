@@ -74,16 +74,22 @@ const pieDicer = piesSlice$.dice({ cheese: 1, sauce: 2 } as PieState, {
 // pieDicer.sliceKeys$.subscribe((pieKey) => console.log('pieKey', pieKey));
 
 const firstPie = pieDicer.get('1');
-firstPie.subscribe((p) => console.log('reading first pie! might not exist!', p));
+firstPie.subscribe((p) => {
+	console.log('reading first pie! might not exist!', p);
+});
 
 const firstPieCheese = firstPie.slice('cheese');
-firstPieCheese.subscribe((c) => console.log('asgfaerge', c));
+firstPieCheese.subscribe((c) => {
+	console.log('asgfaerge', c);
+});
 pieDicer.set('2', { cheese: 3, sauce: 5 });
 
 pieDicer.set('1', { cheese: 32, sauce: 53 });
 pieDicer.set('1', { cheese: 323, sauce: 453 });
 
-firstPie.internals.cheese$.subscribe((cheese) => console.log('cheese', cheese));
+firstPie.internals.cheese$.subscribe((cheese) => {
+	console.log('cheese', cheese);
+});
 /*
 firstPie.internals.cheese$.set(2);
 console.log('firstPie.slice.internals.cheese$', firstPie.internals.cheese$.absolutePath);

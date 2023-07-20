@@ -1,45 +1,49 @@
 {
 	"$schema": "https://turborepo.org/schema.json?mark=managed-by-autotool",
+	"globalDependencies": [
+		"package.json",
+		"pnpm-lock.yaml",
+		".env",
+		"tsconfig.json",
+		".eslintrc.cjs",
+		".prettierrc.cjs",
+		".remarkrc.js",
+		".config/*"
+	],
+	"globalPassThroughEnv": ["GITHUB_TOKEN"],
 	"pipeline": {
-		"prebuild_": {
-			"env": ["TARGET_ENV"],
-			"dependsOn": [],
-			"inputs": ["**/*", "!src/**/*.{spec,test}.{ts,js}"],
-			"outputs": ["dist/**"],
-			"outputMode": "new-only"
-		},
-		"//#prebuild_": {
-			"env": ["TARGET_ENV"],
-			"outputs": ["dist/**"],
-			"dependsOn": [],
-			"outputMode": "new-only"
-		},
 		"build-lib_": {
 			"env": ["TARGET_ENV"],
-			"dependsOn": ["^prebuild_", "^build-lib_"],
-			"inputs": ["**/*", "!src/**/*.spec.{ts,js,tsx,jsx}"],
-			"outputs": ["dist/**"],
+			"dependsOn": ["^build-lib_"],
+			"inputs": [
+				"{src,static,public}/**/*",
+				"*.*",
+				"!{src,static,public}/**/*.spec.{ts,js,tsx,jsx}",
+				"!vite*.config.*.*"
+			],
+			"outputs": ["dist", "build", ".svelte-kit"],
 			"outputMode": "new-only"
 		},
 		"build-app_": {
 			"env": ["TARGET_ENV", "BASE_HREF"],
-			"dependsOn": ["^prebuild_", "^build-lib_"],
-			"inputs": ["**/*", "!src/**/*.spec.{ts,js,tsx,jsx}"],
-			"outputs": ["dist/**"],
+			"dependsOn": ["^build-lib_"],
+			"inputs": [
+				"{src,static,public}/**/*",
+				"*.*",
+				"!{src,static,public}/**/*.spec.{ts,js,tsx,jsx}",
+				"!vite*.config.*.*"
+			],
+			"outputs": ["dist", "build", ".svelte-kit"],
 			"outputMode": "new-only"
 		},
-		"ce_": {
+		"all_": {
 			"outputs": [],
-			"dependsOn": [
-				"lint_",
-				"build-app_",
-				"build-lib_",
-				"test_",
-				"typedoc_",
-				"publint_",
-				"//#typedoc_",
-				"//#lint_"
-			],
+			"dependsOn": ["lint_", "build-app_", "build-lib_", "test_", "typedoc_", "publint_"],
+			"outputMode": "new-only"
+		},
+		"//#all_": {
+			"outputs": [],
+			"dependsOn": ["//#typedoc_", "//#lint_"],
 			"outputMode": "new-only"
 		},
 		"//#lint_": {
@@ -55,6 +59,7 @@
 		},
 		"lint_": {
 			"outputs": [],
+			"inputs": ["!**/*"],
 			"dependsOn": [
 				"lint:es_",
 				"lint:depcheck_",
@@ -89,17 +94,17 @@
 		},
 		"lint:tsc_": {
 			"dependsOn": [],
-			"outputs": [],
+			"outputs": [".cache/tsc"],
 			"outputMode": "new-only"
 		},
 		"//#lint:tsc_": {
 			"dependsOn": [],
-			"outputs": [],
+			"outputs": [".cache/tsc"],
 			"outputMode": "new-only"
 		},
 		"lint:svelte_": {
 			"outputs": [],
-			"dependsOn": [],
+			"dependsOn": ["^build-lib_"],
 			"outputMode": "new-only"
 		},
 		"//#lint:svelte_": {
@@ -112,90 +117,120 @@
 			"outputs": [],
 			"outputMode": "new-only"
 		},
-		"lint:style:require:build-lib_": {
-			"env": [],
-			"dependsOn": ["build-lib_"],
-			"outputs": [],
-			"outputMode": "new-only"
-		},
 		"lint:style:css_": {
-			"dependsOn": ["^lint:style:require:build-lib_", "lint:style:require:build-lib_"],
-			"inputs": [".stylelint*", "**/*.css"],
+			"dependsOn": [],
+			"inputs": [".stylelint*", "{src,static,public}/**/*.css"],
 			"outputs": [".cache/stylelintcache-css"],
 			"outputMode": "new-only"
 		},
 		"lint:style:scss_": {
-			"dependsOn": ["^lint:style:require:build-lib_", "lint:style:require:build-lib_"],
-			"inputs": [".stylelint*", "**/*.scss", "**/*.sass"],
+			"dependsOn": [],
+			"inputs": [".stylelint*", "{src,static,public}/**/*.{scss,sass}"],
 			"outputs": [".cache/stylelintcache-scss"],
 			"outputMode": "new-only"
 		},
 		"lint:style:html_": {
-			"dependsOn": ["^lint:style:require:build-lib_", "lint:style:require:build-lib_"],
-			"inputs": [
-				".stylelint*",
-				"**/*.html",
-				"**/*.svelte",
-				"**/*.vue",
-				"**/*.astro",
-				"**/*.xml",
-				"**/*.php"
-			],
+			"dependsOn": [],
+			"inputs": [".stylelint*", "{src,static,public}/**/*.{html,svelte,vue,astro,xml,php}"],
 			"outputs": [".cache/stylelintcache-html"],
 			"outputMode": "new-only"
 		},
 		"lint:md_": {
 			"dependsOn": [],
-			"inputs": ["package.json", "**/*.md"],
+			"inputs": ["package.json", "**/*.md", "!{.turbo,.cache}/**/*", "!vite*.config.*.*"],
 			"outputs": [],
 			"outputMode": "new-only"
 		},
 		"//#lint:md_": {
 			"dependsOn": [],
-			"inputs": ["package.json", "**/*.md"],
+			"inputs": [
+				"package.json",
+				"**/*.md",
+				"!{packages,libs,apps,fixtures,.turbo,.cache,dist,build,.svelte-kit}",
+				"!vite*.config.*.*"
+			],
 			"outputs": [],
 			"outputMode": "new-only"
 		},
 		"publint_": {
 			"dependsOn": ["build-lib_"],
-			"inputs": ["dist/**/*"],
+			"inputs": ["dist"],
 			"outputs": [],
 			"outputMode": "new-only"
 		},
 		"lint:format_": {
 			"env": [],
+			"inputs": [
+				"{src,static,public}/**/*.{ts,js,tsx,jsx,md,json,json5,yaml,yml,html,svelte,vue,astro,xml,php}",
+				"*.*",
+				"!{.turbo,.cache,dist,build,.svelte-kit}/**/*",
+				"!vite*.config.*.*"
+			],
 			"dependsOn": [],
-			"outputs": [],
+			"outputs": [".cache/prettier"],
 			"outputMode": "new-only"
 		},
 		"//#lint:format_": {
 			"env": [],
+			"inputs": [
+				"**/*.{ts,js,tsx,jsx,md,json,json5,yaml,yml,html,svelte,vue,astro,xml,php}",
+				"!{.turbo,.cache,packages,libs,apps,fixtures,dist,build,.svelte-kit}/**/*",
+				"!vite*.config.*.*"
+			],
 			"dependsOn": [],
-			"outputs": [],
+			"outputs": [".cache/prettier"],
 			"outputMode": "new-only"
+		},
+		"format_": {
+			"inputs": [
+				"{src,static,public}/**/*.{ts,js,tsx,jsx,md,json,json5,yaml,yml,html,svelte,vue,astro,xml,php}",
+				"*.*",
+				"!{.turbo,.cache,dist,build,.svelte-kit}/**/*",
+				"!vite*.config.*.*"
+			],
+			"dependsOn": [],
+			"outputs": [".cache/prettier"],
+			"outputMode": "new-only",
+			"cache": false
+		},
+		"//#format_": {
+			"dependsOn": [],
+			"inputs": [
+				"**/*.{ts,js,tsx,jsx,md,json,json5,yaml,yml,html,svelte,vue,astro,xml,php}",
+				"!{.turbo,.cache,packages,libs,apps,fixtures,dist,build,.svelte-kit}/**/*",
+				"!vite*.config.*.*"
+			],
+			"outputs": [".cache/prettier"],
+			"outputMode": "new-only",
+			"cache": false
 		},
 		"typedoc_": {
 			"dependsOn": [],
-			"inputs": ["**/*.ts"],
-			"outputs": [".cache/typedoc/**"],
+			"inputs": [
+				"**/*.ts",
+				"typedoc.json",
+				"!{.turbo,.cache,dist,build,.svelte-kit}/**/*",
+				"!vite*.config.*.*"
+			],
+			"outputs": [".cache/typedoc"],
 			"outputMode": "new-only"
 		},
 		"//#typedoc_": {
 			"dependsOn": [],
-			"inputs": ["**/*.ts"],
-			"outputs": [".cache/typedoc/**"],
+			"inputs": [
+				"{packages,libs,apps}/**/*.ts",
+				"typedoc.json",
+				"!{.turbo,.cache,dist,build,.svelte-kit}/**/*",
+				"!vite*.config.*.*"
+			],
+			"outputs": [".cache/typedoc"],
 			"outputMode": "new-only"
 		},
 		"test_": {
 			"env": ["VITEST"],
-			"dependsOn": ["^build-lib_", "^test:require:build-lib_", "test:require:build-lib_"],
-			"outputs": ["coverage/**"],
-			"outputMode": "new-only"
-		},
-		"test:require:build-lib_": {
-			"env": [],
-			"dependsOn": ["build-lib_"],
-			"outputs": [],
+			"inputs": ["{src,static,public}/**/*", "*.*", "!vite*.config.*.*"],
+			"dependsOn": ["^build-lib_"],
+			"outputs": ["coverage"],
 			"outputMode": "new-only"
 		},
 		"start": {

@@ -56,7 +56,7 @@ const pieDicer = rootSlice$.addDicedSlice(
     },
     // Plugins can be anywhere, save this slice to localstorage and read as initialised!
     plugins: [new TinySliceHydrationPlugin<PieState>('pies')],
-  }
+  },
 );
 
 // To get a specific entity slice
@@ -67,7 +67,7 @@ firstPie.internals.cheese$.set(2);
 
 // To handle all at once
 pieDicer.latestSlices$.subscribe((pieSliceArray) =>
-  console.log('pieSliceArray', JSON.stringify(pieSliceArray))
+  console.log('pieSliceArray', JSON.stringify(pieSliceArray)),
 );
 
 pieDicer.set(2, { cheese: 12, sauce: 13 });

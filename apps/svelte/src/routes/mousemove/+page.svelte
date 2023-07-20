@@ -5,8 +5,12 @@
 	const paused$ = mouseMoveSlice$.paused$;
 	$: paused = $paused$;
 
-	onMount(() => mouseMoveSlice$.unpause());
-	onDestroy(() => mouseMoveSlice$.pause());
+	onMount(() => {
+		mouseMoveSlice$.unpause();
+	});
+	onDestroy(() => {
+		mouseMoveSlice$.pause();
+	});
 </script>
 
 <div class="mousemovetest">

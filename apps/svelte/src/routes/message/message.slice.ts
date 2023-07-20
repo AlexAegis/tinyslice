@@ -26,17 +26,17 @@ export const messageSlice = rootSlice.addSlice(
 				lastMessage: undefined,
 			})),
 		],
-	}
+	},
 );
 
 export const messageHistory$ = messageSlice.slice('messageHistory');
 
 export const secondMessage$ = messageHistory$.sliceSelect<string | number>(
-	(state) => state[1],
+	(state) => state[1] ?? 0,
 	(state, second) => {
 		const merged = [...state];
 		merged[1] = second;
 		return merged;
 	},
-	{ reducers: [messageActions.setSecondMessage.reduce((_state, payload) => payload)] }
+	{ reducers: [messageActions.setSecondMessage.reduce((_state, payload) => payload)] },
 );

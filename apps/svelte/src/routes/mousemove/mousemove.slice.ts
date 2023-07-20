@@ -37,8 +37,8 @@ if (browser) {
 			map(([packet, listenThrottled]) =>
 				listenThrottled
 					? mouseMoveActions.move.makePacket(packet)
-					: position$.setAction.makePacket(packet)
-			)
-		)
+					: position$.setAction.makePacket(packet),
+			),
+		),
 	);
 }

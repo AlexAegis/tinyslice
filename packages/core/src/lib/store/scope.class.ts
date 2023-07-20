@@ -40,7 +40,7 @@ export class Scope {
 
 	public createAction<Payload = void>(
 		type: string,
-		config?: Partial<ActionConfig>
+		config?: Partial<ActionConfig>,
 	): Action<Payload> {
 		return this.actionMap.has(type)
 			? (this.actionMap.get(type) as Action<Payload>)
@@ -49,7 +49,7 @@ export class Scope {
 
 	public createRootSlice<State, Internals = unknown>(
 		initialState: State,
-		rootSliceOptions?: RootSliceOptions<State, Internals>
+		rootSliceOptions?: RootSliceOptions<State, Internals>,
 	): RootSlice<State, Internals> {
 		return Slice.createRootSlice(this, initialState, rootSliceOptions);
 	}
@@ -76,10 +76,10 @@ export class Scope {
 				console.error(
 					`%c${TINYSLICE_PREFIX} error in effect!\n`,
 					'background: #222, color: #e00;',
-					error
+					error,
 				);
 				return pipeline$;
-			})
+			}),
 		);
 
 		const effectSubscription = source.subscribe();
@@ -96,7 +96,7 @@ export class Scope {
 
 	public registerAction<Payload>(
 		action: Action<Payload>,
-		registerFromAction = false
+		registerFromAction = false,
 	): Subscription | undefined {
 		if (this.actionMap.has(action.type)) {
 			return;
@@ -108,7 +108,9 @@ export class Scope {
 			.pipe(
 				map((payload) => action.makePacket(payload)),
 				finalize(() => this.actionMap.delete(action.type)),
-				tap((next) => this.schedulingDispatcher.next(next))
+				tap((next) => {
+					this.schedulingDispatcher.next(next);
+				}),
 			)
 			.subscribe();
 		action.registrations.add(subscription);

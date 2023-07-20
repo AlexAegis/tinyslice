@@ -2,10 +2,10 @@ export type GetNext<T> = (keys: T[]) => T;
 export type GetKeys<T, K> = (state: T) => K[];
 
 export const getObjectKeys: GetKeys<Record<string | number, unknown>, string> = (
-	state: Record<string | number, unknown>
+	state: Record<string | number, unknown>,
 ): string[] => Object.keys(state);
 export const getObjectKeysAsNumbers: GetKeys<Record<number, unknown>, number> = (
-	state: Record<number, unknown>
+	state: Record<number, unknown>,
 ): number[] => Object.keys(state).map((key) => Number.parseInt(key, 10));
 
 export const getNextNumberLikeStringKey: GetNext<`${number}`> = (keys: `${number}`[]) =>

@@ -9,11 +9,6 @@
 	import packageJson from '../../../../package.json';
 	import '../app.postcss';
 
-	import { page } from '$app/stores';
-	import { derived } from 'svelte/store';
-
-	const selected = derived(page, ($page) => $page.url.pathname);
-
 	const pages = [
 		{ label: 'Counter', href: '/counter' },
 		{ label: 'Deepdish', href: '/deepdish' },
@@ -53,7 +48,7 @@
 				<ul>
 					{#each pages as { label, href }}
 						<li>
-							<a href="{href}" data-sveltekit-preload-="hover"
+							<a {href} data-sveltekit-preload-data="hover"
 								><span class="flex-auto">{label}</span></a
 							>
 						</li>

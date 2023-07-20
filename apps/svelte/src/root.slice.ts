@@ -22,7 +22,7 @@ export const rootSlice = scope.createRootSlice(
 	},
 	{
 		plugins: [],
-	}
+	},
 );
 
 export const debug$ = rootSlice.slice('debug');
@@ -35,7 +35,11 @@ if (browser) {
 	rootSlice.setPlugins([new TinySliceHydrationPlugin(PACKAGE_NAME_AND_VERSION)]);
 
 	scope.createEffect(
-		theme$.pipe(tap((theme) => document.documentElement.setAttribute('theme', theme)))
+		theme$.pipe(
+			tap((theme) => {
+				document.documentElement.setAttribute('theme', theme);
+			}),
+		),
 	);
 
 	scope.createEffect(
@@ -54,12 +58,12 @@ if (browser) {
 							return new plugin.TinySliceLoggerPlugin({
 								onlyTimers: true,
 							});
-						}
+						},
 					);
 				} else {
 					rootSlice.setPlugins([]);
 				}
-			})
-		)
+			}),
+		),
 	);
 }

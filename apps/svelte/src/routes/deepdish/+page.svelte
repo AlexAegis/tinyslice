@@ -16,7 +16,6 @@
 				<button
 					type="button"
 					class="delete btn variant-filled"
-					kind="danger"
 					on:click="{() => pieDicer.remove(key)}"
 				>
 					Remove Slice

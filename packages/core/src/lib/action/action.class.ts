@@ -13,7 +13,7 @@ import { ifLatestFrom } from '../helper/index.js';
 import type { Scope } from '../store/index.js';
 import type { ActionReducer, ReducerConfiguration } from '../store/reducer.type.js';
 import { DEFAULT_ACTION_CONFIG, type ActionConfig } from './action-config.interface.js';
-import { type ActionPacket } from './action-packet.interface.js';
+import type { ActionPacket } from './action-packet.interface.js';
 
 export type ActionTuple<T> = {
 	[K in keyof T]: Action<T[K]>;
@@ -58,7 +58,10 @@ export class Action<Payload = void> extends Subject<Payload> {
 	 * @param type
 	 * @param config
 	 */
-	public constructor(public type: string, config: Partial<ActionConfig> = DEFAULT_ACTION_CONFIG) {
+	public constructor(
+		public type: string,
+		config: Partial<ActionConfig> = DEFAULT_ACTION_CONFIG,
+	) {
 		super();
 		this.config = {
 			...DEFAULT_ACTION_CONFIG,
@@ -69,7 +72,7 @@ export class Action<Payload = void> extends Subject<Payload> {
 
 		if (isNotNullish(this.config.pauseWhile)) {
 			this.actionPipeline = this.actionPipeline.pipe(
-				ifLatestFrom(this.config.pauseWhile, (paused) => !paused)
+				ifLatestFrom(this.config.pauseWhile, (paused) => !paused),
 			);
 		}
 
@@ -78,7 +81,7 @@ export class Action<Payload = void> extends Subject<Payload> {
 				throttleTime(this.config.throttleTime, asyncScheduler, {
 					leading: true,
 					trailing: true,
-				})
+				}),
 			);
 		}
 
@@ -125,11 +128,13 @@ export class Action<Payload = void> extends Subject<Payload> {
 	}
 
 	public reduce<State>(
-		actionReducer: ActionReducer<State, Payload>
+		actionReducer: ActionReducer<State, Payload>,
 	): ReducerConfiguration<State, Payload> {
 		return {
-			packetReducer: (state: State, actionPacket: ActionPacket<Payload> | undefined): State =>
-				actionPacket ? actionReducer(state, actionPacket.payload) : state,
+			packetReducer: (
+				state: State,
+				actionPacket: ActionPacket<Payload> | undefined,
+			): State => (actionPacket ? actionReducer(state, actionPacket.payload) : state),
 			action: this,
 		};
 	}
