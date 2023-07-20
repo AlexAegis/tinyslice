@@ -10,7 +10,7 @@ env:
   PAGES_DEPLOY_ARTIFACT_DIR: 'apps/svelte/build'
   PAGES_DEPLOY_ARTIFACT_BUILDING_JOB: 'build'
   TURBO_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-  TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
+  TURBO_TEAM: ${{ vars.TURBO_TEAM }}
   TURBO_REMOTE_ONLY: true
 
 permissions:
@@ -237,7 +237,7 @@ jobs:
         run: pnpm install
       - name: build
         env:
-          BASE_HREF: '/${{ github.event.repository.name }}/'
+          BASE_HREF: '/${{ github.event.repository.name }}'
         run: pnpm run build
       - name: publint
         run: pnpm run publint
