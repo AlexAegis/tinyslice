@@ -1,6 +1,13 @@
 # Changelog
 
-All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
+All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
+
+## [0.8.0](https://github.com/AlexAegis/tinyslice/compare/v0.7.0...v0.8.0) (2023-07-20)
+
+
+### Features
+
+* migrated example app to sveltekit+skeleton ([305f431](https://github.com/AlexAegis/tinyslice/commit/305f43193aef28efbc264fe58037e5a18ec4cf45))
 
 ## [0.7.0](https://github.com/AlexAegis/tinyslice/compare/v0.6.6...v0.7.0) (2022-10-27)
 

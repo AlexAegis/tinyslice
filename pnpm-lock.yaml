@@ -290,7 +290,7 @@ importers:
   packages/devtools-plugin:
     dependencies:
       '@tinyslice/core':
-        specifier: ^0.7.0
+        specifier: ^0.8.0
         version: link:../core
       rxjs:
         specifier: ^7.8.1
@@ -333,7 +333,7 @@ importers:
         specifier: ^0.4.5
         version: 0.4.5
       '@tinyslice/core':
-        specifier: ^0.7.0
+        specifier: ^0.8.0
         version: link:../core
       rxjs:
         specifier: ^7.8.1
@@ -376,7 +376,7 @@ importers:
         specifier: ^0.4.5
         version: 0.4.5
       '@tinyslice/core':
-        specifier: ^0.7.0
+        specifier: ^0.8.0
         version: link:../core
     devDependencies:
       '@alexaegis/eslint-config-vitest':
