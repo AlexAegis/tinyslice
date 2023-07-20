@@ -2,19 +2,19 @@
 	// The ordering of these imports is critical to your app working properly
 	import '@skeletonlabs/skeleton/themes/theme-skeleton.css';
 	// If you have source.organizeImports set to true in VSCode, then it will auto change this ordering
+	import { base } from '$app/paths';
 	import '@skeletonlabs/skeleton/styles/skeleton.css';
-
 	// Most of your app wide CSS should be put in this file
 	import { AppBar, AppShell } from '@skeletonlabs/skeleton';
 	import packageJson from '../../../../package.json';
 	import '../app.postcss';
 
 	const pages = [
-		{ label: 'Counter', href: '/counter' },
-		{ label: 'Deepdish', href: '/deepdish' },
-		{ label: 'Message', href: '/message' },
-		{ label: 'MouseMove', href: '/mousemove' },
-		{ label: 'Useless', href: '/useless' },
+		{ label: 'Counter', href: `${base}/counter` },
+		{ label: 'Deepdish', href: `${base}/deepdish` },
+		{ label: 'Message', href: `${base}/message` },
+		{ label: 'MouseMove', href: `${base}/mousemove` },
+		{ label: 'Useless', href: `${base}/useless` },
 	];
 </script>
 

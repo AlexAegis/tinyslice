@@ -56,8 +56,6 @@
 		"format": "turbo run format_ --concurrency 16 --cache-dir .cache/turbo --filter @tinyslice/core",
 		"format_": "prettier --cache-location .cache/prettier --plugin prettier-plugin-svelte --plugin prettier-plugin-tailwindcss --write .",
 		"ncu": "ncu -u",
-		"postpublish": "pinst --enable",
-		"prepublish": "pinst --disable",
 		"test": "turbo run test_ --concurrency 16 --cache-dir .cache/turbo --filter @tinyslice/core",
 		"test_": "vitest --passWithNoTests --coverage --run",
 		"test:watch": "vitest --passWithNoTests --coverage"
