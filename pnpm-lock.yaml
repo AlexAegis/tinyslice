@@ -252,9 +252,6 @@ importers:
       svelte-check:
         specifier: ^3.4.6
         version: 3.4.6(postcss@8.4.27)(svelte@4.1.1)
-      svelte-preprocess:
-        specifier: ^5.0.4
-        version: 5.0.4(postcss@8.4.27)(svelte@4.1.1)(typescript@5.1.6)
       vite:
         specifier: ^4.4.6
         version: 4.4.6(@types/node@20.4.4)
