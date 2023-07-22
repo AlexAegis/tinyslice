@@ -48,8 +48,11 @@
 				<ul>
 					{#each pages as { label, href }}
 						<li>
-							<a {href} data-sveltekit-preload-data="hover"
-								><span class="flex-auto">{label}</span></a
+							<a
+								{href}
+								data-sveltekit-preload-data="{label === 'MouseMove'
+									? 'off'
+									: 'hover'}"><span class="flex-auto">{label}</span></a
 							>
 						</li>
 					{/each}

@@ -60,10 +60,10 @@
 		"lint:style:scss_": "stylelint --customSyntax=postcss-scss --cache true --cache-strategy content --cache-location .cache/stylelintcache-scss --allow-empty-input '**/*.scss'",
 		"lint:tsc": "turbo run lint:tsc_ --concurrency 16 --cache-dir .cache/turbo --filter @tinyslice/logger-plugin",
 		"lint:tsc_": "tsc --noEmit",
-		"publint": "turbo run publint_ --concurrency 16 --cache-dir .cache/turbo --filter @tinyslice/logger-plugin",
+		"publint": "BUILD_REASON='publish' turbo run publint_ --concurrency 16 --cache-dir .cache/turbo --filter @tinyslice/logger-plugin",
 		"publint_": "publint dist",
 		"_postinstall": "husky install",
-		"all": "turbo run all_ --concurrency 16 --cache-dir .cache/turbo --filter @tinyslice/logger-plugin",
+		"all": "BUILD_REASON='publish' turbo run all_ --concurrency 16 --cache-dir .cache/turbo --filter @tinyslice/logger-plugin",
 		"format": "turbo run format_ --concurrency 16 --cache-dir .cache/turbo --filter @tinyslice/logger-plugin",
 		"format_": "prettier --cache-location .cache/prettier --plugin prettier-plugin-svelte --plugin prettier-plugin-tailwindcss --write .",
 		"ncu": "ncu -u",
@@ -81,19 +81,19 @@
 		"./readme": "./readme.md"
 	},
 	"dependencies": {
-		"@alexaegis/common": "^0.4.5",
+		"@alexaegis/common": "^0.5.0",
 		"@tinyslice/core": "^0.8.0"
 	},
 	"devDependencies": {
-		"@alexaegis/eslint-config-vitest": "^0.5.6",
-		"@alexaegis/stylelint-config": "^0.5.6",
-		"@alexaegis/ts": "^0.5.6",
-		"@alexaegis/vite": "^0.5.6",
-		"@alexaegis/vitest": "^0.5.6",
-		"@types/node": "^20.4.2",
+		"@alexaegis/eslint-config-vitest": "^0.5.12",
+		"@alexaegis/stylelint-config": "^0.5.12",
+		"@alexaegis/ts": "^0.5.12",
+		"@alexaegis/vite": "^0.5.12",
+		"@alexaegis/vitest": "^0.5.12",
+		"@types/node": "^20.4.4",
 		"publint": "^0.1.16",
 		"stylelint": "^15.10.2",
-		"vite": "^4.4.5",
+		"vite": "^4.4.6",
 		"vitest": "^0.33.0"
 	}
 }
