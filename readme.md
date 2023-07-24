@@ -4,11 +4,14 @@
 [![CI](https://github.com/AlexAegis/tinyslice/workflows/CI/badge.svg)](https://github.com/AlexAegis/tinyslice/actions?query=workflow%3ACI)
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/3862f8fa6e8e4f8a871ed57d446643b3)](https://www.codacy.com/gh/AlexAegis/tinyslice/dashboard?utm_source=github.com&utm_medium=referral&utm_content=AlexAegis/tinyslice&utm_campaign=Badge_Grade)
 [![codecov](https://codecov.io/github/AlexAegis/tinyslice/branch/master/graph/badge.svg?token=RBpL3wVtca)](https://codecov.io/github/AlexAegis/tinyslice)
+[![vercel](https://vercelbadge.vercel.app/api/alexaegis/tinyslice)](https://vercel.com/alexaegis/tinyslice)
 
 Reactive state management
 
+[Example app available @ Vercel](https://tinyslice.vercel.app/)
+
 Check out the example projects in this repository and my
-[Minesweeper clone](https://github.com/AlexAegis/minesweeper) build using this.
+[Minesweeper clone](https://github.com/AlexAegis/minesweeper) built using this.
 
 ```ts
 import { Scope } from '@tinyslice/core';
