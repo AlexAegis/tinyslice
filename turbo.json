@@ -107,7 +107,8 @@
 				"{src,static,public}/**/*"
 			],
 			"outputMode": "new-only",
-			"outputs": [".svelte-kit/**", "build/**", "dist/**", ".vercel/**"]
+			"outputs": [".svelte-kit/**", "build/**", "dist/**", ".vercel/**"],
+			"passThroughEnv": []
 		},
 		"build-lib_": {
 			"dependsOn": ["^build-lib_"],
@@ -119,10 +120,12 @@
 				"{src,static,public}/**/*"
 			],
 			"outputMode": "new-only",
-			"outputs": [".svelte-kit/**", "build/**", "dist/**"]
+			"outputs": [".svelte-kit/**", "build/**", "dist/**"],
+			"passThroughEnv": ["PLATFORM"]
 		},
-		"dev": {
+		"dev_": {
 			"cache": false,
+			"dependsOn": ["^build-lib_"],
 			"passThroughEnv": ["BUILD_REASON"],
 			"persistent": true
 		},
@@ -222,8 +225,9 @@
 			"outputs": [],
 			"passThroughEnv": ["BASE_HREF", "PLATFORM", "TARGET_ENV"]
 		},
-		"start": {
+		"start_": {
 			"cache": false,
+			"dependsOn": ["^build-lib_"],
 			"passThroughEnv": ["BUILD_REASON"],
 			"persistent": true
 		},
