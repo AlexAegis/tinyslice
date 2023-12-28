@@ -10,7 +10,11 @@ const innerAction = actionScope.createAction<number>('innerAction');
 
 actionScope
 	.listenAll$()
-	.pipe(tap((a) => console.log(`[${a.type}]`)))
+	.pipe(
+		tap((a) => {
+			console.log(`[${a.type}]`);
+		}),
+	)
 	.subscribe();
 
 export interface ExampleState {
@@ -29,7 +33,7 @@ const store = actionScope.createRootSlice<ExampleState>(
 		out: 1,
 		foo: { bar: { zed: 2 } },
 	},
-	{ reducers: [outerAction.reduce((state) => ({ ...state, out: state.out + 1 }))] }
+	{ reducers: [outerAction.reduce((state) => ({ ...state, out: state.out + 1 }))] },
 );
 
 const fooSlice = store.slice('foo', {
@@ -40,9 +44,15 @@ const barSlice = fooSlice.slice('bar', {
 	reducers: [innerAction.reduce((state, payload) => ({ ...state, zed: state.zed + payload }))],
 });
 
-store.subscribe((state) => console.log('Full State', JSON.stringify(state)));
-fooSlice.subscribe((foo) => console.log('FooSlice', JSON.stringify(foo)));
-barSlice.subscribe((bar) => console.log('BarSlice', JSON.stringify(bar)));
+store.subscribe((state) => {
+	console.log('Full State', JSON.stringify(state));
+});
+fooSlice.subscribe((foo) => {
+	console.log('FooSlice', JSON.stringify(foo));
+});
+barSlice.subscribe((bar) => {
+	console.log('BarSlice', JSON.stringify(bar));
+});
 // outerAction.next(1);
 innerAction.next(1);
 middleAction.next(1);

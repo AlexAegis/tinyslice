@@ -1,9 +1,5 @@
 <script lang="ts">
-	// The ordering of these imports is critical to your app working properly
-	import '@skeletonlabs/skeleton/themes/theme-skeleton.css';
-	// If you have source.organizeImports set to true in VSCode, then it will auto change this ordering
 	import { base } from '$app/paths';
-	import '@skeletonlabs/skeleton/styles/skeleton.css';
 	// Most of your app wide CSS should be put in this file
 	import { AppBar, AppShell } from '@skeletonlabs/skeleton';
 	import packageJson from '../../../../package.json';
@@ -42,8 +38,8 @@
 	</div>
 
 	<svelte:fragment slot="sidebarLeft">
-		<section class="p-4 pb-20 space-y-4 overflow-y-auto">
-			<p class="font-bold pl-4 text-2xl">Examples</p>
+		<section class="space-y-4 overflow-y-auto p-4 pb-20">
+			<p class="pl-4 text-2xl font-bold">Examples</p>
 			<nav class="list-nav">
 				<ul>
 					{#each pages as { label, href }}

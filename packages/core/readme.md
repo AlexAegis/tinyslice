@@ -65,10 +65,5 @@ const firstPie = pieDicer.get(1);
 firstPie.internals.cheese$.subscribe((cheese) => console.log('cheese', cheese));
 firstPie.internals.cheese$.set(2);
 
-// To handle all at once
-pieDicer.latestSlices$.subscribe((pieSliceArray) =>
-  console.log('pieSliceArray', JSON.stringify(pieSliceArray)),
-);
-
 pieDicer.set(2, { cheese: 12, sauce: 13 });
 ```

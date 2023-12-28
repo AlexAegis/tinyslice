@@ -1,6 +1,6 @@
 import { Scope } from '@tinyslice/core';
 import { TinySliceDevtoolPlugin } from '@tinyslice/devtools-plugin';
-import { TinySliceHydrationPlugin } from '@tinyslice/hydration-plugin';
+// import { TinySliceHydrationPlugin } from '@tinyslice/hydration-plugin';
 
 const scope = new Scope();
 
@@ -21,7 +21,9 @@ const countSlice$ = rootSlice$.slice('count', {
 	reducers: [increment.reduce((state) => state + 1)],
 });
 
-countSlice$.subscribe((count) => console.log('count', count));
+countSlice$.subscribe((count) => {
+	console.log('count', count);
+});
 increment.next(); // Use custom action to trigger reducer
 countSlice$.set(10); // Use premade actions and reducers
 
@@ -38,18 +40,15 @@ const pieDicer = rootSlice$.addDicedSlice('pies', { cheese: 0, sauce: 0 } as Pie
 		return { cheese$, sauce$ };
 	},
 	// Plugins can be anywhere, save this slice to localstorage and read as initialised!
-	plugins: [new TinySliceHydrationPlugin<PieState>('pies')],
+	// plugins: [new TinySliceHydrationPlugin<PieState>('pies')],
 });
 
 // To get a specific entity slice
 const firstPie = pieDicer.get(1);
 
-firstPie.internals.cheese$.subscribe((cheese) => console.log('cheese', cheese));
+firstPie.internals.cheese$.subscribe((cheese) => {
+	console.log('cheese', cheese);
+});
 firstPie.internals.cheese$.set(2);
-
-// To handle all at once
-pieDicer.latestSlices$.subscribe((pieSliceArray) =>
-	console.log('pieSliceArray', JSON.stringify(pieSliceArray))
-);
 
 pieDicer.set(2, { cheese: 12, sauce: 13 });

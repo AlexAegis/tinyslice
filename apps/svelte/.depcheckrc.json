@@ -1,5 +1,12 @@
 {
-	"$schema": "https://json.schemastore.org/typings?mark=managed-by-autotool",
-	"ignores": ["@alexaegis/*", "@sveltejs/*", "autoprefixer", "eslint*", "tailwindcss"],
+	"$schema": "https://json.schemastore.org/typings",
+	"ignores": [
+		"@alexaegis/*",
+		"@sveltejs/*",
+		"autoprefixer",
+		"eslint*",
+		"tailwindcss",
+		"postcss-load-config"
+	],
 	"skip-missing": true
 }

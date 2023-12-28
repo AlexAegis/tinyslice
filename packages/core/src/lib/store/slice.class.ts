@@ -228,7 +228,7 @@ export const normalizeSliceDirection = <ParentState, State>(
 				? {
 						...parentState,
 						[key]: state,
-				  }
+					}
 				: parentState;
 		};
 
@@ -378,7 +378,7 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 					? {
 							...state,
 							[payload.key]: payload.data,
-					  }
+						}
 					: state;
 			}),
 		];
@@ -428,7 +428,7 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 								...sliceReducingActions,
 								...subSliceReducer.flat(),
 							]),
-					  )
+						)
 					: of(sliceReducingActions);
 			}),
 			shareReplay(1), // computed from a behaviorSubject and another computed field
@@ -446,7 +446,7 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 									})),
 								),
 							),
-					  )
+						)
 					: of([]);
 			}),
 			shareReplay(1), // computed from behaviorSubjects from a behaviorSubject
@@ -491,7 +491,7 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 											sliceRegistration,
 										}) as SliceChange<State>,
 								),
-						  )
+							)
 						: undefined;
 				})
 				.filter(isNotNullish);
@@ -506,7 +506,7 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 				return neededChildSlices.length > 0
 					? zip(neededChildSlices).pipe(
 							map((sliceChanges) => ({ sliceChanges, actionPacket })),
-					  )
+						)
 					: of({ sliceChanges: [], actionPacket });
 			}),
 		);

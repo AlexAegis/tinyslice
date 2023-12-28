@@ -2,7 +2,9 @@ import { Scope } from '@tinyslice/core';
 
 const scope = new Scope();
 
-scope.schedulingDispatcher$.subscribe((a) => console.log('action: ' + JSON.stringify(a)));
+scope.schedulingDispatcher$.subscribe((a) => {
+	console.log('action: ' + JSON.stringify(a));
+});
 export interface RootStore {
 	optional: OptionalInnerSlice | undefined;
 	nonOptional: string;
@@ -23,22 +25,28 @@ const rootStore = scope.createRootSlice(
 		defineInternals: (_slice) => {
 			return 1;
 		},
-	}
+	},
 );
 
-rootStore.subscribe((state) => console.log('--root', JSON.stringify(state)));
+rootStore.subscribe((state) => {
+	console.log('--root', JSON.stringify(state));
+});
 
 const optionalSlice = rootStore.slice('optional', {
 	reducers: [setNonOptional.reduce((state, _payload) => ({ ...state }))],
 });
-optionalSlice.subscribe((state) => console.log('--optionalSlice', JSON.stringify(state)));
+optionalSlice.subscribe((state) => {
+	console.log('--optionalSlice', JSON.stringify(state));
+});
 
 const setDataAction = scope.createAction<string>('set data');
 
 const optionalSliceData = optionalSlice.slice('data', {
 	reducers: [setDataAction.reduce((_state, payload) => payload)],
 });
-optionalSliceData.subscribe((state) => console.log('--optionalSliceData', JSON.stringify(state)));
+optionalSliceData.subscribe((state) => {
+	console.log('--optionalSliceData', JSON.stringify(state));
+});
 
 setNonOptional.next('bar');
 optionalSlice.set({ data: 'lazy Init' });

@@ -1,5 +1,5 @@
+import { Scope } from '@tinyslice/core';
 import { map, tap } from 'rxjs';
-import { Scope } from './store';
 
 const scope = new Scope();
 const printAction = scope.createAction<string>('printAction');
@@ -9,12 +9,20 @@ const innerAction = scope.createAction<number>('innerAction');
 
 scope
 	.listenAll$()
-	.pipe(tap((a) => console.log(`[${a.type}]`)))
+	.pipe(
+		tap((a) => {
+			console.log(`[${a.type}]`);
+		}),
+	)
 	.subscribe();
 
 scope
 	.listen$(printAction)
-	.pipe(tap((a) => console.log('a2', a.payload)))
+	.pipe(
+		tap((a) => {
+			console.log('a2', a.payload);
+		}),
+	)
 	.subscribe();
 
 scope.createEffect(countAction.pipe(map((c) => `FROM EFFECT Count called with ${c}`)));
@@ -49,10 +57,12 @@ const store = scope.createRootSlice<ExampleState>(
 			printAction.reduce((state, payload) => ({ ...state, lastPrinted: payload })),
 			countAction.reduce((state, payload) => ({ ...state, lastCounted: payload })),
 		],
-	}
+	},
 );
 
-store.subscribe((state) => console.log('Full State', JSON.stringify(state)));
+store.subscribe((state) => {
+	console.log('Full State', JSON.stringify(state));
+});
 
 const lastPrintedSlice = store.slice('lastPrinted', {
 	reducers: [innerAction.reduce((state, payload) => `${state}${payload}`)],
@@ -73,8 +83,12 @@ const fooSlice = store.slice('foo', {
 
 const barSlice = fooSlice.slice('bar');
 
-barSlice.subscribe((bar) => console.log('bar', bar));
-lastPrintedSlice.subscribe((lastPrinted) => console.log('lastPrinted', lastPrinted));
+barSlice.subscribe((bar) => {
+	console.log('bar', bar);
+});
+lastPrintedSlice.subscribe((lastPrinted) => {
+	console.log('lastPrinted', lastPrinted);
+});
 
 barSlice.set({ zed: 2 });
 innerAction.next(1);
@@ -88,7 +102,9 @@ innerAction.next(1);
 const newBarSlice = barSlice.addSlice(
 	'newBarSlice',
 	{ ns: 1 },
-	{ reducers: [countAction.reduce((s) => ({ ...s, ns: s.ns + 1 }))] }
+	{ reducers: [countAction.reduce((s) => ({ ...s, ns: s.ns + 1 }))] },
 );
 
-newBarSlice.pipe(map((a) => a?.ns)).subscribe((ns) => console.log('ns', ns));
+newBarSlice.pipe(map((a) => a.ns)).subscribe((ns) => {
+	console.log('ns', ns);
+});

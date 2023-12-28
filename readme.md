@@ -1,4 +1,4 @@
-# tinyslice 🍕
+# [tinyslice 🍕](https://github.com/AlexAegis/tinyslice)
 
 [![Latest NPM Version](https://img.shields.io/npm/v/@tinyslice/core/latest)](https://www.npmjs.com/package/@tinyslice/core)
 [![CI](https://github.com/AlexAegis/tinyslice/workflows/CI/badge.svg)](https://github.com/AlexAegis/tinyslice/actions?query=workflow%3ACI)
@@ -66,11 +66,6 @@ const firstPie = pieDicer.get(1);
 
 firstPie.internals.cheese$.subscribe((cheese) => console.log('cheese', cheese));
 firstPie.internals.cheese$.set(2);
-
-// To handle all at once
-pieDicer.latestSlices$.subscribe((pieSliceArray) =>
-  console.log('pieSliceArray', JSON.stringify(pieSliceArray)),
-);
 
 pieDicer.set(2, { cheese: 12, sauce: 13 });
 ```

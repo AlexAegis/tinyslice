@@ -2,7 +2,7 @@
 	import type { Observable } from 'rxjs';
 	import { pieDicer } from './deepdish.slice.js';
 	import Pie from './pie.svelte';
-	let keys$: Observable<string[]> = pieDicer.keys$;
+	const keys$: Observable<string[]> = pieDicer.keys$;
 </script>
 
 <div class="deep-dish-example">
