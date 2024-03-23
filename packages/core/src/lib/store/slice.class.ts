@@ -849,7 +849,7 @@ export class Slice<ParentState, State, Internals = unknown> extends Observable<S
 				...extractSliceOptions(childSliceConstructOptions),
 				plugins: [
 					...(this.plugins$.value as unknown as TinySlicePlugin<ChildState>[]).filter(
-						(plugin) => plugin.sliceOptions?.()?.passToChildren ?? false,
+						(plugin) => plugin.sliceOptions?.().passToChildren ?? false,
 					),
 					...(childSliceConstructOptions.plugins ?? []),
 				],
