@@ -1,5 +1,6 @@
 {
 	"name": "@alexaegis/tinyslice-examples",
+	"version": "0.8.1",
 	"private": true,
 	"archetype": {
 		"platform": "node",

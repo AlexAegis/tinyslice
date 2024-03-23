@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [0.8.1](https://github.com/AlexAegis/tinyslice/compare/v0.8.0...v0.8.1) (2024-03-23)
+
+
+### Features
+
+* vercel config ([c958dac](https://github.com/AlexAegis/tinyslice/commit/c958dac17407fbe8e16d71381318739cd06221d7))
+
+
+### Bug Fixes
+
+* add baseHref ([6ed3ed3](https://github.com/AlexAegis/tinyslice/commit/6ed3ed37323f0c72da654da6dce85a3745b42efc))
+* remove pinst ([02b5267](https://github.com/AlexAegis/tinyslice/commit/02b52676d74dcca244144c2c07a57fe11c0b5286))
+
 ## [0.8.0](https://github.com/AlexAegis/tinyslice/compare/v0.7.0...v0.8.0) (2023-07-20)
 
 
