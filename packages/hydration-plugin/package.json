@@ -1,7 +1,7 @@
 {
 	"name": "@tinyslice/hydration-plugin",
 	"description": "Slice hydration for TinySlice",
-	"version": "0.8.1",
+	"version": "0.8.2",
 	"license": "MIT",
 	"private": false,
 	"archetype": {
@@ -83,7 +83,7 @@
 	},
 	"dependencies": {
 		"@alexaegis/common": "^0.10.0",
-		"@tinyslice/core": "workspace:^0.8.1",
+		"@tinyslice/core": "workspace:^",
 		"rxjs": "^7.8.1"
 	},
 	"devDependencies": {

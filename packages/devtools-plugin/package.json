@@ -1,7 +1,7 @@
 {
 	"name": "@tinyslice/devtools-plugin",
 	"description": "Redux Devtools plugin for TinySlice",
-	"version": "0.8.1",
+	"version": "0.8.2",
 	"license": "MIT",
 	"private": false,
 	"archetype": {
@@ -82,7 +82,7 @@
 		"./readme": "./readme.md"
 	},
 	"dependencies": {
-		"@tinyslice/core": "workspace:^0.8.1",
+		"@tinyslice/core": "workspace:^",
 		"rxjs": "^7.8.1"
 	},
 	"devDependencies": {

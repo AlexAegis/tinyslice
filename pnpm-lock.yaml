@@ -311,7 +311,7 @@ importers:
   packages/devtools-plugin:
     dependencies:
       '@tinyslice/core':
-        specifier: workspace:^0.8.1
+        specifier: workspace:^
         version: link:../core
       rxjs:
         specifier: ^7.8.1
@@ -376,7 +376,7 @@ importers:
         specifier: ^0.10.0
         version: 0.10.0
       '@tinyslice/core':
-        specifier: workspace:^0.8.1
+        specifier: workspace:^
         version: link:../core
       rxjs:
         specifier: ^7.8.1
@@ -419,7 +419,7 @@ importers:
         specifier: ^0.10.0
         version: 0.10.0
       '@tinyslice/core':
-        specifier: workspace:^0.8.1
+        specifier: workspace:^
         version: link:../core
     devDependencies:
       '@alexaegis/eslint-config-vitest':
