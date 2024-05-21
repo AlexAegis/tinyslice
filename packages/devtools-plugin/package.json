@@ -86,11 +86,11 @@
 		"rxjs": "^7.8.1"
 	},
 	"devDependencies": {
-		"@alexaegis/eslint-config-vitest": "^0.11.3",
-		"@alexaegis/stylelint-config": "^0.11.3",
-		"@alexaegis/ts": "^0.11.3",
-		"@alexaegis/vite": "^0.11.3",
-		"@alexaegis/vitest": "^0.11.3",
+		"@alexaegis/eslint-config-vitest": "^0.11.4",
+		"@alexaegis/stylelint-config": "^0.11.4",
+		"@alexaegis/ts": "^0.11.4",
+		"@alexaegis/vite": "^0.11.4",
+		"@alexaegis/vitest": "^0.11.4",
 		"@types/node": "^20.12.12",
 		"publint": "^0.2.8",
 		"stylelint": "^16.5.0",
