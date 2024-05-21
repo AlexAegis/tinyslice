@@ -67,20 +67,21 @@
 			"require": "./dist/index.cjs",
 			"default": "./dist/index.js"
 		},
+		"./package.json": "./package.json",
 		"./readme": "./readme.md"
 	},
 	"dependencies": {
-		"@alexaegis/common": "^0.9.1",
+		"@alexaegis/common": "^0.10.0",
 		"rxjs": "^7.8.1"
 	},
 	"devDependencies": {
-		"@alexaegis/eslint-config-vitest": "^0.10.4",
-		"@alexaegis/ts": "^0.10.4",
-		"@alexaegis/vite": "^0.10.4",
-		"@alexaegis/vitest": "^0.10.4",
-		"@types/node": "^20.11.30",
-		"publint": "^0.2.7",
-		"vite": "^5.2.4",
-		"vitest": "^1.4.0"
+		"@alexaegis/eslint-config-vitest": "^0.11.3",
+		"@alexaegis/ts": "^0.11.3",
+		"@alexaegis/vite": "^0.11.3",
+		"@alexaegis/vitest": "^0.11.3",
+		"@types/node": "^20.12.12",
+		"publint": "^0.2.8",
+		"vite": "^5.2.11",
+		"vitest": "^1.6.0"
 	}
 }
