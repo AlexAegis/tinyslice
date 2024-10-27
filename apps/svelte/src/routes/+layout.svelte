@@ -23,7 +23,7 @@
 			<svelte:fragment slot="trail">
 				<a
 					class="btn btn-sm variant-ghost-surface"
-					href="{packageJson.homepage}"
+					href={packageJson.homepage}
 					target="_blank"
 					rel="noreferrer"
 				>
@@ -46,9 +46,9 @@
 						<li>
 							<a
 								{href}
-								data-sveltekit-preload-data="{label === 'MouseMove'
+								data-sveltekit-preload-data={label === 'MouseMove'
 									? 'off'
-									: 'hover'}"><span class="flex-auto">{label}</span></a
+									: 'hover'}><span class="flex-auto">{label}</span></a
 							>
 						</li>
 					{/each}

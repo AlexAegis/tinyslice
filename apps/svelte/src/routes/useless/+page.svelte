@@ -14,17 +14,17 @@
 
 <div class="mousemovetest">
 	<h1>
-		<span class="strikethrought" class:nonstrikethrought="{$isOn$}">Working</span>
+		<span class="strikethrought" class:nonstrikethrought={$isOn$}>Working</span>
 		Useless Machine
 	</h1>
 
 	{#if $isOn$}
-		<button type="button" class="btn variant-filled" on:click="{() => isOn$.set(false)}">
+		<button type="button" class="btn variant-filled" on:click={() => isOn$.set(false)}>
 			Turn off!
 		</button>
 		<span>Can't see me!</span>
 	{:else}
-		<button type="button" class="btn variant-filled" on:click="{() => isOn$.set(true)}">
+		<button type="button" class="btn variant-filled" on:click={() => isOn$.set(true)}>
 			Turn on!
 		</button>
 	{/if}

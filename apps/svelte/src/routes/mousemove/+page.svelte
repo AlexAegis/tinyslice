@@ -15,14 +15,14 @@
 
 <div class="mousemovetest">
 	<h1>
-		<span class="strikethrought" class:nonstrikethrought="{$listenThrottled$}">Throttled</span>
+		<span class="strikethrought" class:nonstrikethrought={$listenThrottled$}>Throttled</span>
 		Mouse Position: {$positionPrint$}
 	</h1>
 
 	<button
 		type="button"
 		class="btn variant-filled"
-		on:click="{() => listenThrottled$.set(!listenThrottled$.value)}"
+		on:click={() => listenThrottled$.set(!listenThrottled$.value)}
 	>
 		Toggle Throttled Listener
 	</button>
@@ -30,7 +30,7 @@
 	<button
 		type="button"
 		class="btn variant-filled"
-		on:click="{() => (paused ? mouseMoveSlice$.unpause() : mouseMoveSlice$.pause())}"
+		on:click={() => (paused ? mouseMoveSlice$.unpause() : mouseMoveSlice$.pause())}
 	>
 		{#if paused}
 			Unpause

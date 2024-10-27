@@ -10,14 +10,14 @@
 		<button
 			type="button"
 			class="btn variant-filled"
-			on:click="{() => counterActions.increment.next(1)}"
+			on:click={() => counterActions.increment.next(1)}
 		>
 			Add 1
 		</button>
 		<button
 			type="button"
 			class="btn variant-filled"
-			on:click="{() => counterActions.decrement.next(1)}"
+			on:click={() => counterActions.decrement.next(1)}
 		>
 			Sub 1
 		</button>
@@ -25,7 +25,7 @@
 	<div class="internal-counter m-12">
 		<div>
 			<div>
-				<Observer observable="{counterSlice.internals.internalCounter$}" let:next>
+				<Observer observable={counterSlice.internals.internalCounter$} let:next>
 					internalCounter: {JSON.stringify(next)}
 				</Observer>
 			</div>
@@ -33,18 +33,18 @@
 				<button
 					type="button"
 					class="btn variant-filled"
-					on:click="{() =>
+					on:click={() =>
 						counterSlice.internals.internalCount$.set(
 							counterSlice.internals.internalCount$.value + 1,
-						)}">Add 1</button
+						)}>Add 1</button
 				>
 				<button
 					type="button"
 					class="btn variant-filled"
-					on:click="{() =>
+					on:click={() =>
 						counterSlice.internals.internalCount$.set(
 							counterSlice.internals.internalCount$.value - 1,
-						)}"
+						)}
 				>
 					Sub 1
 				</button>
@@ -52,13 +52,13 @@
 		</div>
 		<div>
 			internalCount:
-			<Observer observable="{counterSlice.internals.internalCount$}" let:next>
+			<Observer observable={counterSlice.internals.internalCount$} let:next>
 				value: {next}
 			</Observer>
 		</div>
 		<div>
 			internalDirectCounter:
-			<Observer observable="{counterSlice.internals.internalDirectCounter$}" let:next>
+			<Observer observable={counterSlice.internals.internalDirectCounter$} let:next>
 				value: {next}
 			</Observer>
 		</div>
@@ -66,7 +66,7 @@
 		<div>
 			<div>
 				internalNullableCounter:
-				<Observer observable="{counterSlice.internals.internalNullableCounter$}" let:next>
+				<Observer observable={counterSlice.internals.internalNullableCounter$} let:next>
 					value: {JSON.stringify(next)}
 				</Observer>
 			</div>
@@ -74,30 +74,29 @@
 				<button
 					type="button"
 					class="btn variant-filled"
-					on:click="{() =>
-						counterSlice.internals.internalNullableCounter$.set({ internalCount: 1 })}"
+					on:click={() =>
+						counterSlice.internals.internalNullableCounter$.set({ internalCount: 1 })}
 				>
 					Set Nullable
 				</button>
 				<button
 					type="button"
 					class="btn variant-filled"
-					on:click="{() =>
-						counterSlice.internals.internalNullableCounter$.set(undefined)}"
+					on:click={() => counterSlice.internals.internalNullableCounter$.set(undefined)}
 				>
 					Unset Nullable
 				</button>
 
 				<Observer
-					observable="{counterSlice.internals.internalNullableCounter$.paused$}"
+					observable={counterSlice.internals.internalNullableCounter$.paused$}
 					let:next
 				>
 					{#if next}
 						<button
 							type="button"
 							class="btn variant-filled"
-							on:click="{() =>
-								counterSlice.internals.internalNullableCounter$.unpause()}"
+							on:click={() =>
+								counterSlice.internals.internalNullableCounter$.unpause()}
 						>
 							Unpause Nullable
 						</button>
@@ -105,8 +104,7 @@
 						<button
 							type="button"
 							class="btn variant-filled"
-							on:click="{() =>
-								counterSlice.internals.internalNullableCounter$.pause()}"
+							on:click={() => counterSlice.internals.internalNullableCounter$.pause()}
 						>
 							Pause Nullable
 						</button>
@@ -119,7 +117,7 @@
 			<div>
 				internalNullableCounterCount:
 				<Observer
-					observable="{counterSlice.internals.internalNullableCounterCount$}"
+					observable={counterSlice.internals.internalNullableCounterCount$}
 					let:next
 				>
 					value: {JSON.stringify(next)}
@@ -128,10 +126,10 @@
 				<button
 					type="button"
 					class="btn variant-filled"
-					on:click="{() =>
+					on:click={() =>
 						counterSlice.internals.internalNullableCounterCount$.set(
 							counterSlice.internals.internalNullableCounterCount$.value + 1,
-						)}"
+						)}
 				>
 					Increment internalNullableCounterCount
 				</button>

@@ -1,5 +1,5 @@
 import { Subject, Subscription, finalize, map, tap, type Observer } from 'rxjs';
-import type { SpyInstance } from 'vitest';
+import type { MockInstance } from 'vitest';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Action } from '../action/index.js';
 import { Scope } from './scope.class.js';
@@ -78,14 +78,20 @@ describe('slice', () => {
 		const barScopeEffectObserver: Observer<number> = createMockObserver();
 		const borScopeEffectObserver: Observer<number> = createMockObserver();
 
-		const rootReducerSpy = vi.fn<[RootState, unknown], RootState>((state, _action) => state);
-		const fooReducerSpy = vi.fn<[FooState, unknown], FooState>((state, _action) => state);
-		const barReducerSpy = vi.fn<[number, unknown], number>((state, _action) => state);
-		const borReducerSpy = vi.fn<[string, unknown], string>((state, _action) => state);
+		const rootReducerSpy = vi.fn<(s: RootState, _: unknown) => RootState>(
+			(state, _action) => state,
+		);
+		const fooReducerSpy = vi.fn<(s: FooState, _: unknown) => FooState>(
+			(state, _action) => state,
+		);
+		const barReducerSpy = vi.fn<(s: number, _: unknown) => number>((state, _action) => state);
+		const borReducerSpy = vi.fn<(s: string, _: unknown) => string>((state, _action) => state);
 
 		let testAction: Action<number>;
 		let auxillaryTestAction: Action<number>;
-		const barAuxillaryReducerSpy = vi.fn<[number, number], number>((_state, action) => action);
+		const barAuxillaryReducerSpy = vi.fn<(s: number, _: number) => number>(
+			(_state, action) => action,
+		);
 
 		beforeEach(() => {
 			effectSource = new Subject<number>();
@@ -541,7 +547,7 @@ describe('slice', () => {
 
 		let testAction!: Action;
 
-		const reducerSpy = vi.fn<[string, string], unknown>();
+		const reducerSpy = vi.fn<(a: string, b: string) => unknown>();
 
 		beforeEach(() => {
 			testAction = scope.createAction('test');
@@ -629,7 +635,7 @@ describe('slice', () => {
 
 		const rootObserver: Observer<RootState> = createMockObserver();
 
-		let consoleErrorSpy: SpyInstance;
+		let consoleErrorSpy: MockInstance<(m: string) => void>;
 
 		beforeEach(() => {
 			errorTestAction = scope.createAction('error test action');

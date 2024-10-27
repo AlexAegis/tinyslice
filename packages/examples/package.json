@@ -11,18 +11,18 @@
 	],
 	"type": "module",
 	"scripts": {
-		"lint:depcheck": "turbo run lint:depcheck_ --concurrency 16 --cache-dir .cache/turbo --filter @alexaegis/tinyslice-examples",
+		"lint:depcheck": "turbo run lint:depcheck_ --concurrency 16 --filter @alexaegis/tinyslice-examples",
 		"lint:depcheck_": "depcheck",
-		"lint:es": "turbo run lint:es_ --concurrency 16 --cache-dir .cache/turbo --filter @alexaegis/tinyslice-examples",
+		"lint:es": "turbo run lint:es_ --concurrency 16 --filter @alexaegis/tinyslice-examples",
 		"lint:es_": "eslint --max-warnings=0 --fix --no-error-on-unmatched-pattern .",
-		"lint:format": "turbo run lint:format_ --concurrency 16 --cache-dir .cache/turbo --filter @alexaegis/tinyslice-examples",
+		"lint:format": "turbo run lint:format_ --concurrency 16 --filter @alexaegis/tinyslice-examples",
 		"lint:format_": "prettier --cache-location .cache/prettier --plugin prettier-plugin-svelte --plugin prettier-plugin-tailwindcss --check .",
-		"lint:md": "turbo run lint:md_ --concurrency 16 --cache-dir .cache/turbo --filter @alexaegis/tinyslice-examples",
+		"lint:md": "turbo run lint:md_ --concurrency 16 --filter @alexaegis/tinyslice-examples",
 		"lint:md_": "remark --frail --no-stdout --silently-ignore .",
-		"lint:tsc": "turbo run lint:tsc_ --concurrency 16 --cache-dir .cache/turbo --filter @alexaegis/tinyslice-examples",
+		"lint:tsc": "turbo run lint:tsc_ --concurrency 16 --filter @alexaegis/tinyslice-examples",
 		"lint:tsc_": "tsc --noEmit",
-		"all": "BUILD_REASON='publish' turbo run all_ --concurrency 16 --cache-dir .cache/turbo --filter @alexaegis/tinyslice-examples",
-		"format": "turbo run format_ --concurrency 16 --cache-dir .cache/turbo --filter @alexaegis/tinyslice-examples",
+		"all": "BUILD_REASON='publish' turbo run all_ --concurrency 16 --filter @alexaegis/tinyslice-examples",
+		"format": "turbo run format_ --concurrency 16 --filter @alexaegis/tinyslice-examples",
 		"format_": "prettier --cache-location .cache/prettier --plugin prettier-plugin-svelte --plugin prettier-plugin-tailwindcss --write ."
 	},
 	"dependencies": {
@@ -31,8 +31,8 @@
 		"rxjs": "^7.8.1"
 	},
 	"devDependencies": {
-		"@alexaegis/eslint-config-vitest": "^0.11.4",
-		"@alexaegis/ts": "^0.11.4",
-		"@types/node": "^20.12.12"
+		"@alexaegis/eslint-config-vitest": "^0.11.6",
+		"@alexaegis/ts": "^0.11.6",
+		"@types/node": "^22.8.1"
 	}
 }

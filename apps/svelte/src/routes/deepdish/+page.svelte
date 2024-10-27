@@ -12,11 +12,11 @@
 		{#each $keys$ as key (key)}
 			<li class="row">
 				<h2>{key}</h2>
-				<Pie pieSlice$="{pieDicer.get(key)}" />
+				<Pie pieSlice$={pieDicer.get(key)} />
 				<button
 					type="button"
 					class="delete btn variant-filled"
-					on:click="{() => pieDicer.remove(key)}"
+					on:click={() => pieDicer.remove(key)}
 				>
 					Remove Slice
 				</button>
@@ -28,11 +28,11 @@
 		<button
 			type="button"
 			class="btn variant-filled"
-			on:click="{() => pieDicer.add({ cheese: 0, sauce: 0 })}"
+			on:click={() => pieDicer.add({ cheese: 0, sauce: 0 })}
 		>
 			Add Slice
 		</button>
-		<button type="button" class="btn variant-filled" on:click="{() => pieDicer.create()}">
+		<button type="button" class="btn variant-filled" on:click={() => pieDicer.create()}>
 			Create Slice
 		</button>
 	</div>

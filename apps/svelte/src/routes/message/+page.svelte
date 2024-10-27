@@ -12,7 +12,7 @@
 			class="input"
 			type="text"
 			bind:value
-			on:input="{() => messageActions.sendMessage.next(value)}"
+			on:input={() => messageActions.sendMessage.next(value)}
 		/>
 	</div>
 
