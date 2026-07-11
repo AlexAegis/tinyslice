@@ -1,6 +1,6 @@
 {
 	"name": "@tinyslice/svelte-example",
-	"version": "0.8.3",
+	"version": "0.9.0",
 	"archetype": {
 		"platform": "web",
 		"framework": "sveltekit",
