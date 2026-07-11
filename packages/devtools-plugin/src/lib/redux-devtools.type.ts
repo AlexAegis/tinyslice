@@ -111,8 +111,7 @@ export interface ReduxDevtoolsMessageDispatch<State> {
 }
 
 export type ReduxDevtoolsMessage<State> =
-	| ReduxDevtoolsMessageStart
-	| ReduxDevtoolsMessageDispatch<State>;
+	ReduxDevtoolsMessageStart | ReduxDevtoolsMessageDispatch<State>;
 
 export interface ReduxDevtoolsExtensionConnection<State> {
 	subscribe(listener: (change: ReduxDevtoolsMessage<State>) => void): () => void;

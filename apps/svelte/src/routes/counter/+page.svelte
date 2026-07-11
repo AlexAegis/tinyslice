@@ -9,14 +9,14 @@
 	<div>
 		<button
 			type="button"
-			class="btn variant-filled"
+			class="btn preset-filled-primary-500"
 			on:click={() => counterActions.increment.next(1)}
 		>
 			Add 1
 		</button>
 		<button
 			type="button"
-			class="btn variant-filled"
+			class="btn preset-filled-primary-500"
 			on:click={() => counterActions.decrement.next(1)}
 		>
 			Sub 1
@@ -32,7 +32,7 @@
 			<div>
 				<button
 					type="button"
-					class="btn variant-filled"
+					class="btn preset-filled-primary-500"
 					on:click={() =>
 						counterSlice.internals.internalCount$.set(
 							counterSlice.internals.internalCount$.value + 1,
@@ -40,7 +40,7 @@
 				>
 				<button
 					type="button"
-					class="btn variant-filled"
+					class="btn preset-filled-primary-500"
 					on:click={() =>
 						counterSlice.internals.internalCount$.set(
 							counterSlice.internals.internalCount$.value - 1,
@@ -73,7 +73,7 @@
 			<div>
 				<button
 					type="button"
-					class="btn variant-filled"
+					class="btn preset-filled-primary-500"
 					on:click={() =>
 						counterSlice.internals.internalNullableCounter$.set({ internalCount: 1 })}
 				>
@@ -81,7 +81,7 @@
 				</button>
 				<button
 					type="button"
-					class="btn variant-filled"
+					class="btn preset-filled-primary-500"
 					on:click={() => counterSlice.internals.internalNullableCounter$.set(undefined)}
 				>
 					Unset Nullable
@@ -94,7 +94,7 @@
 					{#if next}
 						<button
 							type="button"
-							class="btn variant-filled"
+							class="btn preset-filled-primary-500"
 							on:click={() =>
 								counterSlice.internals.internalNullableCounter$.unpause()}
 						>
@@ -103,7 +103,7 @@
 					{:else}
 						<button
 							type="button"
-							class="btn variant-filled"
+							class="btn preset-filled-primary-500"
 							on:click={() => counterSlice.internals.internalNullableCounter$.pause()}
 						>
 							Pause Nullable
@@ -125,7 +125,7 @@
 
 				<button
 					type="button"
-					class="btn variant-filled"
+					class="btn preset-filled-primary-500"
 					on:click={() =>
 						counterSlice.internals.internalNullableCounterCount$.set(
 							counterSlice.internals.internalNullableCounterCount$.value + 1,

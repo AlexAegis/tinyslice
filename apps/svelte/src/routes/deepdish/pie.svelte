@@ -20,10 +20,12 @@
 <span>
 	<h4>Sauce: {$sauce$}</h4>
 
-	<button type="button" class="btn variant-filled" on:click={addSauce}>Add Sauce</button>
+	<button type="button" class="btn preset-filled-primary-500" on:click={addSauce}
+		>Add Sauce</button
+	>
 	<button
 		type="button"
-		class="btn variant-filled"
+		class="btn preset-filled-primary-500"
 		on:click={() => pieActions.clearSauce.next(undefined)}
 	>
 		Clear Sauce
@@ -33,10 +35,12 @@
 <span>
 	<h4 title="It's under the sauce">Cheese: {$cheese$}</h4>
 
-	<button type="button" class="btn variant-filled" on:click={addCheese}> Add Cheese </button>
+	<button type="button" class="btn preset-filled-primary-500" on:click={addCheese}>
+		Add Cheese
+	</button>
 	<button
 		type="button"
-		class="btn variant-filled"
+		class="btn preset-filled-primary-500"
 		on:click={() => pieActions.clearCheese.next(undefined)}
 	>
 		Clear Cheese

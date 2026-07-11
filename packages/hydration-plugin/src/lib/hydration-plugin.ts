@@ -50,9 +50,10 @@ export interface HydrationPluginOptions<State, SavedState extends State = State>
  * TODO: if the constrained plugin is also present in the plugins array and not meeting the constraint, put it where it does
  * TODO: do it until
  */
-export class TinySliceHydrationPlugin<State, SavedState extends State = State>
-	implements TinySlicePlugin<State>
-{
+export class TinySliceHydrationPlugin<
+	State,
+	SavedState extends State = State,
+> implements TinySlicePlugin<State> {
 	private sink = new Subscription();
 	private options: HydrationPluginOptions<State, SavedState>;
 	private hooks!: TinySlicePluginHooks<State>;

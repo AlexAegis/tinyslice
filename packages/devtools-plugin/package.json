@@ -40,6 +40,9 @@
 		"engine-strict": true
 	},
 	"sideEffects": false,
+	"engines": {
+		"node": ">=22.6.0"
+	},
 	"scripts": {
 		"lint:depcheck": "turbo run lint:depcheck_ --concurrency 16 --filter @tinyslice/devtools-plugin",
 		"lint:depcheck_": "depcheck",
@@ -53,13 +56,13 @@
 		"lint:style:css": "turbo run lint:style:css_ --concurrency 16 --filter @tinyslice/devtools-plugin",
 		"lint:style:css_": "stylelint --cache true --cache-strategy content --cache-location .cache/stylelintcache-css --allow-empty-input '**/*.css'",
 		"lint:style:html": "turbo run lint:style:html_ --concurrency 16 --filter @tinyslice/devtools-plugin",
-		"lint:style:html_": "stylelint --customSyntax=postcss-html --cache true --cache-strategy content --cache-location .cache/stylelintcache-html --allow-empty-input '**/*.{html,svelte,vue,astro,xml,php}'",
+		"lint:style:html_": "stylelint --cache true --cache-strategy content --cache-location .cache/stylelintcache-html --allow-empty-input '**/*.{html,svelte,vue,astro,xml,php}'",
 		"lint:style:scss": "turbo run lint:style:scss_ --concurrency 16 --filter @tinyslice/devtools-plugin",
-		"lint:style:scss_": "stylelint --customSyntax=postcss-scss --cache true --cache-strategy content --cache-location .cache/stylelintcache-scss --allow-empty-input '**/*.scss'",
+		"lint:style:scss_": "stylelint --cache true --cache-strategy content --cache-location .cache/stylelintcache-scss --allow-empty-input '**/*.scss'",
 		"lint:tsc": "turbo run lint:tsc_ --concurrency 16 --filter @tinyslice/devtools-plugin",
 		"lint:tsc_": "tsc --noEmit",
 		"publint": "BUILD_REASON='publish' turbo run publint_ --concurrency 16 --filter @tinyslice/devtools-plugin",
-		"publint_": "publint dist",
+		"publint_": "publint",
 		"test": "turbo run test_ --concurrency 16 --filter @tinyslice/devtools-plugin",
 		"test_": "vitest --passWithNoTests --coverage --run",
 		"test:watch": "vitest --passWithNoTests --coverage",
@@ -83,18 +86,19 @@
 	},
 	"dependencies": {
 		"@tinyslice/core": "workspace:^",
-		"rxjs": "^7.8.1"
+		"rxjs": "^7.8.2"
 	},
 	"devDependencies": {
-		"@alexaegis/eslint-config-vitest": "^0.11.6",
-		"@alexaegis/stylelint-config": "^0.11.6",
-		"@alexaegis/ts": "^0.11.6",
-		"@alexaegis/vite": "^0.11.6",
-		"@alexaegis/vitest": "^0.11.6",
-		"@types/node": "^22.8.1",
-		"publint": "^0.2.12",
-		"stylelint": "^16.10.0",
-		"vite": "^5.4.10",
-		"vitest": "^2.1.3"
+		"@alexaegis/eslint-config-vitest": "^0.15.4",
+		"@alexaegis/stylelint-config": "^0.15.4",
+		"@alexaegis/ts": "^0.15.4",
+		"@alexaegis/vite": "^0.15.4",
+		"@alexaegis/vitest": "^0.15.4",
+		"@types/node": "^26.1.1",
+		"publint": "^0.3.21",
+		"stylelint": "^17.14.0",
+		"vite": "^8.1.4",
+		"vite-plugin-dts": "^5.0.3",
+		"vitest": "^4.1.10"
 	}
 }

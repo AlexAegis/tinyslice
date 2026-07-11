@@ -15,7 +15,7 @@
 				<Pie pieSlice$={pieDicer.get(key)} />
 				<button
 					type="button"
-					class="delete btn variant-filled"
+					class="delete btn preset-filled-primary-500"
 					on:click={() => pieDicer.remove(key)}
 				>
 					Remove Slice
@@ -27,18 +27,26 @@
 	<div class="controls">
 		<button
 			type="button"
-			class="btn variant-filled"
+			class="btn preset-filled-primary-500"
 			on:click={() => pieDicer.add({ cheese: 0, sauce: 0 })}
 		>
 			Add Slice
 		</button>
-		<button type="button" class="btn variant-filled" on:click={() => pieDicer.create()}>
+		<button
+			type="button"
+			class="btn preset-filled-primary-500"
+			on:click={() => pieDicer.create()}
+		>
 			Create Slice
 		</button>
 	</div>
 </div>
 
 <style>
+	button {
+		background-color: red;
+	}
+
 	.deep-dish-example {
 		display: flex;
 		flex-direction: column;

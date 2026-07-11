@@ -1,5 +1,5 @@
 <div class="card m-12">
-	<header class="card-header">
+	<header class="p-4">
 		<h1 class="h1">
 			<span
 				class="bg-gradient-to-br from-blue-500 to-cyan-300 box-decoration-clone bg-clip-text text-transparent"

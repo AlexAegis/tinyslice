@@ -19,12 +19,20 @@
 	</h1>
 
 	{#if $isOn$}
-		<button type="button" class="btn variant-filled" on:click={() => isOn$.set(false)}>
+		<button
+			type="button"
+			class="btn preset-filled-primary-500"
+			on:click={() => isOn$.set(false)}
+		>
 			Turn off!
 		</button>
 		<span>Can't see me!</span>
 	{:else}
-		<button type="button" class="btn variant-filled" on:click={() => isOn$.set(true)}>
+		<button
+			type="button"
+			class="btn preset-filled-primary-500"
+			on:click={() => isOn$.set(true)}
+		>
 			Turn on!
 		</button>
 	{/if}

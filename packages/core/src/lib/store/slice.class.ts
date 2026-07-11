@@ -135,16 +135,23 @@ export interface RootSliceOptions<State, Internals> extends SliceOptions<never, 
 
 export type RootSlice<State, Internals = unknown> = Slice<never, State, Internals>;
 
-export interface SliceConstructOptions<ParentState, State, Internals>
-	extends SliceOptions<ParentState, State, Internals> {
+export interface SliceConstructOptions<ParentState, State, Internals> extends SliceOptions<
+	ParentState,
+	State,
+	Internals
+> {
 	scope: Scope;
 	initialState: State;
 	parentCoupling?: SliceCoupling<ParentState, State>;
 	pathSegment: string;
 }
 
-export interface DiceConstructOptions<State, ChildState, ChildInternals, DiceKey>
-	extends SliceOptions<State, ChildState, ChildInternals> {
+export interface DiceConstructOptions<
+	State,
+	ChildState,
+	ChildInternals,
+	DiceKey,
+> extends SliceOptions<State, ChildState, ChildInternals> {
 	getAllKeys: (state: State) => DiceKey[];
 	getNextKey: GetNext<DiceKey>;
 }
@@ -171,8 +178,11 @@ const extractSliceOptions = <ParentState, State, Internals>(
 	};
 };
 
-export interface ChildSliceConstructOptions<ParentState, State, Internals>
-	extends SliceOptions<ParentState, State, Internals> {
+export interface ChildSliceConstructOptions<ParentState, State, Internals> extends SliceOptions<
+	ParentState,
+	State,
+	Internals
+> {
 	initialState?: State | undefined;
 	/**
 	 * Marks if a slice should be dropped when its key is dropped from its
@@ -200,11 +210,7 @@ export interface SliceChange<State> {
  * TODO: and State must not already be a value of ParentState
  */
 export type SliceDirection<ParentState, State> =
-	| string
-	| number
-	| symbol
-	| keyof ParentState
-	| SelectSlicer<ParentState, State>;
+	string | number | symbol | keyof ParentState | SelectSlicer<ParentState, State>;
 
 export const normalizeSliceDirection = <ParentState, State>(
 	sliceDirection: SliceDirection<ParentState, State>,

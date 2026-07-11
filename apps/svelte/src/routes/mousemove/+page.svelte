@@ -21,7 +21,7 @@
 
 	<button
 		type="button"
-		class="btn variant-filled"
+		class="btn preset-filled-primary-500"
 		on:click={() => listenThrottled$.set(!listenThrottled$.value)}
 	>
 		Toggle Throttled Listener
@@ -29,7 +29,7 @@
 
 	<button
 		type="button"
-		class="btn variant-filled"
+		class="btn preset-filled-primary-500"
 		on:click={() => (paused ? mouseMoveSlice$.unpause() : mouseMoveSlice$.pause())}
 	>
 		{#if paused}

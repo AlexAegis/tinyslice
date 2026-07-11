@@ -9,7 +9,14 @@
 	"keywords": [
 		"managed-by-autotool"
 	],
+	"repository": {
+		"url": "git+https://github.com/AlexAegis/tinyslice.git",
+		"type": "git"
+	},
 	"type": "module",
+	"engines": {
+		"node": ">=22.6.0"
+	},
 	"scripts": {
 		"lint:depcheck": "turbo run lint:depcheck_ --concurrency 16 --filter @alexaegis/tinyslice-examples",
 		"lint:depcheck_": "depcheck",
@@ -28,11 +35,11 @@
 	"dependencies": {
 		"@tinyslice/core": "workspace:^",
 		"@tinyslice/devtools-plugin": "workspace:^",
-		"rxjs": "^7.8.1"
+		"rxjs": "^7.8.2"
 	},
 	"devDependencies": {
-		"@alexaegis/eslint-config-vitest": "^0.11.6",
-		"@alexaegis/ts": "^0.11.6",
-		"@types/node": "^22.8.1"
+		"@alexaegis/eslint-config-vitest": "^0.15.4",
+		"@alexaegis/ts": "^0.15.4",
+		"@types/node": "^26.1.1"
 	}
 }

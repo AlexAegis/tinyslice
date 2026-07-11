@@ -39,8 +39,7 @@ export type PacketReducer<State, Payload = unknown> = (
 export type PayloadReducer<State, Payload> = (state: State, payload: Payload) => State;
 export type StatelessReducer<State> = () => State;
 export type ActionReducer<State, Payload> =
-	| PayloadReducer<State, Payload>
-	| StatelessReducer<State>;
+	PayloadReducer<State, Payload> | StatelessReducer<State>;
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export interface ReducerConfiguration<State, Payload = any> {
